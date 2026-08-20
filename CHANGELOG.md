@@ -4,11 +4,22 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-20 | 文档 | 增加天空盒 Pass 教学示例与素材 | docs、assets、scripts | 本次提交 |
 | 08-20 | 资产 | 增加经典图形学测试模型下载集 | assets、scripts | 本次提交 |
 | 08-20 | 文档 | 项目 Markdown 文档中文化 | docs | 本次提交 |
 | 08-20 | 功能 | 搭建 DX11 渲染实验平台 | 全部 | `3aafc78` |
 
 ---
+
+## [2026-08-20] 增加天空盒 Pass 教学示例与素材
+
+- **文件**：`docs/examples/skybox-pass.md`、`assets/skyboxes/`、
+  `scripts/download-skybox-assets.ps1`
+- **范围**：渲染架构学习示例与第三方素材
+- **变更**：增加固定版本的 DirectXTKTest cubemap DDS 下载流程，以及覆盖 `IRenderPass`、
+  `SkyboxPass`、`SkyboxEffect`、HLSL、DX11 状态、编辑器接入和验证方法的详细中文文档。
+- **原因**：用一个完整例子说明如何在不滥用逐网格 `IRenderEffect` 的前提下扩展场景级渲染功能。
+- **提交**：本次提交
 
 ## [2026-08-20] 增加经典图形学测试模型下载集
 

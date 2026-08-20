@@ -15,6 +15,15 @@
 6. 条件允许时，为参数验证添加 CPU 侧测试。
 7. 如果边界发生变化，更新 `FILE_INDEX.md`、`CHANGELOG.md` 和本文档。
 
+## 场景级 Pass
+
+天空盒、阴影图等功能每帧按场景执行一次，不属于单个实体。此类功能应继承 `IRenderPass`，由 Pass
+负责绘制时机和资源依赖，并在内部组合专用 Effect。不要为了复用接口而伪造
+`IRenderEffect::Bind` 所需的 world、color 或 selected 参数。
+
+完整示例见 `docs/examples/skybox-pass.md`，其中说明了 `SkyboxPass`、`SkyboxEffect`、cubemap
+DDS、深度状态和 `Dx11Renderer` 接入方式。
+
 ## 屏幕空间效果
 
 SSAO、SSR、Bloom 和色调映射操作的是帧资源，而非单个网格。实现第一项此类技术时，应新增独立的

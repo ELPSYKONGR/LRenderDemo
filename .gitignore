@@ -18,6 +18,8 @@
 # Downloaded third-party learning assets
 /assets/test-scenes/downloads/*
 !/assets/test-scenes/downloads/.gitkeep
+/assets/skyboxes/downloads/*
+!/assets/skyboxes/downloads/.gitkeep
 
 # Local environment and credentials
 .env

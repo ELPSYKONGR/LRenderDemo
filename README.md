@@ -70,6 +70,9 @@ powershell -ExecutionPolicy Bypass -File scripts/download-test-scenes.ps1
 模型保存在 `assets/test-scenes/downloads/`，来源、许可限制和建议用途见
 `assets/test-scenes/README.md`。第三方模型大文件不会提交到 Git。
 
+天空盒学习素材可通过 `scripts/download-skybox-assets.ps1` 下载。完整的类设计、Pass 顺序、HLSL、
+DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
+
 ## 编辑器操作
 
 | 功能 | 输入方式 |

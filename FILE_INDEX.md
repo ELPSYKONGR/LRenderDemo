@@ -36,10 +36,13 @@
 | `cmake/CompilerWarnings.cmake` | 第一方代码警告基线 |
 | `scripts/bootstrap-and-verify.ps1` | 一条命令完成设置、构建、测试和启动 |
 | `scripts/download-test-scenes.ps1` | 下载并校验经典图形学测试模型 |
+| `scripts/download-skybox-assets.ps1` | 下载固定版本的天空盒 cubemap DDS |
 | `assets/test-scenes/README.md` | 测试模型来源、许可和学习用途索引 |
+| `assets/skyboxes/README.md` | 天空盒素材来源、许可和下载说明 |
 | `README.md` | 环境要求、操作方式和调试指南 |
 | `docs/architecture.md` | 生命周期、帧序列和 RHI 边界 |
 | `docs/adding-an-effect.md` | Effect 扩展流程和学习顺序 |
+| `docs/examples/skybox-pass.md` | 天空盒 Pass 的逐文件设计与实现示例 |
 | `AGENTS.md` | 仓库专用开发规则 |
 | `CHANGELOG.md` | 近期和历史变更 |
 | `LESSONS.md` | 架构决策记录、问题和长期实践 |
