@@ -566,9 +566,10 @@ target_link_libraries(LRenderDemo PRIVATE
     dxguid)
 ```
 
-HLSL 第一版由运行时从仓库相对路径读取，不需要加入 C++ 编译源；可以使用
-`set_source_files_properties` 将它显示在 VS 的 Shaders 筛选器中。后续稳定后再改为 CMake/FXC
-离线生成 CSO，以便启动更快并把 shader 编译错误前移到构建阶段。
+Skybox HLSL 应复用 `src/CMakeLists.txt` 中已经验证的基础网格 Shader 管线：通过
+`set_source_files_properties` 登记 VS/PS 类型、入口点、Shader Model 和按配置隔离的 CSO 路径，
+并加入 VS 的 `Shaders` 筛选器。`SkyboxEffect` 从构建目录加载 CSO，使编译错误在构建阶段暴露，
+且修改 HLSL 后无需手工复制文件。
 
 ## 14. 完整帧状态说明
 

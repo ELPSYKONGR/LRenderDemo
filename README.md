@@ -13,7 +13,7 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 - 使用 ImGuizmo 进行平移、旋转和缩放
 - 对实体创建和变换编辑执行撤销/重做
 - 程序化生成 D3D11 顶点缓冲区和索引缓冲区
-- 独立的 `IRenderEffect` 边界，以及基于 DirectXTK `BasicEffect` 的实现
+- 独立的 `IRenderEffect` 边界，以及可直接编辑、构建和加载的项目自有 HLSL
 - 面向 Visual Studio 2022 的 CMake Presets 和轻量级 CTest 测试
 
 ## 环境要求
@@ -55,6 +55,13 @@ cmake --build --preset vs2022-debug
 ctest --preset vs2022-debug
 ```
 
+## 修改 Shader
+
+基础网格 Shader 位于 `src/shaders/BasicMeshVS.hlsl` 和 `src/shaders/BasicMeshPS.hlsl`，在
+Visual Studio 的 `LRenderDemo > Shaders` 筛选器中可直接打开。修改后执行“生成”或按 `F5`，VS
+会通过 FXC 重新生成当前配置的 `.cso`；`BasicMeshEffect` 启动时加载本次构建对应的文件，因此
+无需手工复制 Shader。Debug 产物位于 `build/vs2022/src/shaders/Debug/`，不要直接编辑该目录。
+
 在构建代理上，或仅需执行验证时，请使用
 `scripts/bootstrap-and-verify.ps1 -SkipLaunch`。
 
@@ -72,6 +79,10 @@ powershell -ExecutionPolicy Bypass -File scripts/download-test-scenes.ps1
 
 天空盒学习素材可通过 `scripts/download-skybox-assets.ps1` 下载。完整的类设计、Pass 顺序、HLSL、
 DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
+
+与 `DirectX11-With-Windows-SDK-master` 的逐项功能差距、推荐实现顺序和验收标准见
+`docs/directx11-feature-roadmap.md`。已经下载的模型如何对应纹理、拾取、法线贴图、阴影、SSAO 和
+延迟渲染阶段，见 `assets/learning-roadmap/README.md`。
 
 ## 编辑器操作
 

@@ -8,12 +8,14 @@
 `BasicMeshEffect` 是参考实现。
 
 1. 添加 `src/render/effects/MyEffect.h` 和 `.cpp`。
-2. 实现 `IRenderEffect::Bind`。
-3. 在类内部持有着色器、输入布局、状态和常量缓冲区。
-4. 验证所有设备/上下文输入；创建失败时抛出包含上下文信息的异常。
-5. 在 `Dx11Renderer` 中注册 Effect；只向 `EditorLayer` 暴露用于学习的参数。
-6. 条件允许时，为参数验证添加 CPU 侧测试。
-7. 如果边界发生变化，更新 `FILE_INDEX.md`、`CHANGELOG.md` 和本文档。
+2. 在 `src/shaders/` 添加 VS/PS，并参考 `src/CMakeLists.txt` 登记 `FXCompile` 类型、入口点、
+   Shader Model 和按配置隔离的 CSO 输出路径。
+3. 实现 `IRenderEffect::Bind`。
+4. 在类内部持有着色器、输入布局、状态和常量缓冲区；从构建目录加载 CSO，不直接加载源码目录。
+5. 验证所有设备/上下文输入；创建失败时抛出包含上下文信息的异常。
+6. 在 `Dx11Renderer` 中注册 Effect；只向 `EditorLayer` 暴露用于学习的参数。
+7. 条件允许时，为参数验证添加 CPU 侧测试。
+8. 如果边界发生变化，更新 `FILE_INDEX.md`、`CHANGELOG.md` 和本文档。
 
 ## 场景级 Pass
 

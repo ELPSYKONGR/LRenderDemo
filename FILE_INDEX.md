@@ -17,7 +17,9 @@
 | `src/commands/TransformCommand.*` | 可逆变换编辑 | `Execute()`、`Undo()` | Scene |
 | `src/commands/CreateEntityCommand.*` | 可逆实体创建 | `Execute()`、`Undo()` | Scene |
 | `src/render/IRenderEffect.h` | 逐网格的 Effect 边界 | `Bind()` | D3D11、SimpleMath |
-| `src/render/BasicMeshEffect.*` | 基于 DirectXTK 的光照 Effect | `Bind()` | BasicEffect、CommonStates |
+| `src/render/BasicMeshEffect.*` | 加载项目自有 CSO 的基础光照 Effect | `Bind()` | D3DCompiler、CommonStates |
+| `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | BasicMeshEffect 常量缓冲区 |
+| `src/shaders/BasicMeshPS.hlsl` | 基础网格方向光照和选中颜色 | `PSMain()` | BasicMeshEffect 常量缓冲区 |
 | `src/render/Mesh.*` | D3D11 顶点/索引缓冲区所有者 | `Draw()` | D3D11、VertexTypes |
 | `src/render/PrimitiveFactory.*` | 生成立方体和球体 | `CreateCube()`、`CreateSphere()` | Mesh |
 | `src/render/RenderTarget.*` | 离屏视口的 RTV/SRV/DSV | `Resize()`、`BindAndClear()` | D3D11 |
@@ -30,19 +32,22 @@
 
 | 路径 | 用途 |
 |---|---|
-| `CMakeLists.txt`、`src/CMakeLists.txt` | CMake 目标和 VS 启动项目 |
+| `CMakeLists.txt`、`src/CMakeLists.txt` | CMake 目标、VS 启动项目和 HLSL 构建规则 |
 | `CMakePresets.json` | 可移植的 VS2022 x64 配置/构建/测试预设 |
 | `cmake/Dependencies.cmake` | 固定版本的子模块目标定义 |
 | `cmake/CompilerWarnings.cmake` | 第一方代码警告基线 |
 | `scripts/bootstrap-and-verify.ps1` | 一条命令完成设置、构建、测试和启动 |
-| `scripts/download-test-scenes.ps1` | 下载并校验经典图形学测试模型 |
+| `scripts/download-test-scenes.ps1` | 下载经典图形学测试模型并生成 SHA-256 清单 |
 | `scripts/download-skybox-assets.ps1` | 下载固定版本的天空盒 cubemap DDS |
+| `scripts/verify-learning-assets.ps1` | 按 SHA-256 清单校验学习路线必需素材 |
 | `assets/test-scenes/README.md` | 测试模型来源、许可和学习用途索引 |
 | `assets/skyboxes/README.md` | 天空盒素材来源、许可和下载说明 |
+| `assets/learning-roadmap/README.md` | 将已下载素材映射到渲染效果实现阶段 |
 | `README.md` | 环境要求、操作方式和调试指南 |
 | `docs/architecture.md` | 生命周期、帧序列和 RHI 边界 |
 | `docs/adding-an-effect.md` | Effect 扩展流程和学习顺序 |
 | `docs/examples/skybox-pass.md` | 天空盒 Pass 的逐文件设计与实现示例 |
+| `docs/directx11-feature-roadmap.md` | DX11 教程功能差距、实现顺序和验收标准 |
 | `AGENTS.md` | 仓库专用开发规则 |
 | `CHANGELOG.md` | 近期和历史变更 |
 | `LESSONS.md` | 架构决策记录、问题和长期实践 |

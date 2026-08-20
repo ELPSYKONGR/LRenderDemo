@@ -72,7 +72,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     viewportTarget_.Resize(device_.Get(), 960, 640);
     cubeMesh_ = PrimitiveFactory::CreateCube(device_.Get());
     sphereMesh_ = PrimitiveFactory::CreateSphere(device_.Get());
-    effect_ = std::make_unique<BasicMeshEffect>(device_.Get());
+    effect_ = std::make_unique<BasicMeshEffect>(device_.Get(), LRENDER_SHADER_OUTPUT_DIR);
 }
 
 void Dx11Renderer::Shutdown() noexcept {
