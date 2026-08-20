@@ -1,0 +1,46 @@
+/**
+ * @file Dear ImGui editor shell and scene manipulation workflow.
+ * @author Codex
+ * @created 2026-08-20
+ * @depends core/Scene.h, commands/CommandHistory.h, render/Dx11Renderer.h, ImGuizmo
+ */
+#pragma once
+
+#include "commands/CommandHistory.h"
+#include "core/Camera.h"
+#include "core/Scene.h"
+
+#include <imgui.h>
+#include <ImGuizmo.h>
+#include <cstdint>
+#include <optional>
+
+namespace lrender {
+
+class Dx11Renderer;
+
+class EditorLayer final {
+public:
+    void Draw(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer);
+    [[nodiscard]] std::uint32_t SelectedEntityId() const noexcept { return selectedEntityId_; }
+
+private:
+    void DrawMainMenu(Scene& scene, CommandHistory& history);
+    void DrawToolbar(CommandHistory& history, Dx11Renderer& renderer);
+    void DrawHierarchy(Scene& scene);
+    void DrawInspector(Scene& scene, CommandHistory& history);
+    void DrawViewport(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer);
+    void CreatePrimitive(Scene& scene, CommandHistory& history, PrimitiveType primitive);
+    void TrackPropertyEdit(
+        Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl);
+    void ValidateSelection(const Scene& scene);
+
+    std::uint32_t selectedEntityId_{};
+    ImGuizmo::OPERATION gizmoOperation_{ImGuizmo::TRANSLATE};
+    bool wasUsingGizmo_{false};
+    Transform gizmoStart_;
+    std::optional<Transform> propertyEditStart_;
+    std::uint32_t propertyEditEntityId_{};
+};
+
+} // namespace lrender
