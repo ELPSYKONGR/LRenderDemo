@@ -42,7 +42,7 @@
 | `CHANGELOG.md` | Recent and historical changes |
 | `LESSONS.md` | ADRs, pitfalls, and durable practices |
 | `SKILLS_USED.md` | Reproducible Codex skill record |
-| `.env.example`, `.gitignore` | Local-setting template and exclusions |
+| `.env.example`, `.gitignore`, `.gitattributes` | Local settings, exclusions, and line endings |
 
 ## Module dependency graph
 

@@ -4,7 +4,7 @@
 
 | Time | Type | Summary | Modules | Commit |
 |---|---|---|---|---|
-| 08-20 | feat | Bootstrap DX11 render lab | all | pending |
+| 08-20 | feat | Bootstrap DX11 render lab | all | 3aafc78 |
 
 ---
 
@@ -15,4 +15,4 @@
 - **Change**: Added a portable VS2022 DX11 editor framework with primitives, camera, Gizmo,
   undo/redo, Effect isolation, logging, tests, and learning documentation.
 - **Reason**: Establish a reusable platform for validating learned rendering techniques.
-- **Commit**: pending
+- **Commit**: `3aafc78`

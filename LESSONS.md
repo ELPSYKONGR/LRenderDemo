@@ -36,7 +36,23 @@ This file records durable architecture decisions and project-specific engineerin
 
 ## Pitfalls
 
-No resolved project-specific pitfalls yet.
+### PIT-001: Interrupted submodule initialization leaves protected Git metadata
+
+- **Date**: 2026-08-20
+- **Symptom**: A timed-out `git submodule add` left a worktree pointer without its remote branch.
+- **Root cause**: The full-history clone was terminated before the requested branch was fetched.
+- **Resolution**: Bootstrap detects the partial state, performs a shallow fetch through Git, checks
+  out `FETCH_HEAD`, and registers the gitlink without directly editing protected `.git` files.
+- **Prevention**: Both initial add and update use `--depth 1`; the recorded gitlink still pins the
+  exact dependency commit.
+
+### PIT-002: DirectXTK tools require an unrelated C# workload
+
+- **Date**: 2026-08-20
+- **Symptom**: CMake requested a C# compiler for `MakeSpriteFont` on a C++-only VS2022 install.
+- **Root cause**: DirectXTK enables command-line tools by default.
+- **Resolution**: Set `BUILD_TOOLS=OFF` before adding DirectXTK.
+- **Prevention**: Enable only dependency components used by the render lab.
 
 ## Best practices
 
