@@ -15,6 +15,10 @@
 *.log
 *.tmp
 
+# Downloaded third-party learning assets
+/assets/test-scenes/downloads/*
+!/assets/test-scenes/downloads/.gitkeep
+
 # Local environment and credentials
 .env
 .env.*

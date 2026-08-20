@@ -4,10 +4,21 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-20 | 资产 | 增加经典图形学测试模型下载集 | assets、scripts | 本次提交 |
 | 08-20 | 文档 | 项目 Markdown 文档中文化 | docs | 本次提交 |
 | 08-20 | 功能 | 搭建 DX11 渲染实验平台 | 全部 | `3aafc78` |
 
 ---
+
+## [2026-08-20] 增加经典图形学测试模型下载集
+
+- **文件**：`assets/test-scenes/`、`scripts/download-test-scenes.ps1`、`.gitignore`
+- **范围**：学习资产和可复现下载流程
+- **变更**：增加 Stanford Bunny、Suzanne、Sponza、Metal/Roughness Spheres 和 Damaged Helmet 的集中下载、
+  来源说明、许可入口及 SHA-256 清单。
+- **原因**：提供覆盖几何、光照、大型场景和 PBR 材质的经典测试数据，同时避免将第三方大文件
+  直接提交到 Git 历史。
+- **提交**：本次提交
 
 ## [2026-08-20] 项目文档中文化
 

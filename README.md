@@ -58,6 +58,18 @@ ctest --preset vs2022-debug
 在构建代理上，或仅需执行验证时，请使用
 `scripts/bootstrap-and-verify.ps1 -SkipLaunch`。
 
+## 经典测试模型
+
+项目提供 Stanford Bunny、Suzanne、Sponza、Metal/Roughness Spheres 和 Damaged Helmet 的
+可复现下载脚本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/download-test-scenes.ps1
+```
+
+模型保存在 `assets/test-scenes/downloads/`，来源、许可限制和建议用途见
+`assets/test-scenes/README.md`。第三方模型大文件不会提交到 Git。
+
 ## 编辑器操作
 
 | 功能 | 输入方式 |

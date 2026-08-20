@@ -35,6 +35,8 @@
 | `cmake/Dependencies.cmake` | 固定版本的子模块目标定义 |
 | `cmake/CompilerWarnings.cmake` | 第一方代码警告基线 |
 | `scripts/bootstrap-and-verify.ps1` | 一条命令完成设置、构建、测试和启动 |
+| `scripts/download-test-scenes.ps1` | 下载并校验经典图形学测试模型 |
+| `assets/test-scenes/README.md` | 测试模型来源、许可和学习用途索引 |
 | `README.md` | 环境要求、操作方式和调试指南 |
 | `docs/architecture.md` | 生命周期、帧序列和 RHI 边界 |
 | `docs/adding-an-effect.md` | Effect 扩展流程和学习顺序 |
