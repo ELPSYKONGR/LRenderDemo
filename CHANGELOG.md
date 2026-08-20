@@ -1,18 +1,27 @@
 # CHANGELOG - LRenderDemo
 
-## Recent changes
+## 近期变更
 
-| Time | Type | Summary | Modules | Commit |
+| 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
-| 08-20 | feat | Bootstrap DX11 render lab | all | 3aafc78 |
+| 08-20 | 文档 | 项目 Markdown 文档中文化 | docs | 本次提交 |
+| 08-20 | 功能 | 搭建 DX11 渲染实验平台 | 全部 | `3aafc78` |
 
 ---
 
-## [2026-08-20] Bootstrap DX11 render lab
+## [2026-08-20] 项目文档中文化
 
-- **Files**: root CMake/docs, `src/`, `tests/`, `scripts/`
-- **Area**: Initial project implementation
-- **Change**: Added a portable VS2022 DX11 editor framework with primitives, camera, Gizmo,
-  undo/redo, Effect isolation, logging, tests, and learning documentation.
-- **Reason**: Establish a reusable platform for validating learned rendering techniques.
-- **Commit**: `3aafc78`
+- **文件**：`README.md`、项目管理文档、`docs/`
+- **范围**：面向开发者和学习者的项目文档
+- **变更**：将仓库内的 Markdown 文档统一改为中文，同时保留代码标识符、命令和路径原文。
+- **原因**：降低项目学习和后续维护的语言门槛，并满足项目文档使用中文的要求。
+- **提交**：本次提交
+
+## [2026-08-20] 搭建 DX11 渲染实验平台
+
+- **文件**：根目录 CMake/文档、`src/`、`tests/`、`scripts/`
+- **范围**：项目初始实现
+- **变更**：新增可移植的 VS2022 DX11 编辑器框架，包含基础几何体、相机、Gizmo、撤销/重做、
+  Effect 隔离、日志、测试和学习文档。
+- **原因**：建立一个可复用的平台，用于验证学习到的渲染技术。
+- **提交**：`3aafc78`

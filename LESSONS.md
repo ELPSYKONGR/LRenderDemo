@@ -1,69 +1,68 @@
 # LESSONS - LRenderDemo
 
-This file records durable architecture decisions and project-specific engineering knowledge.
+本文档记录长期有效的架构决策和项目专用工程知识。
 
-## Architecture decision records
+## 架构决策记录
 
-### ADR-001: Use native DX11 plus focused helper libraries
+### ADR-001：使用原生 DX11 和职责集中的辅助库
 
-- **Date**: 2026-08-20
-- **Context**: The project must teach DX11 while providing a usable editor platform.
-- **Options**: rbfx, Diligent Engine, LLGL, or Win32 + DirectXTK + ImGui + ImGuizmo.
-- **Decision**: Use Win32 + DirectXTK + Dear ImGui + ImGuizmo.
-- **Reason**: DX11 objects and draw flow remain visible; helpers remove repetitive math, UI, and Gizmo work.
-- **Consequence**: Scene and undo systems are maintained locally, but the learning surface is clearer.
-- **Status**: Accepted.
+- **日期**：2026-08-20
+- **背景**：项目既要用于学习 DX11，也要提供可用的编辑器平台。
+- **备选方案**：rbfx、Diligent Engine、LLGL，或 Win32 + DirectXTK + ImGui + ImGuizmo。
+- **决策**：使用 Win32 + DirectXTK + Dear ImGui + ImGuizmo。
+- **原因**：DX11 对象和绘制流程仍然可见；辅助库则减少重复的数学、界面和 Gizmo 工作。
+- **结果**：场景和撤销系统需要由项目维护，但学习界面更加清晰。
+- **状态**：已接受。
 
-### ADR-002: Delay a generic RHI until a second backend exists
+### ADR-002：在出现第二个后端前暂缓设计通用 RHI
 
-- **Date**: 2026-08-20
-- **Context**: A future RHI is possible, but only DX11 is currently being studied.
-- **Options**: Design an RHI now or isolate native DX11 behind module boundaries.
-- **Decision**: Keep native DX11 in `src/render/` and extract an RHI from proven needs later.
-- **Reason**: Avoids speculative abstractions while preserving non-renderer modules.
-- **Consequence**: A future backend requires a deliberate renderer refactor, not a whole-editor rewrite.
-- **Status**: Accepted.
+- **日期**：2026-08-20
+- **背景**：未来可能引入 RHI，但当前仅学习 DX11。
+- **备选方案**：立即设计 RHI，或先通过模块边界隔离原生 DX11。
+- **决策**：将原生 DX11 保持在 `src/render/` 内，今后再根据经过验证的需求提取 RHI。
+- **原因**：避免推测性的抽象，同时保护非渲染器模块不受影响。
+- **结果**：未来新增后端时需要有计划地重构渲染器，但无需重写整个编辑器。
+- **状态**：已接受。
 
-### ADR-003: Lock third-party sources as Git submodules
+### ADR-003：使用 Git 子模块锁定第三方源码
 
-- **Date**: 2026-08-20
-- **Context**: Builds must reproduce on other VS2022 machines.
-- **Options**: CMake FetchContent branches, package manager, vendored source, or submodules.
-- **Decision**: Record exact dependency commits as Git submodules.
-- **Reason**: CMake stays simple and every clone resolves the same source revisions.
-- **Consequence**: Clones should use `--recurse-submodules`; bootstrap repairs omitted submodules.
-- **Status**: Accepted.
+- **日期**：2026-08-20
+- **背景**：构建必须能在其他 VS2022 机器上准确复现。
+- **备选方案**：CMake FetchContent 分支、包管理器、源码内置或子模块。
+- **决策**：使用 Git 子模块记录依赖项的精确提交。
+- **原因**：CMake 保持简单，并且每次克隆都能解析到相同的源码版本。
+- **结果**：克隆时应使用 `--recurse-submodules`；引导脚本会修复遗漏的子模块。
+- **状态**：已接受。
 
-## Pitfalls
+## 已知问题与经验
 
-### PIT-001: Interrupted submodule initialization leaves protected Git metadata
+### PIT-001：子模块初始化中断会留下受保护的 Git 元数据
 
-- **Date**: 2026-08-20
-- **Symptom**: A timed-out `git submodule add` left a worktree pointer without its remote branch.
-- **Root cause**: The full-history clone was terminated before the requested branch was fetched.
-- **Resolution**: Bootstrap detects the partial state, performs a shallow fetch through Git, checks
-  out `FETCH_HEAD`, and registers the gitlink without directly editing protected `.git` files.
-- **Prevention**: Both initial add and update use `--depth 1`; the recorded gitlink still pins the
-  exact dependency commit.
+- **日期**：2026-08-20
+- **现象**：超时的 `git submodule add` 留下了工作树指针，但未取得对应的远端分支。
+- **根因**：获取所需分支之前，完整历史克隆过程被终止。
+- **解决方案**：引导脚本检测不完整状态，通过 Git 执行浅获取，检出 `FETCH_HEAD`，并在不直接
+  编辑受保护 `.git` 文件的情况下登记 gitlink。
+- **预防措施**：初次添加和更新都使用 `--depth 1`；记录的 gitlink 仍然固定到精确的依赖提交。
 
-### PIT-002: DirectXTK tools require an unrelated C# workload
+### PIT-002：DirectXTK 工具会要求无关的 C# 工作负载
 
-- **Date**: 2026-08-20
-- **Symptom**: CMake requested a C# compiler for `MakeSpriteFont` on a C++-only VS2022 install.
-- **Root cause**: DirectXTK enables command-line tools by default.
-- **Resolution**: Set `BUILD_TOOLS=OFF` before adding DirectXTK.
-- **Prevention**: Enable only dependency components used by the render lab.
+- **日期**：2026-08-20
+- **现象**：在仅安装 C++ 的 VS2022 环境中，CMake 因 `MakeSpriteFont` 请求 C# 编译器。
+- **根因**：DirectXTK 默认启用命令行工具。
+- **解决方案**：添加 DirectXTK 前设置 `BUILD_TOOLS=OFF`。
+- **预防措施**：只启用渲染实验平台实际使用的依赖组件。
 
-## Best practices
+## 最佳实践
 
-### PRACTICE-001: Separate mesh Effects from screen-space passes
+### PRACTICE-001：区分网格 Effect 和屏幕空间 Pass
 
-Per-object state implements `IRenderEffect`. Effects that consume frame textures should use a
-future `IRenderPass` interface so resource dependencies remain explicit.
+逐对象状态实现 `IRenderEffect`。使用帧纹理的效果应采用未来的 `IRenderPass` 接口，使资源依赖
+保持显式可见。
 
-## Project conventions
+## 项目约定
 
-### CONVENTION-001: Matrix and transform representation
+### CONVENTION-001：矩阵和变换的表示方式
 
-Scene transforms store translation, Euler degrees, and scale for transparent editing. Matrix
-composition uses DirectXTK `SimpleMath`; ImGuizmo decomposes interactive matrices back to fields.
+场景变换保存位移、欧拉角（度）和缩放值，以便直观编辑。矩阵组合使用 DirectXTK
+`SimpleMath`；ImGuizmo 将交互矩阵重新分解为这些字段。

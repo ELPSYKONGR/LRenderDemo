@@ -1,36 +1,34 @@
-# Adding A Rendering Effect
+# 添加渲染效果
 
-Rendering experiments should be isolated so disabling one technique does not destabilize the
-editor or scene model.
+每个渲染实验都应保持隔离，确保禁用某项技术时不会破坏编辑器或场景模型的稳定性。
 
-## Mesh effect
+## 网格 Effect
 
-Use `IRenderEffect` when a technique primarily changes shaders, constants, and pipeline state for
-each mesh. `BasicMeshEffect` is the reference implementation.
+当某项技术主要改变每个网格的着色器、常量和管线状态时，使用 `IRenderEffect`。
+`BasicMeshEffect` 是参考实现。
 
-1. Add `src/render/effects/MyEffect.h` and `.cpp`.
-2. Implement `IRenderEffect::Bind`.
-3. Own shaders, input layouts, states, and constant buffers inside the class.
-4. Validate all device/context inputs and throw a contextual exception on creation failure.
-5. Register the Effect in `Dx11Renderer`; expose only its learning parameters to `EditorLayer`.
-6. Add a CPU-side test for parameter validation when possible.
-7. Update `FILE_INDEX.md`, `CHANGELOG.md`, and this document if the boundary changes.
+1. 添加 `src/render/effects/MyEffect.h` 和 `.cpp`。
+2. 实现 `IRenderEffect::Bind`。
+3. 在类内部持有着色器、输入布局、状态和常量缓冲区。
+4. 验证所有设备/上下文输入；创建失败时抛出包含上下文信息的异常。
+5. 在 `Dx11Renderer` 中注册 Effect；只向 `EditorLayer` 暴露用于学习的参数。
+6. 条件允许时，为参数验证添加 CPU 侧测试。
+7. 如果边界发生变化，更新 `FILE_INDEX.md`、`CHANGELOG.md` 和本文档。
 
-## Screen-space effect
+## 屏幕空间效果
 
-SSAO, SSR, bloom, and tone mapping operate on frame resources rather than one mesh. Add a separate
-`IRenderPass` boundary when the first such technique is implemented. A pass should receive an
-explicit context containing input SRVs, output RTV, depth, camera matrices, and viewport size.
-Do not force screen-space work into `IRenderEffect::Bind`.
+SSAO、SSR、Bloom 和色调映射操作的是帧资源，而非单个网格。实现第一项此类技术时，应新增独立的
+`IRenderPass` 边界。Pass 应接收显式上下文，其中包含输入 SRV、输出 RTV、深度、相机矩阵和
+视口尺寸。不要将屏幕空间工作强行放入 `IRenderEffect::Bind`。
 
-## Suggested learning order
+## 建议学习顺序
 
-1. Unlit color Effect
-2. Blinn-Phong lighting controls
-3. Normal mapping
-4. Shadow-map pass
-5. HDR target and tone mapping
+1. 无光照颜色 Effect
+2. Blinn-Phong 光照控制
+3. 法线贴图
+4. 阴影贴图 Pass
+5. HDR 目标和色调映射
 6. SSAO
 7. SSR
 
-Capture a PIX frame before and after each effect to verify resource bindings and GPU cost.
+实现每个效果前后各捕获一次 PIX 帧，用于检查资源绑定和 GPU 开销。

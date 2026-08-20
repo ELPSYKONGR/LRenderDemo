@@ -1,15 +1,15 @@
 # SKILLS_USED - LRenderDemo
 
-Codex skills are development aids, not runtime or build dependencies.
+Codex skills 仅作为开发辅助工具，不是运行时或构建依赖项。
 
-## Required skills
+## 必需的 skills
 
-None. A developer can clone, build, test, and run the project with the tools listed in `README.md`.
+无。开发者使用 `README.md` 中列出的工具即可克隆、构建、测试和运行项目。
 
-## Skills used during project research
+## 项目调研期间使用的 skill
 
-| Skill | Purpose | Availability | Version |
+| Skill | 用途 | 来源 | 版本 |
 |---|---|---|---|
-| `browser:control-in-app-browser` | Read-only framework and GitHub research | OpenAI bundled Browser plugin | 26.810.41047 |
+| `browser:control-in-app-browser` | 只读的框架和 GitHub 调研 | OpenAI 内置 Browser 插件 | 26.810.41047 |
 
-No skill installation script is required for this repository.
+本仓库不需要 skill 安装脚本。
