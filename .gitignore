@@ -1,0 +1,39 @@
+# Build and IDE output
+/build/
+/.vs/
+/out/
+/imgui.ini
+*.user
+*.suo
+*.VC.db
+*.VC.VC.opendb
+
+# Runtime output
+/logs/*
+!/logs/.gitkeep
+/scratch/
+*.log
+*.tmp
+
+# Downloaded third-party learning assets
+/assets/test-scenes/downloads/*
+!/assets/test-scenes/downloads/.gitkeep
+/assets/skyboxes/downloads/*
+!/assets/skyboxes/downloads/.gitkeep
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.*
+service-account.json
+*secret*
+*password*
+
+# Operating system files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,13 @@
+# Populated by scripts/bootstrap-and-verify.ps1 on first setup.
+[submodule "external/DirectXTK"]
+	path = external/DirectXTK
+	url = https://github.com/microsoft/DirectXTK.git
+	branch = main
+[submodule "external/imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "external/ImGuizmo"]
+	path = external/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
+	branch = master
