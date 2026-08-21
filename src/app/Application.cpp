@@ -13,6 +13,7 @@
 #include <imgui.h>
 
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <stdexcept>
 
@@ -42,6 +43,12 @@ int Application::Run() {
 }
 
 void Application::Initialize() {
+    const HRESULT comResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    if (SUCCEEDED(comResult)) {
+        isComInitialized_ = true;
+    } else if (comResult != RPC_E_CHANGED_MODE) {
+        throw std::runtime_error("Failed to initialize COM for texture loading");
+    }
     window_.Create(instance_, L"LRenderDemo - DX11 Render Lab", 1440, 900);
     Logger::Instance().Info(
         "platform",
@@ -72,6 +79,33 @@ void Application::Initialize() {
     auto& sphere = scene_.CreateEntity(PrimitiveType::Sphere, "Sphere 2");
     sphere.transform.position.x = 0.8F;
     sphere.color = {0.92F, 0.42F, 0.22F, 1.0F};
+
+    const std::filesystem::path sampleModel =
+        "assets/test-scenes/downloads/suzanne/Suzanne.gltf";
+    if (std::filesystem::is_regular_file(sampleModel)) {
+        try {
+            renderer_.PreloadModel(sampleModel);
+            auto& model = scene_.CreateModelEntity(sampleModel, "Suzanne (glTF)");
+            model.transform.position.y = 1.8F;
+            Logger::Instance().Info("assets", "Loaded optional Suzanne glTF sample");
+        } catch (const std::exception& error) {
+            Logger::Instance().Error(
+                "assets", std::format("Optional Suzanne sample failed: {}", error.what()));
+        }
+    }
+
+    const std::filesystem::path glbValidationModel =
+        "assets/test-scenes/downloads/damaged-helmet/DamagedHelmet.glb";
+    if (std::filesystem::is_regular_file(glbValidationModel)) {
+        try {
+            renderer_.PreloadModel(glbValidationModel);
+            Logger::Instance().Info(
+                "assets", "Validated optional Damaged Helmet GLB and embedded texture");
+        } catch (const std::exception& error) {
+            Logger::Instance().Error(
+                "assets", std::format("Optional GLB validation failed: {}", error.what()));
+        }
+    }
 }
 
 void Application::Shutdown() noexcept {
@@ -82,6 +116,10 @@ void Application::Shutdown() noexcept {
         isImGuiInitialized_ = false;
     }
     renderer_.Shutdown();
+    if (isComInitialized_) {
+        CoUninitialize();
+        isComInitialized_ = false;
+    }
 }
 
 } // namespace lrender

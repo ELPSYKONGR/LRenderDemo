@@ -10,6 +10,7 @@
 #include "core/Scene.h"
 
 #include <iostream>
+#include <filesystem>
 #include <memory>
 #include <stdexcept>
 
@@ -56,6 +57,21 @@ void TestCreateUndoRedo() {
     Require(scene.FindEntity(entity.id) != nullptr, "Redo should restore created entity");
 }
 
+void TestModelCreateUndoRedo() {
+    lrender::Scene scene;
+    lrender::CommandHistory history;
+    const std::filesystem::path modelPath = "assets/sample.glb";
+    const auto entity = scene.CreateModelEntity(modelPath, "Sample model");
+    history.PushApplied(std::make_unique<lrender::CreateEntityCommand>(scene, entity));
+
+    Require(entity.IsModel(), "Model entity should report its resource type");
+    Require(history.Undo(), "Model creation should be undoable");
+    Require(history.Redo(), "Model creation should be redoable");
+    const auto* restored = scene.FindEntity(entity.id);
+    Require(restored != nullptr, "Redo should restore the model entity");
+    Require(restored->modelPath == modelPath, "Redo should preserve the model path");
+}
+
 } // namespace
 
 int main() {
@@ -63,6 +79,7 @@ int main() {
         TestSceneLifecycle();
         TestTransformUndoRedo();
         TestCreateUndoRedo();
+        TestModelCreateUndoRedo();
         std::cout << "LRenderCoreTests: all tests passed\n";
         return 0;
     } catch (const std::exception& error) {

@@ -10,6 +10,9 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 - 基于 Dear ImGui Docking 的界面，包含视口、层级、检查器和工具面板
 - 支持环绕、平移和缩放的编辑器相机
 - 创建立方体和 UV 球体
+- `Texture2D`、Sampler、UV 与 BaseColor 材质，可为程序化几何显示棋盘纹理
+- 导入静态 glTF/GLB 模型，支持外部/内嵌图片、子网格、节点变换与资源缓存
+- 一盏方向光和最多四盏点光，支持 Lambert 漫反射与 Blinn-Phong 高光实时调节
 - 使用 ImGuizmo 进行平移、旋转和缩放
 - 对实体创建和变换编辑执行撤销/重做
 - 程序化生成 D3D11 顶点缓冲区和索引缓冲区
@@ -77,6 +80,11 @@ powershell -ExecutionPolicy Bypass -File scripts/download-test-scenes.ps1
 模型保存在 `assets/test-scenes/downloads/`，来源、许可限制和建议用途见
 `assets/test-scenes/README.md`。第三方模型大文件不会提交到 Git。
 
+下载后可在编辑器中选择 `Create > Import glTF/GLB...`，导入成功的模型会进入层级面板，并与
+基础几何体一样支持 Gizmo、检查器变换和创建操作的撤销/重做。`Resources` 面板显示模型/纹理
+缓存数量；重复导入同一路径不会重复创建 GPU 资源。`Lighting` 面板可编辑环境光、方向光和四盏
+点光。当前导入器的完整支持边界和阅读顺序见 `docs/model-import-and-material.md`。
+
 天空盒学习素材可通过 `scripts/download-skybox-assets.ps1` 下载。完整的类设计、Pass 顺序、HLSL、
 DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 
@@ -94,6 +102,8 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 | 平移/旋转/缩放 | 按 `W` / `E` / `R`，或使用工具面板按钮 |
 | 撤销/重做 | 按 `Ctrl+Z` / `Ctrl+Y` |
 | 创建基础几何体 | 使用 `Create` 菜单 |
+| 导入模型 | `Create > Import glTF/GLB...` |
+| 调节多光源 | 使用 `Lighting` 面板 |
 
 ## 建议学习路线
 
@@ -103,8 +113,9 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 2. `src/render/Dx11Renderer.cpp`：设备、交换链、帧目标和绘制遍历。
 3. `src/render/Mesh.cpp`：不可变顶点/索引缓冲区和索引绘制调用。
 4. `src/render/BasicMeshEffect.cpp`：着色器常量、输入布局和渲染状态。
-5. `src/editor/EditorLayer.cpp`：编辑器面板、相机输入、Gizmo 和命令创建。
-6. `src/commands/`：独立于界面的可逆操作。
+5. `src/render/ResourceCache.cpp` 与 `src/render/GltfLoader.cpp`：模型、纹理和 Sampler 的缓存与导入。
+6. `src/editor/EditorLayer.cpp`、`src/editor/EditorAssets.cpp`：编辑器交互、导入和光照控制。
+7. `src/commands/`：独立于界面的可逆操作。
 
 添加新的渲染技术前，请先阅读 `docs/architecture.md` 和 `docs/adding-an-effect.md`。
 

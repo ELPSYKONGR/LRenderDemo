@@ -4,6 +4,7 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-21 | 功能 | 增加纹理材质、glTF/GLB 缓存导入与可编辑多光源 | core、render、editor、shaders | 工作区 |
 | 08-20 | 文档 | 增加 DX11 教程差距分析、实施路线和素材映射 | docs、assets、scripts | 工作区 |
 | 08-20 | 功能 | 接入可编辑且自动增量编译的项目 HLSL | render、shaders、cmake | 工作区 |
 | 08-20 | 文档 | 增加天空盒 Pass 教学示例与素材 | docs、assets、scripts | 本次提交 |
@@ -12,6 +13,20 @@
 | 08-20 | 功能 | 搭建 DX11 渲染实验平台 | 全部 | `3aafc78` |
 
 ---
+
+## [2026-08-21] 增加纹理材质、模型导入和多光源
+
+- **文件**：`src/render/Texture2D.*`、`SamplerState.*`、`Material.h`、`Model.h`、
+  `GltfLoader.*`、`ResourceCache.*`、`Lighting.h`、`BasicMeshEffect.*`、`src/shaders/`、
+  `src/editor/EditorAssets.cpp`、`src/core/Scene.*`
+- **范围**：基础资源系统、静态模型管线、场景实体和编辑器控制
+- **变更**：为顶点增加 UV 并切换到 32 位索引；程序化几何使用棋盘纹理；固定版本 `cgltf`
+  导入 glTF/GLB、外部/内嵌 BaseColor 图片、节点变换和子网格；按路径缓存模型/纹理并缓存 Sampler；
+  增加方向光、四盏点光、Lambert 与 Blinn-Phong；通过原生文件对话框导入模型并显示缓存统计。
+- **原因**：建立后续法线贴图、PBR、阴影和场景级 Pass 能共享的最小资源边界。
+- **验证**：VS2022 Debug 构建和 CTest 通过；运行时验证 Suzanne glTF 外部纹理、Damaged Helmet
+  GLB 内嵌纹理，以及程序化几何的 UV/多光源输出。
+- **提交**：工作区
 
 ## [2026-08-20] 增加 DX11 功能差距路线与素材映射
 

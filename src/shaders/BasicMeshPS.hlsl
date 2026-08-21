@@ -1,30 +1,73 @@
 /**
- * @file Basic mesh directional-light pixel shader.
+ * @file Textured multi-light basic mesh pixel shader.
  * @depends BasicMeshVS output, BasicMeshEffect constant buffer
  */
 
 cbuffer BasicMeshConstants : register(b0)
 {
     row_major float4x4 WorldViewProjection;
+    row_major float4x4 World;
     row_major float4x4 WorldInverseTranspose;
-    float4 DiffuseColor;
-    float4 LightDirection;
-    float4 LightColor;
+    float4 BaseColor;
+    float4 CameraPosition;
     float4 AmbientColor;
+    float4 DirectionalDirectionAndIntensity;
+    float4 DirectionalColorAndEnabled;
+    float4 PointLightData[8];
+    float4 MaterialParameters;
 };
+
+Texture2D BaseColorTexture : register(t0);
+SamplerState BaseColorSampler : register(s0);
 
 struct PixelInput
 {
     float4 position : SV_POSITION;
+    float3 worldPosition : POSITION0;
     float3 worldNormal : NORMAL;
-    float4 color : COLOR0;
+    float2 textureCoordinate : TEXCOORD0;
 };
+
+float3 EvaluateLight(
+    float3 normal, float3 viewDirection, float3 lightDirection,
+    float3 lightColor, float intensity, float3 baseColor)
+{
+    const float diffuse = saturate(dot(normal, lightDirection));
+    const float3 halfDirection = normalize(lightDirection + viewDirection);
+    const float specular = pow(saturate(dot(normal, halfDirection)), MaterialParameters.y) *
+        MaterialParameters.x;
+    return (baseColor * diffuse + specular.xxx) * lightColor * intensity;
+}
 
 float4 PSMain(PixelInput input) : SV_TARGET
 {
     const float3 normal = normalize(input.worldNormal);
-    const float diffuseIntensity = saturate(dot(normal, LightDirection.xyz));
-    const float3 lighting = AmbientColor.rgb + LightColor.rgb * diffuseIntensity;
-    const float3 surfaceColor = input.color.rgb * DiffuseColor.rgb;
-    return float4(saturate(surfaceColor * lighting), input.color.a * DiffuseColor.a);
+    const float3 viewDirection = normalize(CameraPosition.xyz - input.worldPosition);
+    const float4 sampledColor = BaseColorTexture.Sample(BaseColorSampler, input.textureCoordinate);
+    const float3 surfaceColor = sampledColor.rgb * BaseColor.rgb;
+    float3 result = surfaceColor * AmbientColor.rgb;
+
+    if (DirectionalColorAndEnabled.w > 0.5F)
+    {
+        result += EvaluateLight(
+            normal, viewDirection, normalize(-DirectionalDirectionAndIntensity.xyz),
+            DirectionalColorAndEnabled.rgb, DirectionalDirectionAndIntensity.w, surfaceColor);
+    }
+
+    [unroll]
+    for (uint lightIndex = 0; lightIndex < 4; ++lightIndex)
+    {
+        const float4 positionAndRange = PointLightData[lightIndex * 2];
+        const float4 colorAndIntensity = PointLightData[lightIndex * 2 + 1];
+        const float3 offset = positionAndRange.xyz - input.worldPosition;
+        const float distanceToLight = length(offset);
+        const float attenuation = pow(saturate(1.0F - distanceToLight / positionAndRange.w), 2.0F);
+        if (colorAndIntensity.w > 0.0F && attenuation > 0.0F)
+        {
+            result += EvaluateLight(
+                normal, viewDirection, offset / max(distanceToLight, 0.0001F),
+                colorAndIntensity.rgb, colorAndIntensity.w * attenuation, surfaceColor);
+        }
+    }
+    return float4(saturate(result), sampledColor.a * BaseColor.a);
 }

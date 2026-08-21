@@ -1,4 +1,4 @@
-# Defines third-party targets from pinned Git submodules.
+# Defines third-party targets from pinned Git submodules and vendored cgltf sources.
 set(LRENDER_EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 
 foreach(dependency DirectXTK imgui ImGuizmo)
@@ -8,6 +8,11 @@ foreach(dependency DirectXTK imgui ImGuizmo)
             "or clone with --recurse-submodules.")
     endif()
 endforeach()
+
+if(NOT EXISTS "${LRENDER_EXTERNAL_DIR}/cgltf/cgltf.c" OR
+   NOT EXISTS "${LRENDER_EXTERNAL_DIR}/cgltf/cgltf.h")
+    message(FATAL_ERROR "Missing vendored external/cgltf sources.")
+endif()
 
 set(BUILD_XAUDIO_WIN7 OFF CACHE BOOL "" FORCE)
 set(BUILD_XAUDIO_REDIST OFF CACHE BOOL "" FORCE)
@@ -33,3 +38,8 @@ add_library(imguizmo STATIC
 target_include_directories(imguizmo PUBLIC "${LRENDER_EXTERNAL_DIR}/ImGuizmo/src")
 target_link_libraries(imguizmo PUBLIC imgui)
 set_target_properties(imguizmo PROPERTIES FOLDER "External")
+
+add_library(cgltf STATIC "${LRENDER_EXTERNAL_DIR}/cgltf/cgltf.c")
+target_include_directories(cgltf PUBLIC "${LRENDER_EXTERNAL_DIR}/cgltf")
+target_compile_features(cgltf PUBLIC c_std_99)
+set_target_properties(cgltf PROPERTIES FOLDER "External")

@@ -13,8 +13,8 @@ namespace lrender {
 
 Mesh::Mesh(
     ID3D11Device* device,
-    std::span<const DirectX::VertexPositionNormalColor> vertices,
-    std::span<const std::uint16_t> indices) {
+    std::span<const MeshVertex> vertices,
+    std::span<const std::uint32_t> indices) {
     if (device == nullptr || vertices.empty() || indices.empty()) {
         throw std::invalid_argument("Mesh requires a device and non-empty geometry");
     }
@@ -49,11 +49,11 @@ void Mesh::Draw(ID3D11DeviceContext* context) const {
     if (context == nullptr) {
         throw std::invalid_argument("Mesh draw requires a D3D11 context");
     }
-    constexpr UINT stride = sizeof(DirectX::VertexPositionNormalColor);
+    constexpr UINT stride = sizeof(MeshVertex);
     constexpr UINT offset = 0;
     ID3D11Buffer* vertexBuffer = vertexBuffer_.Get();
     context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-    context->IASetIndexBuffer(indexBuffer_.Get(), DXGI_FORMAT_R16_UINT, 0);
+    context->IASetIndexBuffer(indexBuffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     context->DrawIndexed(indexCount_, 0, 0);
 }

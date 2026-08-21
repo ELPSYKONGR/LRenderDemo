@@ -12,7 +12,7 @@ sequenceDiagram
     participant Win32 as Win32 消息泵
     participant Editor as EditorLayer
     participant Scene as Scene 和 Commands
-    participant DX11 as Dx11Renderer
+    participant DX11 as Dx11Renderer 和 ResourceCache
     participant UI as ImGui DX11 后端
     Win32->>Editor: 开始 ImGui 帧
     Editor->>Scene: 应用相机和变换编辑
@@ -26,8 +26,9 @@ sequenceDiagram
 
 - `Application` 负责子系统生命周期和帧循环。
 - `Window` 只负责 Win32 `HWND` 和消息状态。
-- `Dx11Renderer` 负责 GPU 对象、程序化网格和当前启用的 Effects。
-- `Scene` 负责可编辑的实体数据，但不持有 GPU 资源。
+- `Dx11Renderer` 负责 GPU 对象、程序化网格、资源缓存和当前启用的 Effects。
+- `ResourceCache` 按规范化路径复用模型和纹理，并按描述复用 Sampler；缓存与 D3D 设备同生命周期。
+- `Scene` 负责可编辑的实体数据，只保存模型路径，不持有 GPU 资源。
 - `EditorLayer` 将用户交互转换为场景编辑和命令。
 - `CommandHistory` 负责可逆操作，且不依赖界面。
 - 每项渲染技术派生自 `IRenderEffect`，或实现为后续的渲染 Pass 类。
@@ -40,5 +41,6 @@ sequenceDiagram
 
 ## 资源生命周期
 
-COM 资源使用 `Microsoft::WRL::ComPtr`。CPU 对象通过值语义或 `std::unique_ptr` 管理。
-关闭顺序依次为：UI 后端、Effect/网格/目标、D3D 上下文、交换链、设备和窗口。
+COM 资源使用 `Microsoft::WRL::ComPtr`。CPU 对象通过值语义、`std::unique_ptr` 或缓存共享所需的
+`std::shared_ptr` 管理。关闭顺序依次为：UI 后端、Effect、模型/纹理缓存、程序化网格/目标、
+D3D 上下文、交换链、设备、COM apartment 和窗口。

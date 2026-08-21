@@ -6,17 +6,19 @@
 ## 1. 结论
 
 LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过早期示例：具备原生窗口、ImGui
-编辑器、离屏视口、场景实体、相机、Gizmo、撤销/重做和可编辑 HLSL；但渲染效果仍处于基础阶段。
+编辑器、离屏视口、场景实体、相机、Gizmo、撤销/重做和可编辑 HLSL；纹理、静态模型和基础多光源
+链路也已经贯通，但高级渲染效果仍处于基础阶段。
 
-- 38 个教程示例中，能力等价或被更高层实现覆盖的约 6 项。
-- 已有基础设施但未完成对应效果的约 6 项。
-- 尚未实现的约 26 项。
-- 按渲染能力看，当前大致处于第 10～14 章的骨架阶段。
-- 第 9 章纹理映射和第 19 章模型/材质导入是当前最重要的断点。
+- 38 个教程示例中，能力等价或被更高层实现覆盖的约 9 项。
+- 已有基础设施但未完成对应效果的约 5 项。
+- 尚未实现的约 24 项。
+- 按渲染能力看，已经跨过第 19 章静态网格入口，但并非线性完成前 19 章。
+- 第 9 章纹理映射与第 19 章模型/材质导入的基础断点已经补齐；下一批关键断点是拾取、渲染状态、
+  法线贴图和场景级 Pass。
 - `RenderTarget` 虽涉及第 24 章所需技术，但目前只服务编辑器视口，不能视为完整的 Render To Texture 效果。
 
-因此下一步不应直接跳到 SSAO、延迟渲染或 RHI。先建立纹理、材质、模型和 Pass 资源边界，后续
-效果才能共享稳定的数据结构，而不是每个示例各写一套资源加载代码。
+因此下一步仍不应直接跳到 SSAO、延迟渲染或 RHI。应先让现有纹理、材质和模型边界经受法线贴图、
+拾取与天空盒 Pass 的验证，再提取更通用的 Pass 或后端接口。
 
 ## 2. 当前已经具备的基础
 
@@ -26,7 +28,9 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 | 可见编辑器界面 | 已完成，包含停靠、视口、层级、检查器和工具栏 | `editor/EditorLayer.*` |
 | 场景与相机 | 已完成基础实体、环绕/平移/缩放相机 | `core/Scene.*`、`core/Camera.*` |
 | 基础几何 | 已完成立方体和 UV 球体程序化生成 | `render/PrimitiveFactory.*` |
-| 基础光照 | 已完成单方向光 Lambert 漫反射，无材质纹理和高光 | `render/BasicMeshEffect.*` |
+| 纹理与材质 | 已完成 UV、sRGB BaseColor、Sampler、生成棋盘纹理和基础高光参数 | `render/Material.h`、`Texture2D.*` |
+| 模型与缓存 | 已完成静态 glTF/GLB、子网格、节点变换、外部/内嵌图片和资源复用 | `render/GltfLoader.*`、`ResourceCache.*` |
+| 基础光照 | 已完成方向光、四盏点光、Lambert、Blinn-Phong 和编辑器参数控制 | `render/BasicMeshEffect.*`、`editor/EditorAssets.cpp` |
 | Shader 工作流 | 已完成 VS 工程显示、FXC 增量构建和 CSO 加载 | `src/shaders/`、`src/CMakeLists.txt` |
 | 深度缓冲 | 已有视口 DSV 和默认深度测试 | `render/RenderTarget.*` |
 | 离屏渲染 | 场景渲染到纹理，再由 ImGui 采样显示 | `RenderTarget`、`RenderEditor()` |
@@ -43,9 +47,9 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 | 02 Rendering a Triangle | 完成 | 未保留独立三角形示例，但当前索引网格绘制已覆盖其 IA/VS/PS/Draw 能力。 |
 | 03 Rendering a Cube | 完成 | 程序化立方体、顶点/索引缓冲和场景绘制均已存在。 |
 | 06 Use ImGui | 完成 | 已形成多面板编辑器，而非单一 ImGui 示例。 |
-| 07 Lighting | 部分 | 只有单方向 Lambert 光；缺少多光源、镜面反射、材质参数和可视化灯光。 |
+| 07 Lighting | 完成 | 方向光、四盏点光、Lambert、Blinn-Phong、材质参数和编辑器实时控制已接通；灯光几何图标可后续补充。 |
 | 08 Direct2D and Direct3D Interoperability | 未实现 | 未接入 Direct2D/DirectWrite；当前 UI 文本由 ImGui 负责。 |
-| 09 Texture Mapping | 未实现 | 顶点没有 UV，Effect 没有 SRV/Sampler，Scene 没有材质。 |
+| 09 Texture Mapping | 完成 | 顶点 UV、Texture2D、Sampler、Material、sRGB BaseColor 和程序化棋盘验证已完成。 |
 | 10 Camera | 完成 | 已有透视相机和编辑器环绕、平移、缩放输入。 |
 | 11 Blending | 未实现 | 产品渲染路径没有自有 BlendState 和透明物排序。 |
 | 12 Depth and Stenciling | 部分 | 有 DSV 和默认深度测试；没有模板写入、遮罩、镜面或轮廓实验。 |
@@ -54,7 +58,7 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 | 15 Geometry Shader Beginning | 未实现 | 没有 GS 阶段和相关 Shader 管理。 |
 | 16 Stream Output | 未实现 | 没有 Stream Output buffer、声明和多阶段更新。 |
 | 17 Tree Billboard | 未实现 | 没有 Billboard、纹理数组和 Alpha-to-Coverage。 |
-| 19 Meshes | 部分 | 有 `Mesh` 和程序化几何；没有模型导入、子网格、材质或 GPU 资源缓存。 |
+| 19 Meshes | 完成 | 支持静态 glTF/GLB、子网格、32 位索引、节点变换、BaseColor 材质和模型/纹理/Sampler 缓存。 |
 | 20 Instancing and Frustum Culling | 未实现 | 没有实例缓冲、包围体、视锥测试和 `DrawIndexedInstanced`。 |
 | 21 Picking | 未实现 | 只能在层级面板选实体；没有视口射线、包围体/三角形求交。 |
 | 22 Static Cube Mapping | 未实现 | 已有详细设计文档和 cubemap 素材，但没有 `SkyboxPass/SkyboxEffect` 产品代码。 |
@@ -84,9 +88,9 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 
 | 顺序 | 里程碑 | 对应教程 | 为什么现在做 | 完成标准 | 推荐资产 |
 |---:|---|---|---|---|---|
-| 1 | Texture2D、Sampler、UV 和 Material | 09 | 所有后续材质效果的共同入口 | 立方体和 Suzanne 可显示 BaseColor；sRGB 正确 | Suzanne |
-| 2 | glTF 模型导入与资源缓存 | 19 | 当前只能画程序化几何，测试场景无法进入平台 | 支持 glTF/GLB、子网格、索引、节点变换和基础材质 | Suzanne、Bunny、Damaged Helmet |
-| 3 | 完整基础光照与渲染状态 | 07、11、12、14 | 建立材质、光源、混合、深度和模板的可控基线 | 方向/点/聚光、Blinn-Phong、透明排序、Stencil 示例 | Suzanne、Sponza |
+| 1 | Texture2D、Sampler、UV 和 Material（已完成） | 09 | 所有后续材质效果的共同入口 | 立方体和 Suzanne 可显示 BaseColor；sRGB 正确 | Suzanne |
+| 2 | glTF 模型导入与资源缓存（已完成） | 19 | 测试场景需要统一进入平台 | 支持 glTF/GLB、子网格、索引、节点变换和基础材质 | Suzanne、Damaged Helmet |
+| 3 | 完整基础光照与渲染状态（光照已完成） | 07、11、12、14 | 继续补齐混合、深度和模板的可控基线 | 增加聚光、透明排序、可切换深度与 Stencil 示例 | Suzanne、Sponza |
 | 4 | 编辑器拾取 | 21 | 对工具平台的收益高于视觉特效 | 鼠标射线先测包围体，再测三角形，并与层级选择同步 | Bunny、Suzanne |
 | 5 | 实例化、包围体与视锥剔除 | 20 | 为复杂场景和后续性能比较建立统计基线 | 可切换剔除，显示提交/剔除数量，支持实例绘制 | 大量 Bunny/Suzanne |
 | 6 | `IRenderPass` 与静态天空盒 | 22 | 第一个场景级 Pass，用于验证资源依赖和状态恢复 | 天空盒正确处理相机平移、深度和 cubemap | `cubemap.dds` |
@@ -101,12 +105,13 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 
 ### 5.1 模型导入
 
-优先支持 glTF 2.0，而不是围绕旧 OBJ 建立长期材质格式。可选择固定版本的 `cgltf`（C、单头文件）
-解析 glTF/GLB，使用 DirectXTK WIC/DDS loader 创建纹理。这样既保留数据处理的学习价值，又避免
-Assimp 将场景转换细节全部隐藏。OBJ/OFF 可作为简单几何导入练习，不应成为主资产格式。
+项目已经使用固定版本的 `cgltf`（C、单头文件）解析 glTF/GLB，并使用 DirectXTK WIC/DDS loader
+创建纹理。这样既保留数据处理的学习价值，又避免 Assimp 将场景转换细节全部隐藏。OBJ/OFF 可
+作为简单几何导入练习，不应成为主资产格式。
 
-CPU 侧建议拆分为 `MeshData`、`MaterialData`、`ModelAsset`，GPU 侧继续由 `render/` 创建
-VertexBuffer、IndexBuffer、SRV 和 Sampler。不要让 `core/Scene` 持有 `ID3D11*`。
+当前 `ModelPart` 直接保存 GPU `Mesh` 与 `Material`，足以支持同步学习工具；当需要后台加载或 RHI
+时，再拆分 CPU `MeshData/MaterialData` 和 GPU 资源。`core/Scene` 继续只保存路径，不持有
+`ID3D11*`。
 
 ### 5.2 Effect 与 Pass
 
@@ -130,6 +135,6 @@ VertexBuffer、IndexBuffer、SRV 和 Sampler。不要让 `core/Scene` 持有 `ID
 
 ## 7. 下一项建议
 
-下一次实现建议选择“Texture2D + Material + UV”，先让程序化立方体显示一张 sRGB 纹理，再加载
-Suzanne 的 BaseColor。不要一开始就加载 Sponza；它的节点、材质和纹理数量会让导入器问题与
-渲染问题混在一起。Suzanne 完成后，再用 Damaged Helmet 验证 GLB 内嵌资源，最后进入 Sponza。
+纹理、材质、Suzanne 外部资源和 Damaged Helmet GLB 内嵌资源已经完成验证。下一次建议实现
+Tangent 与法线贴图：先在程序化球体显示切线调试色，再读取 Damaged Helmet 的 normal texture，
+最后用 Sponza 检查大量材质。拾取或静态天空盒也可以并行作为编辑器能力和场景级 Pass 的验证点。

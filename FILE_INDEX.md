@@ -1,6 +1,6 @@
 # FILE_INDEX - LRenderDemo
 
-> 最后更新：2026-08-20 | 维护者：Codex
+> 最后更新：2026-08-21 | 维护者：Codex
 
 ## 源文件
 
@@ -10,21 +10,26 @@
 | `src/app/Application.*` | 子系统生命周期和帧循环 | `Run()`、`Initialize()` | platform、editor、render、core |
 | `src/platform/Window.*` | Win32 窗口和消息泵 | `Create()`、`PumpMessages()` | Win32、ImGui 后端 |
 | `src/core/Transform.h` | 可编辑的变换值 | `ToMatrix()`、`NearlyEquals()` | SimpleMath |
-| `src/core/Scene.*` | 实体的稳定存储 | `CreateEntity()`、`RemoveEntity()` | Transform |
+| `src/core/Scene.*` | 基础几何/模型实体的稳定存储 | `CreateEntity()`、`CreateModelEntity()` | Transform、filesystem |
 | `src/core/Camera.*` | 支持环绕/平移/缩放的编辑器相机 | `ViewMatrix()`、`ProjectionMatrix()` | SimpleMath |
 | `src/commands/ICommand.h` | 可逆操作接口 | `Execute()`、`Undo()` | 无 |
 | `src/commands/CommandHistory.*` | 有界撤销/重做栈 | `Execute()`、`PushApplied()` | ICommand |
 | `src/commands/TransformCommand.*` | 可逆变换编辑 | `Execute()`、`Undo()` | Scene |
 | `src/commands/CreateEntityCommand.*` | 可逆实体创建 | `Execute()`、`Undo()` | Scene |
 | `src/render/IRenderEffect.h` | 逐网格的 Effect 边界 | `Bind()` | D3D11、SimpleMath |
-| `src/render/BasicMeshEffect.*` | 加载项目自有 CSO 的基础光照 Effect | `Bind()` | D3DCompiler、CommonStates |
+| `src/render/BasicMeshEffect.*` | 纹理材质与多光源基础 Effect | `Bind()`、`Lights()` | Material、Lighting、D3DCompiler |
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | BasicMeshEffect 常量缓冲区 |
-| `src/shaders/BasicMeshPS.hlsl` | 基础网格方向光照和选中颜色 | `PSMain()` | BasicMeshEffect 常量缓冲区 |
-| `src/render/Mesh.*` | D3D11 顶点/索引缓冲区所有者 | `Draw()` | D3D11、VertexTypes |
+| `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | BasicMeshEffect 常量缓冲区 |
+| `src/render/Mesh.*` | 带 UV 的 D3D11 顶点/32 位索引缓冲区 | `Draw()` | D3D11、DirectXMath |
 | `src/render/PrimitiveFactory.*` | 生成立方体和球体 | `CreateCube()`、`CreateSphere()` | Mesh |
-| `src/render/RenderTarget.*` | 离屏视口的 RTV/SRV/DSV | `Resize()`、`BindAndClear()` | D3D11 |
+| `src/render/Texture2D.*` | WIC/DDS 文件、内存与生成纹理 | `LoadFile()`、`LoadMemory()` | DirectXTK、D3D11 |
+| `src/render/SamplerState.*` | Sampler 描述与 D3D11 状态所有权 | `SamplerState()` | D3D11 |
+| `src/render/Material.h`、`Lighting.h` | 基础材质和可编辑多光源数据 | `Material`、`LightingSettings` | Texture2D、SimpleMath |
+| `src/render/Model.h`、`GltfLoader.*` | 静态 glTF/GLB 节点、网格与材质导入 | `GltfLoader::Load()` | cgltf、ResourceCache |
+| `src/render/ResourceCache.*` | 按规范化路径缓存模型/纹理/Sampler | `LoadModel()`、`LoadTexture()` | GltfLoader、Texture2D |
+| `src/render/RenderTarget.*` | 离屏视口的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
 | `src/render/Dx11Renderer.*` | 设备、交换链和场景遍历 | `Initialize()`、`RenderScene()` | Effect、Mesh、RenderTarget |
-| `src/editor/EditorLayer.*` | 停靠面板和交互操作 | `Draw()` | Scene、Commands、Renderer、ImGui |
+| `src/editor/EditorLayer.*`、`EditorAssets.cpp` | 停靠面板、原生模型导入和光照控制 | `Draw()`、`ImportModel()` | Scene、Commands、Renderer、ImGui |
 | `src/utils/Logger.*` | 按日期写入文件日志 | `Initialize()`、`Info()`、`Error()` | C++ filesystem |
 | `tests/CoreTests.cpp` | CPU 行为回归测试 | 场景/命令测试用例 | LRenderCore |
 
@@ -48,6 +53,7 @@
 | `docs/adding-an-effect.md` | Effect 扩展流程和学习顺序 |
 | `docs/examples/skybox-pass.md` | 天空盒 Pass 的逐文件设计与实现示例 |
 | `docs/directx11-feature-roadmap.md` | DX11 教程功能差距、实现顺序和验收标准 |
+| `docs/model-import-and-material.md` | 纹理、材质、glTF/GLB、缓存与多光源学习指南 |
 | `AGENTS.md` | 仓库专用开发规则 |
 | `CHANGELOG.md` | 近期和历史变更 |
 | `LESSONS.md` | 架构决策记录、问题和长期实践 |
@@ -68,6 +74,7 @@ graph TD
     Commands --> Core
     Render --> Core
     Render --> DXTK[DirectXTK]
+    Render --> Cgltf[cgltf]
     Editor --> ImGui[Dear ImGui 和 ImGuizmo]
     App --> Utils[utils]
 ```

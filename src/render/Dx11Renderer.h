@@ -10,10 +10,12 @@
 #include "core/Scene.h"
 #include "render/BasicMeshEffect.h"
 #include "render/Mesh.h"
+#include "render/ResourceCache.h"
 #include "render/RenderTarget.h"
 
 #include <cstdint>
 #include <d3d11.h>
+#include <filesystem>
 #include <memory>
 #include <windows.h>
 #include <wrl/client.h>
@@ -31,11 +33,15 @@ public:
     void RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId);
     void RenderEditor(ImDrawData* drawData);
     void Present();
+    void PreloadModel(const std::filesystem::path& path);
 
     [[nodiscard]] ID3D11Device* Device() const noexcept { return device_.Get(); }
     [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return context_.Get(); }
     [[nodiscard]] RenderTarget& ViewportTarget() noexcept { return viewportTarget_; }
     [[nodiscard]] BasicMeshEffect& Effect() noexcept { return *effect_; }
+    [[nodiscard]] std::size_t CachedModelCount() const noexcept;
+    [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
+    [[nodiscard]] HWND WindowHandle() const noexcept { return windowHandle_; }
 
 private:
     void CreateBackBuffer();
@@ -51,6 +57,8 @@ private:
     std::unique_ptr<Mesh> cubeMesh_;
     std::unique_ptr<Mesh> sphereMesh_;
     std::unique_ptr<BasicMeshEffect> effect_;
+    std::unique_ptr<ResourceCache> resources_;
+    Material primitiveMaterial_;
 };
 
 } // namespace lrender

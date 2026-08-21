@@ -25,6 +25,16 @@ Entity& Scene::CreateEntity(PrimitiveType primitive, std::string name) {
     return entities_.back();
 }
 
+Entity& Scene::CreateModelEntity(std::filesystem::path modelPath, std::string name) {
+    if (modelPath.empty()) {
+        throw std::invalid_argument("Model path must not be empty");
+    }
+    Entity& entity = CreateEntity(PrimitiveType::Cube, std::move(name));
+    entity.modelPath = std::move(modelPath);
+    entity.color = {1.0F, 1.0F, 1.0F, 1.0F};
+    return entity;
+}
+
 Entity& Scene::AddEntity(Entity entity) {
     if (entity.id == 0 || entity.name.empty()) {
         throw std::invalid_argument("Entity snapshot is invalid");

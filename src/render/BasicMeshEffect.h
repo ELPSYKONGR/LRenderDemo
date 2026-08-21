@@ -7,8 +7,10 @@
 #pragma once
 
 #include "render/IRenderEffect.h"
+#include "render/Lighting.h"
 
 #include <CommonStates.h>
+#include <array>
 #include <filesystem>
 #include <memory>
 #include <wrl/client.h>
@@ -24,21 +26,34 @@ public:
         const DirectX::SimpleMath::Matrix& world,
         const DirectX::SimpleMath::Matrix& view,
         const DirectX::SimpleMath::Matrix& projection,
-        const DirectX::SimpleMath::Color& color,
+        const DirectX::SimpleMath::Vector3& cameraPosition,
+        const Material& material,
+        const DirectX::SimpleMath::Color& tint,
         bool isSelected) override;
 
     [[nodiscard]] std::string_view Name() const noexcept override { return "Basic Lit"; }
     void SetWireframe(bool isWireframe) noexcept { isWireframe_ = isWireframe; }
     [[nodiscard]] bool IsWireframe() const noexcept { return isWireframe_; }
+    [[nodiscard]] LightingSettings& Lights() noexcept { return lights_; }
+    [[nodiscard]] const LightingSettings& Lights() const noexcept { return lights_; }
 
 private:
+    struct alignas(16) PointLightConstants {
+        DirectX::SimpleMath::Vector4 positionAndRange;
+        DirectX::SimpleMath::Vector4 colorAndIntensity;
+    };
+
     struct alignas(16) Constants {
         DirectX::SimpleMath::Matrix worldViewProjection;
+        DirectX::SimpleMath::Matrix world;
         DirectX::SimpleMath::Matrix worldInverseTranspose;
-        DirectX::SimpleMath::Vector4 diffuseColor;
-        DirectX::SimpleMath::Vector4 lightDirection;
-        DirectX::SimpleMath::Vector4 lightColor;
+        DirectX::SimpleMath::Vector4 baseColor;
+        DirectX::SimpleMath::Vector4 cameraPosition;
         DirectX::SimpleMath::Vector4 ambientColor;
+        DirectX::SimpleMath::Vector4 directionalDirectionAndIntensity;
+        DirectX::SimpleMath::Vector4 directionalColorAndEnabled;
+        std::array<PointLightConstants, 4> pointLights;
+        DirectX::SimpleMath::Vector4 materialParameters;
     };
 
     std::unique_ptr<DirectX::CommonStates> states_;
@@ -46,6 +61,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader_;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout_;
     Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer_;
+    LightingSettings lights_;
     bool isWireframe_{false};
 };
 

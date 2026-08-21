@@ -35,6 +35,7 @@ private:
     Camera camera_;
     EditorLayer editor_;
     bool isImGuiInitialized_{false};
+    bool isComInitialized_{false};
 };
 
 } // namespace lrender

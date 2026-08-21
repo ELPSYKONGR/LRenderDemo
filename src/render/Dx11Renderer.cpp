@@ -73,6 +73,8 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     cubeMesh_ = PrimitiveFactory::CreateCube(device_.Get());
     sphereMesh_ = PrimitiveFactory::CreateSphere(device_.Get());
     effect_ = std::make_unique<BasicMeshEffect>(device_.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    resources_ = std::make_unique<ResourceCache>(device_.Get(), context_.Get());
+    primitiveMaterial_ = resources_->CheckerMaterial();
 }
 
 void Dx11Renderer::Shutdown() noexcept {
@@ -81,8 +83,11 @@ void Dx11Renderer::Shutdown() noexcept {
         context_->Flush();
     }
     effect_.reset();
+    primitiveMaterial_ = {};
+    resources_.reset();
     sphereMesh_.reset();
     cubeMesh_.reset();
+    viewportTarget_.Reset();
     backBufferView_.Reset();
     swapChain_.Reset();
     context_.Reset();
@@ -130,15 +135,47 @@ void Dx11Renderer::RenderScene(
                          static_cast<float>(viewportTarget_.Height());
     const auto view = camera.ViewMatrix();
     const auto projection = camera.ProjectionMatrix(aspect);
+    const auto cameraPosition = camera.Position();
 
     for (const Entity& entity : scene.Entities()) {
-        effect_->Bind(
-            context_.Get(), entity.transform.ToMatrix(), view, projection, entity.color,
-            entity.id == selectedEntityId);
-        const Mesh& mesh = entity.primitive == PrimitiveType::Cube ? *cubeMesh_ : *sphereMesh_;
-        mesh.Draw(context_.Get());
+        const auto world = entity.transform.ToMatrix();
+        const bool isSelected = entity.id == selectedEntityId;
+        if (entity.IsModel()) {
+            const std::shared_ptr<Model> model = resources_->LoadModel(entity.modelPath);
+            for (const ModelPart& part : model->parts) {
+                effect_->Bind(
+                    context_.Get(), world, view, projection, cameraPosition,
+                    part.material, entity.color, isSelected);
+                part.mesh->Draw(context_.Get());
+            }
+        } else {
+            effect_->Bind(
+                context_.Get(), world, view, projection, cameraPosition,
+                primitiveMaterial_, entity.color, isSelected);
+            const Mesh& mesh = entity.primitive == PrimitiveType::Cube ? *cubeMesh_ : *sphereMesh_;
+            mesh.Draw(context_.Get());
+        }
     }
+    nullResource = nullptr;
+    ID3D11SamplerState* nullSampler = nullptr;
+    context_->PSSetShaderResources(0, 1, &nullResource);
+    context_->PSSetSamplers(0, 1, &nullSampler);
     context_->RSSetState(nullptr);
+}
+
+void Dx11Renderer::PreloadModel(const std::filesystem::path& path) {
+    if (!resources_) {
+        throw std::logic_error("Renderer resource cache is not initialized");
+    }
+    static_cast<void>(resources_->LoadModel(path));
+}
+
+std::size_t Dx11Renderer::CachedModelCount() const noexcept {
+    return resources_ ? resources_->ModelCount() : 0;
+}
+
+std::size_t Dx11Renderer::CachedTextureCount() const noexcept {
+    return resources_ ? resources_->TextureCount() : 0;
 }
 
 void Dx11Renderer::RenderEditor(ImDrawData* drawData) {

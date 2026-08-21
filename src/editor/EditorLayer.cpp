@@ -29,15 +29,18 @@ void ItemTooltip(const char* text) {
 void EditorLayer::Draw(
     Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer) {
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-    DrawMainMenu(scene, history);
+    DrawMainMenu(scene, history, renderer);
     DrawToolbar(history, renderer);
+    DrawLighting(renderer);
+    DrawResources(renderer);
     DrawHierarchy(scene);
     ValidateSelection(scene);
     DrawInspector(scene, history);
     DrawViewport(scene, history, camera, renderer);
 }
 
-void EditorLayer::DrawMainMenu(Scene& scene, CommandHistory& history) {
+void EditorLayer::DrawMainMenu(
+    Scene& scene, CommandHistory& history, Dx11Renderer& renderer) {
     if (!ImGui::BeginMainMenuBar()) {
         return;
     }
@@ -58,6 +61,10 @@ void EditorLayer::DrawMainMenu(Scene& scene, CommandHistory& history) {
         if (ImGui::MenuItem("Sphere")) {
             CreatePrimitive(scene, history, PrimitiveType::Sphere);
         }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Import glTF/GLB...")) {
+            ImportModel(scene, history, renderer);
+        }
         ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
@@ -69,6 +76,18 @@ void EditorLayer::DrawMainMenu(Scene& scene, CommandHistory& history) {
     }
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false) && history.CanRedo()) {
         history.Redo();
+    }
+
+    if (openImportErrorPopup_) {
+        ImGui::OpenPopup("Model import failed");
+        openImportErrorPopup_ = false;
+    }
+    if (ImGui::BeginPopupModal("Model import failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextWrapped("%s", importError_.c_str());
+        if (ImGui::Button("Close")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
     }
 }
 

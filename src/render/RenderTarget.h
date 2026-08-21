@@ -15,6 +15,7 @@ namespace lrender {
 class RenderTarget final {
 public:
     void Resize(ID3D11Device* device, std::uint32_t width, std::uint32_t height);
+    void Reset() noexcept;
     void BindAndClear(ID3D11DeviceContext* context, const float clearColor[4]) const;
 
     [[nodiscard]] ID3D11ShaderResourceView* ShaderResourceView() const noexcept {

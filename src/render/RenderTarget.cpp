@@ -11,6 +11,16 @@
 
 namespace lrender {
 
+void RenderTarget::Reset() noexcept {
+    depthStencilView_.Reset();
+    depthTexture_.Reset();
+    shaderResourceView_.Reset();
+    renderTargetView_.Reset();
+    colorTexture_.Reset();
+    width_ = 0;
+    height_ = 0;
+}
+
 void RenderTarget::Resize(ID3D11Device* device, std::uint32_t width, std::uint32_t height) {
     if (device == nullptr) {
         throw std::invalid_argument("RenderTarget resize requires a D3D11 device");

@@ -14,6 +14,7 @@
 #include <ImGuizmo.h>
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace lrender {
 
@@ -25,12 +26,15 @@ public:
     [[nodiscard]] std::uint32_t SelectedEntityId() const noexcept { return selectedEntityId_; }
 
 private:
-    void DrawMainMenu(Scene& scene, CommandHistory& history);
+    void DrawMainMenu(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void DrawToolbar(CommandHistory& history, Dx11Renderer& renderer);
+    void DrawLighting(Dx11Renderer& renderer);
+    void DrawResources(Dx11Renderer& renderer);
     void DrawHierarchy(Scene& scene);
     void DrawInspector(Scene& scene, CommandHistory& history);
     void DrawViewport(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer);
     void CreatePrimitive(Scene& scene, CommandHistory& history, PrimitiveType primitive);
+    void ImportModel(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void TrackPropertyEdit(
         Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl);
     void ValidateSelection(const Scene& scene);
@@ -41,6 +45,8 @@ private:
     Transform gizmoStart_;
     std::optional<Transform> propertyEditStart_;
     std::uint32_t propertyEditEntityId_{};
+    std::string importError_;
+    bool openImportErrorPopup_{false};
 };
 
 } // namespace lrender

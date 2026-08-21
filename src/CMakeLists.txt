@@ -15,9 +15,14 @@ add_executable(LRenderDemo WIN32
     platform/Window.cpp
     render/BasicMeshEffect.cpp
     render/Dx11Renderer.cpp
+    render/GltfLoader.cpp
     render/Mesh.cpp
+    render/ResourceCache.cpp
+    render/SamplerState.cpp
     render/PrimitiveFactory.cpp
     render/RenderTarget.cpp
+    render/Texture2D.cpp
+    editor/EditorAssets.cpp
     editor/EditorLayer.cpp)
 
 set(LRENDER_SHADER_OUTPUT_ROOT "${CMAKE_CURRENT_BINARY_DIR}/shaders")
@@ -51,10 +56,12 @@ target_compile_definitions(LRenderDemo PRIVATE
 target_include_directories(LRenderDemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(LRenderDemo PRIVATE
     LRenderCore
+    cgltf
     imgui
     imguizmo
     d3d11
     d3dcompiler
+    comdlg32
     dxgi
     dxguid)
 lrender_set_warnings(LRenderDemo)
