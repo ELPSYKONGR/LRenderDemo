@@ -4,15 +4,22 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-25 | 工程 | 在 VS2022 工程中显示全部项目头文件 | cmake | 本次提交 |
 | 08-21 | 功能 | 增加纹理材质、glTF/GLB 缓存导入与可编辑多光源 | core、render、editor、shaders | 工作区 |
 | 08-20 | 文档 | 增加 DX11 教程差距分析、实施路线和素材映射 | docs、assets、scripts | 工作区 |
 | 08-20 | 功能 | 接入可编辑且自动增量编译的项目 HLSL | render、shaders、cmake | 工作区 |
 | 08-20 | 文档 | 增加天空盒 Pass 教学示例与素材 | docs、assets、scripts | 本次提交 |
-| 08-20 | 资产 | 增加经典图形学测试模型下载集 | assets、scripts | 本次提交 |
-| 08-20 | 文档 | 项目 Markdown 文档中文化 | docs | 本次提交 |
-| 08-20 | 功能 | 搭建 DX11 渲染实验平台 | 全部 | `3aafc78` |
 
 ---
+
+## [2026-08-25] 在 VS2022 工程中显示项目头文件
+
+- **文件**：`src/CMakeLists.txt`
+- **区块**：`LRenderCore`、`LRenderDemo` 源文件清单与 `source_group`
+- **改动**：将 `src/` 下 24 个项目头文件显式加入所属 CMake target，并按
+  `Header Files/commands`、`core`、`render` 等模块生成 VS 筛选器。
+- **原因**：此前 CMake 仅登记 `.cpp` 和 HLSL，VS2022 解决方案中无法稳定浏览项目头文件。
+- **提交**：本次提交
 
 ## [2026-08-21] 增加纹理材质、模型导入和多光源
 

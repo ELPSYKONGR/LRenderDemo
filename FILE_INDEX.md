@@ -1,6 +1,6 @@
 # FILE_INDEX - LRenderDemo
 
-> 最后更新：2026-08-21 | 维护者：Codex
+> 最后更新：2026-08-25 | 维护者：Codex
 
 ## 源文件
 
@@ -37,7 +37,7 @@
 
 | 路径 | 用途 |
 |---|---|
-| `CMakeLists.txt`、`src/CMakeLists.txt` | CMake 目标、VS 启动项目和 HLSL 构建规则 |
+| `CMakeLists.txt`、`src/CMakeLists.txt` | CMake 目标、VS 头文件分组、启动项目和 HLSL 构建规则 |
 | `CMakePresets.json` | 可移植的 VS2022 x64 配置/构建/测试预设 |
 | `cmake/Dependencies.cmake` | 固定版本的子模块目标定义 |
 | `cmake/CompilerWarnings.cmake` | 第一方代码警告基线 |

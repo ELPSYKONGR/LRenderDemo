@@ -1,15 +1,49 @@
+set(LRENDER_CORE_HEADERS
+    commands/CommandHistory.h
+    commands/CreateEntityCommand.h
+    commands/ICommand.h
+    commands/TransformCommand.h
+    core/Camera.h
+    core/Scene.h
+    core/Transform.h
+    utils/Logger.h)
+
 add_library(LRenderCore STATIC
+    ${LRENDER_CORE_HEADERS}
     core/Camera.cpp
     core/Scene.cpp
     commands/CommandHistory.cpp
     commands/CreateEntityCommand.cpp
     commands/TransformCommand.cpp
     utils/Logger.cpp)
+source_group(
+    TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+    PREFIX "Header Files"
+    FILES ${LRENDER_CORE_HEADERS})
 target_include_directories(LRenderCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(LRenderCore PUBLIC DirectXTK)
 lrender_set_warnings(LRenderCore)
 
+set(LRENDER_DEMO_HEADERS
+    app/Application.h
+    editor/EditorLayer.h
+    platform/Window.h
+    render/BasicMeshEffect.h
+    render/Dx11Renderer.h
+    render/GltfLoader.h
+    render/IRenderEffect.h
+    render/Lighting.h
+    render/Material.h
+    render/Mesh.h
+    render/Model.h
+    render/PrimitiveFactory.h
+    render/RenderTarget.h
+    render/ResourceCache.h
+    render/SamplerState.h
+    render/Texture2D.h)
+
 add_executable(LRenderDemo WIN32
+    ${LRENDER_DEMO_HEADERS}
     app/Main.cpp
     app/Application.cpp
     platform/Window.cpp
@@ -24,6 +58,10 @@ add_executable(LRenderDemo WIN32
     render/Texture2D.cpp
     editor/EditorAssets.cpp
     editor/EditorLayer.cpp)
+source_group(
+    TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+    PREFIX "Header Files"
+    FILES ${LRENDER_DEMO_HEADERS})
 
 set(LRENDER_SHADER_OUTPUT_ROOT "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(LRENDER_SHADER_BUILD_OUTPUT_DIR "${LRENDER_SHADER_OUTPUT_ROOT}/$(Configuration)")
