@@ -4,6 +4,7 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-25 | 功能 | 增加可创建的水平 Plane 基础几何 | core、render、editor、app | 本次提交 |
 | 08-25 | 工程 | 在 VS2022 工程中显示全部项目头文件 | cmake | 本次提交 |
 | 08-21 | 功能 | 增加纹理材质、glTF/GLB 缓存导入与可编辑多光源 | core、render、editor、shaders | 工作区 |
 | 08-20 | 文档 | 增加 DX11 教程差距分析、实施路线和素材映射 | docs、assets、scripts | 工作区 |
@@ -11,6 +12,16 @@
 | 08-20 | 文档 | 增加天空盒 Pass 教学示例与素材 | docs、assets、scripts | 本次提交 |
 
 ---
+
+## [2026-08-25] 增加 Plane 基础几何
+
+- **文件**：`src/core/Scene.h`、`src/render/PrimitiveFactory.*`、`src/render/Dx11Renderer.*`、
+  `src/editor/EditorLayer.cpp`、`src/app/Application.cpp`、`tests/CoreTests.cpp`
+- **区块**：`PrimitiveType`、基础网格创建、场景绘制选择与 `Create` 菜单
+- **改动**：增加带向上法线和平铺 UV 的 10x10 水平 Plane；支持菜单创建、撤销/重做，并在默认
+  场景的 `Y=-0.5` 位置创建平面，使现有对象位于其上方。
+- **原因**：提供观察纹理平铺、光照和后续阴影效果所需的基础承接面。
+- **提交**：本次提交
 
 ## [2026-08-25] 在 VS2022 工程中显示项目头文件
 

@@ -72,6 +72,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     viewportTarget_.Resize(device_.Get(), 960, 640);
     cubeMesh_ = PrimitiveFactory::CreateCube(device_.Get());
     sphereMesh_ = PrimitiveFactory::CreateSphere(device_.Get());
+    planeMesh_ = PrimitiveFactory::CreatePlane(device_.Get());
     effect_ = std::make_unique<BasicMeshEffect>(device_.Get(), LRENDER_SHADER_OUTPUT_DIR);
     resources_ = std::make_unique<ResourceCache>(device_.Get(), context_.Get());
     primitiveMaterial_ = resources_->CheckerMaterial();
@@ -85,6 +86,7 @@ void Dx11Renderer::Shutdown() noexcept {
     effect_.reset();
     primitiveMaterial_ = {};
     resources_.reset();
+    planeMesh_.reset();
     sphereMesh_.reset();
     cubeMesh_.reset();
     viewportTarget_.Reset();
@@ -152,8 +154,16 @@ void Dx11Renderer::RenderScene(
             effect_->Bind(
                 context_.Get(), world, view, projection, cameraPosition,
                 primitiveMaterial_, entity.color, isSelected);
-            const Mesh& mesh = entity.primitive == PrimitiveType::Cube ? *cubeMesh_ : *sphereMesh_;
-            mesh.Draw(context_.Get());
+            const Mesh* mesh = nullptr;
+            switch (entity.primitive) {
+            case PrimitiveType::Cube: mesh = cubeMesh_.get(); break;
+            case PrimitiveType::Sphere: mesh = sphereMesh_.get(); break;
+            case PrimitiveType::Plane: mesh = planeMesh_.get(); break;
+            }
+            if (mesh == nullptr) {
+                throw std::runtime_error("Primitive mesh is not initialized");
+            }
+            mesh->Draw(context_.Get());
         }
     }
     nullResource = nullptr;

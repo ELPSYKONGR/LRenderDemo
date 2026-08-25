@@ -49,12 +49,16 @@ void TestTransformUndoRedo() {
 void TestCreateUndoRedo() {
     lrender::Scene scene;
     lrender::CommandHistory history;
-    const auto entity = scene.CreateEntity(lrender::PrimitiveType::Cube, "Cube");
+    const auto entity = scene.CreateEntity(lrender::PrimitiveType::Plane, "Plane");
     history.PushApplied(std::make_unique<lrender::CreateEntityCommand>(scene, entity));
     Require(history.Undo(), "Creation should be undoable");
     Require(scene.FindEntity(entity.id) == nullptr, "Undo should remove created entity");
     Require(history.Redo(), "Creation should be redoable");
-    Require(scene.FindEntity(entity.id) != nullptr, "Redo should restore created entity");
+    const auto* restored = scene.FindEntity(entity.id);
+    Require(restored != nullptr, "Redo should restore created entity");
+    Require(
+        restored->primitive == lrender::PrimitiveType::Plane,
+        "Redo should preserve the plane primitive type");
 }
 
 void TestModelCreateUndoRedo() {

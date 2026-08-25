@@ -9,7 +9,7 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 - Win32 原生窗口，以及 D3D11 设备和交换链
 - 基于 Dear ImGui Docking 的界面，包含视口、层级、检查器和工具面板
 - 支持环绕、平移和缩放的编辑器相机
-- 创建立方体和 UV 球体
+- 创建立方体、UV 球体和水平平面
 - `Texture2D`、Sampler、UV 与 BaseColor 材质，可为程序化几何显示棋盘纹理
 - 导入静态 glTF/GLB 模型，支持外部/内嵌图片、子网格、节点变换与资源缓存
 - 一盏方向光和最多四盏点光，支持 Lambert 漫反射与 Blinn-Phong 高光实时调节

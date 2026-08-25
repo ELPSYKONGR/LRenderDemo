@@ -17,6 +17,7 @@ public:
     [[nodiscard]] static std::unique_ptr<Mesh> CreateCube(ID3D11Device* device);
     [[nodiscard]] static std::unique_ptr<Mesh> CreateSphere(
         ID3D11Device* device, std::uint16_t slices = 32, std::uint16_t stacks = 20);
+    [[nodiscard]] static std::unique_ptr<Mesh> CreatePlane(ID3D11Device* device);
 };
 
 } // namespace lrender

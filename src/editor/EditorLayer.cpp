@@ -61,6 +61,9 @@ void EditorLayer::DrawMainMenu(
         if (ImGui::MenuItem("Sphere")) {
             CreatePrimitive(scene, history, PrimitiveType::Sphere);
         }
+        if (ImGui::MenuItem("Plane")) {
+            CreatePrimitive(scene, history, PrimitiveType::Plane);
+        }
         ImGui::Separator();
         if (ImGui::MenuItem("Import glTF/GLB...")) {
             ImportModel(scene, history, renderer);
@@ -242,9 +245,18 @@ void EditorLayer::DrawViewport(
 
 void EditorLayer::CreatePrimitive(
     Scene& scene, CommandHistory& history, PrimitiveType primitive) {
-    const std::string baseName = primitive == PrimitiveType::Cube ? "Cube" : "Sphere";
+    std::string baseName;
+    switch (primitive) {
+    case PrimitiveType::Cube: baseName = "Cube"; break;
+    case PrimitiveType::Sphere: baseName = "Sphere"; break;
+    case PrimitiveType::Plane: baseName = "Plane"; break;
+    }
     Entity& entity = scene.CreateEntity(
         primitive, baseName + " " + std::to_string(scene.Entities().size() + 1));
+    if (primitive == PrimitiveType::Plane) {
+        entity.transform.position.y = -0.5F;
+        entity.color = {0.55F, 0.58F, 0.62F, 1.0F};
+    }
     selectedEntityId_ = entity.id;
     history.PushApplied(std::make_unique<CreateEntityCommand>(scene, entity));
 }

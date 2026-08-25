@@ -1,5 +1,5 @@
 /**
- * @file Procedural cube and UV sphere generation.
+ * @file Procedural cube, UV sphere, and plane generation.
  * @author Codex
  * @created 2026-08-20
  * @depends render/PrimitiveFactory.h
@@ -97,6 +97,19 @@ std::unique_ptr<Mesh> PrimitiveFactory::CreateSphere(
             indices.insert(indices.end(), {first, second, first + 1, first + 1, second, second + 1});
         }
     }
+    return std::make_unique<Mesh>(device, vertices, indices);
+}
+
+std::unique_ptr<Mesh> PrimitiveFactory::CreatePlane(ID3D11Device* device) {
+    constexpr float halfExtent = 5.0F;
+    constexpr float uvRepeat = 5.0F;
+    constexpr std::array<Vertex, 4> vertices{{
+        {{-halfExtent, 0.0F, -halfExtent}, {0.0F, 1.0F, 0.0F}, {0.0F, uvRepeat}},
+        {{-halfExtent, 0.0F, halfExtent}, {0.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+        {{halfExtent, 0.0F, halfExtent}, {0.0F, 1.0F, 0.0F}, {uvRepeat, 0.0F}},
+        {{halfExtent, 0.0F, -halfExtent}, {0.0F, 1.0F, 0.0F}, {uvRepeat, uvRepeat}},
+    }};
+    constexpr std::array<std::uint32_t, 6> indices{0, 1, 2, 0, 2, 3};
     return std::make_unique<Mesh>(device, vertices, indices);
 }
 

@@ -17,7 +17,7 @@
 
 namespace lrender {
 
-enum class PrimitiveType { Cube, Sphere };
+enum class PrimitiveType { Cube, Sphere, Plane };
 
 struct Entity {
     std::uint32_t id{};

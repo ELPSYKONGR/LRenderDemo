@@ -21,7 +21,7 @@
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | BasicMeshEffect 常量缓冲区 |
 | `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | BasicMeshEffect 常量缓冲区 |
 | `src/render/Mesh.*` | 带 UV 的 D3D11 顶点/32 位索引缓冲区 | `Draw()` | D3D11、DirectXMath |
-| `src/render/PrimitiveFactory.*` | 生成立方体和球体 | `CreateCube()`、`CreateSphere()` | Mesh |
+| `src/render/PrimitiveFactory.*` | 生成立方体、球体和平面 | `CreateCube()`、`CreateSphere()`、`CreatePlane()` | Mesh |
 | `src/render/Texture2D.*` | WIC/DDS 文件、内存与生成纹理 | `LoadFile()`、`LoadMemory()` | DirectXTK、D3D11 |
 | `src/render/SamplerState.*` | Sampler 描述与 D3D11 状态所有权 | `SamplerState()` | D3D11 |
 | `src/render/Material.h`、`Lighting.h` | 基础材质和可编辑多光源数据 | `Material`、`LightingSettings` | Texture2D、SimpleMath |

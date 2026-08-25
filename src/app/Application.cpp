@@ -79,6 +79,9 @@ void Application::Initialize() {
     auto& sphere = scene_.CreateEntity(PrimitiveType::Sphere, "Sphere 2");
     sphere.transform.position.x = 0.8F;
     sphere.color = {0.92F, 0.42F, 0.22F, 1.0F};
+    auto& plane = scene_.CreateEntity(PrimitiveType::Plane, "Plane 3");
+    plane.transform.position.y = -0.5F;
+    plane.color = {0.55F, 0.58F, 0.62F, 1.0F};
 
     const std::filesystem::path sampleModel =
         "assets/test-scenes/downloads/suzanne/Suzanne.gltf";

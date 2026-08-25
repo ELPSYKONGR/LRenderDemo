@@ -56,6 +56,7 @@ private:
     RenderTarget viewportTarget_;
     std::unique_ptr<Mesh> cubeMesh_;
     std::unique_ptr<Mesh> sphereMesh_;
+    std::unique_ptr<Mesh> planeMesh_;
     std::unique_ptr<BasicMeshEffect> effect_;
     std::unique_ptr<ResourceCache> resources_;
     Material primitiveMaterial_;
