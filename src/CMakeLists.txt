@@ -57,6 +57,7 @@ add_executable(LRenderDemo WIN32
     render/RenderTarget.cpp
     render/Texture2D.cpp
     editor/EditorAssets.cpp
+    editor/EditorCamera.cpp
     editor/EditorLayer.cpp)
 source_group(
     TREE "${CMAKE_CURRENT_SOURCE_DIR}"

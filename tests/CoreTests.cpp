@@ -7,8 +7,10 @@
 #include "commands/CommandHistory.h"
 #include "commands/CreateEntityCommand.h"
 #include "commands/TransformCommand.h"
+#include "core/Camera.h"
 #include "core/Scene.h"
 
+#include <cmath>
 #include <iostream>
 #include <filesystem>
 #include <memory>
@@ -20,6 +22,55 @@ void Require(bool condition, const char* message) {
     if (!condition) {
         throw std::runtime_error(message);
     }
+}
+
+void RequireNear(float actual, float expected, const char* message) {
+    Require(std::abs(actual - expected) < 0.001F, message);
+}
+
+void RequireFinite(const DirectX::SimpleMath::Matrix& matrix, const char* message) {
+    const float values[]{
+        matrix._11, matrix._12, matrix._13, matrix._14,
+        matrix._21, matrix._22, matrix._23, matrix._24,
+        matrix._31, matrix._32, matrix._33, matrix._34,
+        matrix._41, matrix._42, matrix._43, matrix._44};
+    for (const float value : values) {
+        Require(std::isfinite(value), message);
+    }
+}
+
+void TestCameraViewPresets() {
+    lrender::Camera camera;
+    constexpr struct ExpectedView {
+        lrender::CameraViewPreset preset;
+        DirectX::SimpleMath::Vector3 direction;
+    } views[]{
+        {lrender::CameraViewPreset::Front, {0.0F, 0.0F, 1.0F}},
+        {lrender::CameraViewPreset::Back, {0.0F, 0.0F, -1.0F}},
+        {lrender::CameraViewPreset::Left, {-1.0F, 0.0F, 0.0F}},
+        {lrender::CameraViewPreset::Right, {1.0F, 0.0F, 0.0F}},
+        {lrender::CameraViewPreset::Top, {0.0F, 1.0F, 0.0F}},
+        {lrender::CameraViewPreset::Bottom, {0.0F, -1.0F, 0.0F}}};
+
+    for (const ExpectedView& view : views) {
+        camera.SetView(view.preset);
+        const auto position = camera.Position();
+        RequireNear(position.x / 8.0F, view.direction.x, "Camera preset X is incorrect");
+        RequireNear(position.y / 8.0F, view.direction.y, "Camera preset Y is incorrect");
+        RequireNear(position.z / 8.0F, view.direction.z, "Camera preset Z is incorrect");
+        RequireFinite(camera.ViewMatrix(), "Camera preset produced an invalid view matrix");
+    }
+
+    camera.SetView(lrender::CameraViewPreset::RightIsometric);
+    Require(camera.Position().x > 0.0F && camera.Position().y > 0.0F,
+            "Right isometric view should be above and right of the target");
+    camera.SetView(lrender::CameraViewPreset::LeftIsometric);
+    Require(camera.Position().x < 0.0F && camera.Position().y > 0.0F,
+            "Left isometric view should be above and left of the target");
+
+    camera.SetView(lrender::CameraViewPreset::Front);
+    camera.RotateAroundTarget(90.0F);
+    RequireNear(camera.Position().x, 8.0F, "Automatic rotation should advance camera yaw");
 }
 
 void TestSceneLifecycle() {
@@ -81,6 +132,7 @@ void TestModelCreateUndoRedo() {
 int main() {
     try {
         TestSceneLifecycle();
+        TestCameraViewPresets();
         TestTransformUndoRedo();
         TestCreateUndoRedo();
         TestModelCreateUndoRedo();

@@ -31,6 +31,7 @@ void EditorLayer::Draw(
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
     DrawMainMenu(scene, history, renderer);
     DrawToolbar(history, renderer);
+    DrawCameraControls(camera);
     DrawLighting(renderer);
     DrawResources(renderer);
     DrawHierarchy(scene);
@@ -184,6 +185,7 @@ void EditorLayer::DrawViewport(
     const ImGuiIO& input = ImGui::GetIO();
     if (isHovered && !ImGuizmo::IsUsing()) {
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Right)) {
+            autoRotate_ = false;
             camera.Orbit(input.MouseDelta.x, input.MouseDelta.y);
         }
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {

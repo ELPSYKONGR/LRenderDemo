@@ -28,6 +28,7 @@ public:
 private:
     void DrawMainMenu(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void DrawToolbar(CommandHistory& history, Dx11Renderer& renderer);
+    void DrawCameraControls(Camera& camera);
     void DrawLighting(Dx11Renderer& renderer);
     void DrawResources(Dx11Renderer& renderer);
     void DrawHierarchy(Scene& scene);
@@ -47,6 +48,9 @@ private:
     std::uint32_t propertyEditEntityId_{};
     std::string importError_;
     bool openImportErrorPopup_{false};
+    bool autoRotate_{false};
+    bool autoRotateClockwise_{false};
+    float autoRotateSpeedDegrees_{20.0F};
 };
 
 } // namespace lrender

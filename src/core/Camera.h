@@ -10,17 +10,32 @@
 
 namespace lrender {
 
+enum class CameraViewPreset {
+    Front,
+    Back,
+    Left,
+    Right,
+    Top,
+    Bottom,
+    RightIsometric,
+    LeftIsometric
+};
+
 class Camera final {
 public:
     void Orbit(float deltaX, float deltaY);
     void Pan(float deltaX, float deltaY);
     void Zoom(float wheelDelta);
+    void SetView(CameraViewPreset preset) noexcept;
+    void RotateAroundTarget(float deltaDegrees) noexcept;
 
     [[nodiscard]] DirectX::SimpleMath::Matrix ViewMatrix() const;
     [[nodiscard]] DirectX::SimpleMath::Matrix ProjectionMatrix(float aspectRatio) const;
     [[nodiscard]] DirectX::SimpleMath::Vector3 Position() const;
 
 private:
+    [[nodiscard]] DirectX::SimpleMath::Vector3 UpDirection() const noexcept;
+
     DirectX::SimpleMath::Vector3 target_{0.0F, 0.0F, 0.0F};
     float yaw_{DirectX::XMConvertToRadians(35.0F)};
     float pitch_{DirectX::XMConvertToRadians(-20.0F)};

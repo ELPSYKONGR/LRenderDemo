@@ -11,7 +11,7 @@
 | `src/platform/Window.*` | Win32 窗口和消息泵 | `Create()`、`PumpMessages()` | Win32、ImGui 后端 |
 | `src/core/Transform.h` | 可编辑的变换值 | `ToMatrix()`、`NearlyEquals()` | SimpleMath |
 | `src/core/Scene.*` | 基础几何/模型实体的稳定存储 | `CreateEntity()`、`CreateModelEntity()` | Transform、filesystem |
-| `src/core/Camera.*` | 支持环绕/平移/缩放的编辑器相机 | `ViewMatrix()`、`ProjectionMatrix()` | SimpleMath |
+| `src/core/Camera.*` | 支持环绕、标准视角和自动旋转的编辑器相机 | `SetView()`、`RotateAroundTarget()` | SimpleMath |
 | `src/commands/ICommand.h` | 可逆操作接口 | `Execute()`、`Undo()` | 无 |
 | `src/commands/CommandHistory.*` | 有界撤销/重做栈 | `Execute()`、`PushApplied()` | ICommand |
 | `src/commands/TransformCommand.*` | 可逆变换编辑 | `Execute()`、`Undo()` | Scene |
@@ -29,7 +29,7 @@
 | `src/render/ResourceCache.*` | 按规范化路径缓存模型/纹理/Sampler | `LoadModel()`、`LoadTexture()` | GltfLoader、Texture2D |
 | `src/render/RenderTarget.*` | 离屏视口的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
 | `src/render/Dx11Renderer.*` | 设备、交换链和场景遍历 | `Initialize()`、`RenderScene()` | Effect、Mesh、RenderTarget |
-| `src/editor/EditorLayer.*`、`EditorAssets.cpp` | 停靠面板、原生模型导入和光照控制 | `Draw()`、`ImportModel()` | Scene、Commands、Renderer、ImGui |
+| `src/editor/EditorLayer.*`、`EditorAssets.cpp`、`EditorCamera.cpp` | 停靠面板、模型导入、视角和光照控制 | `Draw()`、`DrawCameraControls()` | Scene、Commands、Renderer、ImGui |
 | `src/utils/Logger.*` | 按日期写入文件日志 | `Initialize()`、`Info()`、`Error()` | C++ filesystem |
 | `tests/CoreTests.cpp` | CPU 行为回归测试 | 场景/命令测试用例 | LRenderCore |
 
