@@ -11,10 +11,10 @@
 
 namespace lrender {
 
-CreateEntityCommand::CreateEntityCommand(Scene& scene, Entity entity)
-    : scene_(scene), entity_(std::move(entity)) {}
+CreateEntityCommand::CreateEntityCommand(Scene& scene, ModelId modelId, Entity entity)
+    : scene_(scene), modelId_(modelId), entity_(std::move(entity)) {}
 
-void CreateEntityCommand::Execute() { scene_.AddEntity(entity_); }
+void CreateEntityCommand::Execute() { scene_.AddEntity(modelId_, entity_); }
 
 void CreateEntityCommand::Undo() {
     auto removed = scene_.RemoveEntity(entity_.id);

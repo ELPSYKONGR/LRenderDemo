@@ -116,7 +116,7 @@ void EditorLayer::DrawMaterialEditor(
             ImGui::TextDisabled("No texture preview");
         }
         if (entity.material.useSourceTexture) {
-            ImGui::TextUnformatted(entity.IsModel() ? "Model texture (first material)" :
+            ImGui::TextUnformatted(entity.IsMesh() ? "Mesh texture (first material)" :
                                                     "Generated checker texture");
         } else {
             const std::string fileName = PathUtf8(entity.material.baseColorTexturePath.filename());

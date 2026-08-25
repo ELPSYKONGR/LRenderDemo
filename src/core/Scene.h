@@ -1,57 +1,97 @@
 /**
- * @file Minimal scene model for render-lab entities.
+ * @file Scene-owned models containing solid and imported-mesh entities.
  * @author Codex
  * @created 2026-08-20
- * @depends core/Transform.h
+ * @depends core/EntityMaterial.h, core/Transform.h
  */
 #pragma once
 
 #include "core/EntityMaterial.h"
 #include "core/Transform.h"
 
-#include <SimpleMath.h>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
+#include <span>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace lrender {
 
-enum class PrimitiveType { Cube, Sphere, Plane };
+using ModelId = std::uint32_t;
+using EntityId = std::uint32_t;
+
+enum class PrimitiveType { Cube, Sphere, Plane, Mesh };
+
+struct SolidGeometry {
+    PrimitiveType primitive{PrimitiveType::Cube};
+};
+
+struct MeshGeometry {
+    std::filesystem::path assetPath;
+    std::uint32_t assetEntityIndex{};
+};
+
+using EntityGeometry = std::variant<SolidGeometry, MeshGeometry>;
 
 struct Entity {
-    std::uint32_t id{};
+    EntityId id{};
     std::string name;
-    PrimitiveType primitive{PrimitiveType::Cube};
     Transform transform;
     EntityMaterial material;
-    std::filesystem::path modelPath;
+    EntityGeometry geometry;
 
-    [[nodiscard]] bool IsModel() const noexcept { return !modelPath.empty(); }
+    [[nodiscard]] bool IsMesh() const noexcept {
+        return std::holds_alternative<MeshGeometry>(geometry);
+    }
+    [[nodiscard]] bool IsSolid() const noexcept { return !IsMesh(); }
+    [[nodiscard]] PrimitiveType GetPrimitiveType() const noexcept {
+        return IsMesh() ? PrimitiveType::Mesh : std::get<SolidGeometry>(geometry).primitive;
+    }
+    [[nodiscard]] const MeshGeometry* Mesh() const noexcept {
+        return std::get_if<MeshGeometry>(&geometry);
+    }
+};
+
+struct Model {
+    ModelId id{};
+    std::string name;
+    std::vector<Entity> entities;
 };
 
 class Scene final {
 public:
-    /** Creates and inserts an entity with a stable identifier. */
-    Entity& CreateEntity(PrimitiveType primitive, std::string name);
+    Model& CreateModel(std::string name);
+    Model& CreateMeshModel(
+        std::filesystem::path assetPath, std::string name,
+        std::span<const std::string> assetEntityNames);
+    Entity& CreateEntity(ModelId modelId, PrimitiveType primitive, std::string name);
+    Entity& CreateMeshEntity(
+        ModelId modelId, std::filesystem::path assetPath,
+        std::uint32_t assetEntityIndex, std::string name);
 
-    /** Creates an entity that references a cached glTF/GLB model. */
-    Entity& CreateModelEntity(std::filesystem::path modelPath, std::string name);
+    Model& AddModel(Model model);
+    Entity& AddEntity(ModelId modelId, Entity entity);
+    std::optional<Model> RemoveModel(ModelId id);
+    std::optional<Entity> RemoveEntity(EntityId id);
 
-    /** Re-inserts a prior snapshot, primarily for redo. */
-    Entity& AddEntity(Entity entity);
-
-    /** Removes an entity and returns its complete snapshot. */
-    std::optional<Entity> RemoveEntity(std::uint32_t id);
-
-    [[nodiscard]] Entity* FindEntity(std::uint32_t id);
-    [[nodiscard]] const Entity* FindEntity(std::uint32_t id) const;
-    [[nodiscard]] const std::vector<Entity>& Entities() const noexcept { return entities_; }
+    [[nodiscard]] Model* FindModel(ModelId id);
+    [[nodiscard]] const Model* FindModel(ModelId id) const;
+    [[nodiscard]] Entity* FindEntity(EntityId id);
+    [[nodiscard]] const Entity* FindEntity(EntityId id) const;
+    [[nodiscard]] Model* FindEntityModel(EntityId id);
+    [[nodiscard]] const Model* FindEntityModel(EntityId id) const;
+    [[nodiscard]] const std::vector<Model>& Models() const noexcept { return models_; }
+    [[nodiscard]] std::size_t EntityCount() const noexcept;
 
 private:
-    std::vector<Entity> entities_;
-    std::uint32_t nextId_{1};
+    static void ValidateEntity(const Entity& entity);
+
+    std::vector<Model> models_;
+    ModelId nextModelId_{1};
+    EntityId nextEntityId_{1};
 };
 
 } // namespace lrender

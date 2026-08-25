@@ -1,7 +1,7 @@
 # Defines third-party targets from pinned Git submodules and vendored cgltf sources.
 set(LRENDER_EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 
-foreach(dependency DirectXTK imgui ImGuizmo)
+foreach(dependency DirectXTK imgui ImGuizmo tinyobjloader)
     if(NOT EXISTS "${LRENDER_EXTERNAL_DIR}/${dependency}")
         message(FATAL_ERROR
             "Missing external/${dependency}. Run scripts/bootstrap-and-verify.ps1 "
@@ -43,3 +43,9 @@ add_library(cgltf STATIC "${LRENDER_EXTERNAL_DIR}/cgltf/cgltf.c")
 target_include_directories(cgltf PUBLIC "${LRENDER_EXTERNAL_DIR}/cgltf")
 target_compile_features(cgltf PUBLIC c_std_99)
 set_target_properties(cgltf PROPERTIES FOLDER "External")
+
+add_library(tinyobjloader STATIC
+    "${LRENDER_EXTERNAL_DIR}/tinyobjloader/tiny_obj_loader.cc")
+target_include_directories(tinyobjloader PUBLIC
+    "${LRENDER_EXTERNAL_DIR}/tinyobjloader")
+set_target_properties(tinyobjloader PROPERTIES FOLDER "External")

@@ -4,6 +4,7 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-25 | 功能 | 增加 Scene/Model/Entity 层级、混合 Solid/Mesh 绘制和 OBJ/MTL 导入 | core、commands、editor、render、tests | 本次提交 |
 | 08-25 | 功能 | 增加实体材质编辑、贴图选择和显示控制 | core、commands、editor、render、shaders | 本次提交 |
 | 08-25 | 功能 | 增加八个相机视角和自动旋转控制 | core、editor | 本次提交 |
 | 08-25 | 功能 | 增加可创建的水平 Plane 基础几何 | core、render、editor、app | 本次提交 |
@@ -12,6 +13,23 @@
 | 08-20 | 文档 | 增加 DX11 教程差距分析、实施路线和素材映射 | docs、assets、scripts | 工作区 |
 
 ---
+
+## [2026-08-25] 增加模型实体层级与 OBJ/MTL 导入
+
+- **文件**：`src/core/Scene.*`、`src/commands/CreateModelCommand.*`、`src/render/MeshAsset.h`、
+  `src/render/IModelImporter.h`、`src/render/ModelLoader.*`、`src/render/ObjLoader.*`、
+  `src/render/MeshImportUtils.*`、`src/editor/EditorHierarchy.cpp`、`tests/ImportTests.cpp`
+- **范围**：场景所有权、混合实体绘制、格式扩展边界、OBJ/MTL 导入和资源缓存。
+- **改动**：`Scene` 管理 `Model`，`Model` 管理多个 `Entity`；同一个 Model 可同时容纳程序化
+  Solid Entity 与导入的 Mesh Entity。新增 `PrimitiveType::Mesh` 和独立几何描述；把渲染资源类型
+  从易混淆的 `Model` 改为 `MeshAsset`；通过 `IModelImporter` 和 `ModelLoader` 注册 glTF 与 OBJ 导入器。
+- **OBJ 边界**：支持多 Shape、多材质、Position/Normal/UV、缺失法线重建，以及 MTL 的 `Kd`、
+  `Ks`、`Ns`、透明度和 `map_Kd`。导入时集中完成手性、绕序和 UV V 方向转换。
+- **扩展性**：后续接入 Assimp 时新增 `AssimpImporter` 并在 `ModelLoader` 注册目标扩展名即可，
+  `Scene`、编辑器、渲染遍历和资源缓存接口无需随格式改变。
+- **验证**：VS2022 Debug 构建通过；`LRenderCoreTests` 和 WARP 支持的 `LRenderImportTests` 通过。
+- **依赖**：tinyobjloader 固定到 v2.0.0rc13（提交 `2945a96`）。
+- **提交**：本次提交
 
 ## [2026-08-25] 增加实体材质编辑与贴图控制
 
@@ -22,7 +40,7 @@
 - **改动**：把可序列化材质参数作为 `Entity::material` 保存；支持基础色、漫反射强度、高光颜色/
   强度/指数、双面状态、Point/Linear/Anisotropic 过滤及 Wrap/Clamp/Mirror 寻址；支持贴图缩略图、
   Windows 原生选择器、恢复模型/程序化几何源贴图，以及带光照贴图、仅贴图、带光照无贴图三种模式。
-- **边界**：glTF 各 `ModelPart` 的源材质和 GPU 资源仍由渲染层缓存；绘制时复制并应用实体参数，
+- **边界**：导入资产各 `MeshPart` 的源材质和 GPU 资源仍由渲染层缓存；绘制时复制并应用实体参数，
   不修改共享缓存。当前仅编辑 Blinn-Phong 与 BaseColor，不包含法线、金属粗糙度或透明混合。
 - **验证**：VS2022 Debug 构建和 CTest 通过；材质完整快照支持撤销/重做。
 - **提交**：本次提交

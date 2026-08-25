@@ -160,31 +160,39 @@ void Dx11Renderer::RenderScene(
     const auto projection = camera.ProjectionMatrix(aspect);
     const auto cameraPosition = camera.Position();
 
-    for (const Entity& entity : scene.Entities()) {
-        const auto world = entity.transform.ToMatrix();
-        const bool isSelected = entity.id == selectedEntityId;
-        if (entity.IsModel()) {
-            const std::shared_ptr<Model> model = resources_->LoadModel(entity.modelPath);
-            for (const ModelPart& part : model->parts) {
-                const Material material = ResolveMaterial(part.material, entity.material);
-                effect_->Bind(
-                    context_.Get(), world, view, projection, cameraPosition,
-                    material, entity.material.baseColor, isSelected);
-                part.mesh->Draw(context_.Get());
+    for (const Model& sceneModel : scene.Models()) {
+        for (const Entity& entity : sceneModel.entities) {
+            const auto world = entity.transform.ToMatrix();
+            const bool isSelected = entity.id == selectedEntityId;
+            if (const MeshGeometry* meshGeometry = entity.Mesh()) {
+                const auto asset = resources_->LoadMeshAsset(meshGeometry->assetPath);
+                if (meshGeometry->assetEntityIndex >= asset->entities.size()) {
+                    throw std::runtime_error("Mesh entity index is outside the cached asset");
+                }
+                for (const MeshPart& part :
+                     asset->entities[meshGeometry->assetEntityIndex].parts) {
+                    const Material material = ResolveMaterial(part.material, entity.material);
+                    effect_->Bind(
+                        context_.Get(), world, view, projection, cameraPosition,
+                        material, entity.material.baseColor, isSelected);
+                    part.mesh->Draw(context_.Get());
+                }
+                continue;
             }
-        } else {
+
             const Material material = ResolveMaterial(primitiveMaterial_, entity.material);
             effect_->Bind(
                 context_.Get(), world, view, projection, cameraPosition,
                 material, entity.material.baseColor, isSelected);
             const Mesh* mesh = nullptr;
-            switch (entity.primitive) {
+            switch (entity.GetPrimitiveType()) {
             case PrimitiveType::Cube: mesh = cubeMesh_.get(); break;
             case PrimitiveType::Sphere: mesh = sphereMesh_.get(); break;
             case PrimitiveType::Plane: mesh = planeMesh_.get(); break;
+            case PrimitiveType::Mesh: break;
             }
             if (mesh == nullptr) {
-                throw std::runtime_error("Primitive mesh is not initialized");
+                throw std::runtime_error("Solid primitive mesh is not initialized");
             }
             mesh->Draw(context_.Get());
         }
@@ -196,11 +204,12 @@ void Dx11Renderer::RenderScene(
     context_->RSSetState(nullptr);
 }
 
-void Dx11Renderer::PreloadModel(const std::filesystem::path& path) {
+std::shared_ptr<const MeshAsset> Dx11Renderer::PreloadModel(
+    const std::filesystem::path& path) {
     if (!resources_) {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
-    static_cast<void>(resources_->LoadModel(path));
+    return resources_->LoadMeshAsset(path);
 }
 
 void Dx11Renderer::PreloadTexture(const std::filesystem::path& path) {
@@ -215,13 +224,14 @@ ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity) {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
     const Material* source = &primitiveMaterial_;
-    std::shared_ptr<Model> model;
-    if (entity.IsModel()) {
-        model = resources_->LoadModel(entity.modelPath);
-        if (model->parts.empty()) {
+    std::shared_ptr<MeshAsset> asset;
+    if (const MeshGeometry* meshGeometry = entity.Mesh()) {
+        asset = resources_->LoadMeshAsset(meshGeometry->assetPath);
+        if (meshGeometry->assetEntityIndex >= asset->entities.size() ||
+            asset->entities[meshGeometry->assetEntityIndex].parts.empty()) {
             return nullptr;
         }
-        source = &model->parts.front().material;
+        source = &asset->entities[meshGeometry->assetEntityIndex].parts.front().material;
     }
     const Material resolved = ResolveMaterial(*source, entity.material);
     return resolved.baseColorTexture ? resolved.baseColorTexture->ShaderResourceView() : nullptr;
@@ -251,8 +261,8 @@ Material Dx11Renderer::ResolveMaterial(
     return resolved;
 }
 
-std::size_t Dx11Renderer::CachedModelCount() const noexcept {
-    return resources_ ? resources_->ModelCount() : 0;
+std::size_t Dx11Renderer::CachedMeshAssetCount() const noexcept {
+    return resources_ ? resources_->MeshAssetCount() : 0;
 }
 
 std::size_t Dx11Renderer::CachedTextureCount() const noexcept {

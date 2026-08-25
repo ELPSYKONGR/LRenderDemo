@@ -58,7 +58,7 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 | 15 Geometry Shader Beginning | 未实现 | 没有 GS 阶段和相关 Shader 管理。 |
 | 16 Stream Output | 未实现 | 没有 Stream Output buffer、声明和多阶段更新。 |
 | 17 Tree Billboard | 未实现 | 没有 Billboard、纹理数组和 Alpha-to-Coverage。 |
-| 19 Meshes | 完成 | 支持静态 glTF/GLB、子网格、32 位索引、节点变换、BaseColor 材质和模型/纹理/Sampler 缓存。 |
+| 19 Meshes | 完成 | 支持静态 glTF/GLB、OBJ/MTL、子网格、32 位索引、节点变换、基础材质和网格资产/纹理/Sampler 缓存。 |
 | 20 Instancing and Frustum Culling | 未实现 | 没有实例缓冲、包围体、视锥测试和 `DrawIndexedInstanced`。 |
 | 21 Picking | 未实现 | 只能在层级面板选实体；没有视口射线、包围体/三角形求交。 |
 | 22 Static Cube Mapping | 未实现 | 已有详细设计文档和 cubemap 素材，但没有 `SkyboxPass/SkyboxEffect` 产品代码。 |
@@ -105,12 +105,12 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 
 ### 5.1 模型导入
 
-项目已经使用固定版本的 `cgltf`（C、单头文件）解析 glTF/GLB，并使用 DirectXTK WIC/DDS loader
-创建纹理。这样既保留数据处理的学习价值，又避免 Assimp 将场景转换细节全部隐藏。OBJ/OFF 可
-作为简单几何导入练习，不应成为主资产格式。
+项目使用固定版本的 `cgltf`（C、单头文件）解析 glTF/GLB，使用 tinyobjloader 解析 OBJ/MTL，并用
+DirectXTK WIC/DDS loader 创建纹理。两者都实现 `IModelImporter`，由 `ModelLoader` 按扩展名分发。
+以后需要 FBX 等复杂格式时，可以新增 Assimp 导入器并注册对应扩展名，不必修改场景和渲染遍历。
 
-当前 `ModelPart` 直接保存 GPU `Mesh` 与 `Material`，足以支持同步学习工具；当需要后台加载或 RHI
-时，再拆分 CPU `MeshData/MaterialData` 和 GPU 资源。`core/Scene` 继续只保存路径，不持有
+当前 `MeshPart` 直接保存 GPU `Mesh` 与 `Material`，足以支持同步学习工具；当需要后台加载或 RHI
+时，再拆分 CPU `MeshData/MaterialData` 和 GPU 资源。`core/Scene` 只保存资产路径和实体索引，不持有
 `ID3D11*`。
 
 ### 5.2 Effect 与 Pass

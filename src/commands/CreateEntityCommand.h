@@ -13,13 +13,14 @@ namespace lrender {
 
 class CreateEntityCommand final : public ICommand {
 public:
-    CreateEntityCommand(Scene& scene, Entity entity);
+    CreateEntityCommand(Scene& scene, ModelId modelId, Entity entity);
     void Execute() override;
     void Undo() override;
     [[nodiscard]] std::string_view Name() const noexcept override { return "Create entity"; }
 
 private:
     Scene& scene_;
+    ModelId modelId_;
     Entity entity_;
 };
 

@@ -479,10 +479,12 @@ skyboxPass_.reset();
 在 `RenderScene` 中构造 Context，并在实体循环后执行：
 
 ```cpp
-for (const Entity& entity : scene.Entities()) {
-    effect_->Bind(/* 当前参数 */);
-    const Mesh& mesh = entity.primitive == PrimitiveType::Cube ? *cubeMesh_ : *sphereMesh_;
-    mesh.Draw(context_.Get());
+for (const Model& model : scene.Models()) {
+    for (const Entity& entity : model.entities) {
+        // 这里沿用 Dx11Renderer 当前的 Solid/Mesh 分支：Solid 选择程序化网格，
+        // Mesh 通过 MeshGeometry 的资产路径和索引取得 MeshAssetEntity。
+        DrawEntity(entity, view, projection);
+    }
 }
 
 RenderPassContext passContext{

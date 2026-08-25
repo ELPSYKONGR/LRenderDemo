@@ -11,12 +11,13 @@
 | `src/platform/Window.*` | Win32 窗口和消息泵 | `Create()`、`PumpMessages()` | Win32、ImGui 后端 |
 | `src/core/Transform.h` | 可编辑的变换值 | `ToMatrix()`、`NearlyEquals()` | SimpleMath |
 | `src/core/EntityMaterial.h` | 与图形 API 无关的实体材质参数 | `EntityMaterial`、`SurfaceDisplayMode` | SimpleMath、filesystem |
-| `src/core/Scene.*` | 基础几何/模型实体及材质的稳定存储 | `CreateEntity()`、`CreateModelEntity()` | Transform、EntityMaterial |
+| `src/core/Scene.*` | `Scene -> Model -> Entity` 层级及 Solid/Mesh 几何描述 | `CreateModel()`、`CreateEntity()`、`CreateMeshEntity()` | Transform、EntityMaterial |
 | `src/core/Camera.*` | 支持环绕、标准视角和自动旋转的编辑器相机 | `SetView()`、`RotateAroundTarget()` | SimpleMath |
 | `src/commands/ICommand.h` | 可逆操作接口 | `Execute()`、`Undo()` | 无 |
 | `src/commands/CommandHistory.*` | 有界撤销/重做栈 | `Execute()`、`PushApplied()` | ICommand |
 | `src/commands/TransformCommand.*` | 可逆变换编辑 | `Execute()`、`Undo()` | Scene |
 | `src/commands/CreateEntityCommand.*` | 可逆实体创建 | `Execute()`、`Undo()` | Scene |
+| `src/commands/CreateModelCommand.*` | 可逆模型整体创建 | `Execute()`、`Undo()` | Scene |
 | `src/commands/MaterialCommand.*` | 可逆实体材质编辑 | `Execute()`、`Undo()` | Scene、EntityMaterial |
 | `src/render/IRenderEffect.h` | 逐网格的 Effect 边界 | `Bind()` | D3D11、SimpleMath |
 | `src/render/BasicMeshEffect.*` | 纹理材质与多光源基础 Effect | `Bind()`、`Lights()` | Material、Lighting、D3DCompiler |
@@ -27,13 +28,16 @@
 | `src/render/Texture2D.*` | WIC/DDS 文件、内存与生成纹理 | `LoadFile()`、`LoadMemory()` | DirectXTK、D3D11 |
 | `src/render/SamplerState.*` | Sampler 描述与 D3D11 状态所有权 | `SamplerState()` | D3D11 |
 | `src/render/Material.h`、`Lighting.h` | 基础材质和可编辑多光源数据 | `Material`、`LightingSettings` | Texture2D、SimpleMath |
-| `src/render/Model.h`、`GltfLoader.*` | 静态 glTF/GLB 节点、网格与材质导入 | `GltfLoader::Load()` | cgltf、ResourceCache |
-| `src/render/ResourceCache.*` | 按规范化路径缓存模型/纹理/Sampler | `LoadModel()`、`LoadTexture()` | GltfLoader、Texture2D |
+| `src/render/MeshAsset.h` | 导入资产的 Entity/Part、GPU Mesh 与材质边界 | `MeshAsset`、`MeshAssetEntity`、`MeshPart` | Mesh、Material |
+| `src/render/IModelImporter.h`、`ModelLoader.*` | 按扩展名分发模型格式导入器 | `IModelImporter::Import()`、`ModelLoader::Load()` | GltfLoader、ObjLoader |
+| `src/render/GltfLoader.*`、`ObjLoader.*`、`MeshImportUtils.*` | glTF/GLB 与 OBJ/MTL 静态网格导入 | `Import()` | cgltf、tinyobjloader、ResourceCache |
+| `src/render/ResourceCache.*` | 按规范化路径缓存网格资产/纹理/Sampler | `LoadMeshAsset()`、`LoadTexture()` | ModelLoader、Texture2D |
 | `src/render/RenderTarget.*` | 离屏视口的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
 | `src/render/Dx11Renderer.*` | 设备、交换链、材质解析和场景遍历 | `RenderScene()`、`MaterialPreview()` | Effect、Mesh、ResourceCache |
-| `src/editor/EditorLayer.*`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | 停靠面板、资源、视角、材质和光照控制 | `Draw()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
+| `src/editor/EditorLayer.*`、`EditorHierarchy.cpp`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | Model/Entity 层级、资源、视角、材质和光照控制 | `Draw()`、`DrawHierarchy()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
 | `src/utils/Logger.*` | 按日期写入文件日志 | `Initialize()`、`Info()`、`Error()` | C++ filesystem |
 | `tests/CoreTests.cpp` | CPU 行为回归测试 | 场景/命令测试用例 | LRenderCore |
+| `tests/ImportTests.cpp`、`tests/assets/obj/` | WARP 支持的 OBJ/MTL 与资源缓存回归测试 | `LRenderImportTests` | LRenderAssets、D3D11 WARP |
 
 ## 配置和文档
 
@@ -77,6 +81,7 @@ graph TD
     Render --> Core
     Render --> DXTK[DirectXTK]
     Render --> Cgltf[cgltf]
+    Render --> TinyObj[tinyobjloader]
     Editor --> ImGui[Dear ImGui 和 ImGuizmo]
     App --> Utils[utils]
 ```
@@ -94,4 +99,4 @@ graph TD
 | `core/` | 与图形 API 无关的场景和相机数据 | `Scene`、`Camera`、`Transform` | 仅 SimpleMath | 编辑器和渲染器 |
 | `render/` | DX11 资源和绘制执行 | `Dx11Renderer`、`IRenderEffect` | core、DX11、DirectXTK | 视觉输出 |
 | `utils/` | 叶子工具模块 | `Logger` | C++ 标准库 | 仅诊断功能 |
-| `tests/` | CPU 行为验证 | CTest 可执行文件 | LRenderCore | 回归保障 |
+| `tests/` | 场景 CPU 行为和 WARP 资源导入验证 | CTest 可执行文件 | LRenderCore、LRenderAssets | 回归保障 |

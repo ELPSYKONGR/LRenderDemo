@@ -6,7 +6,6 @@
  */
 #include "editor/EditorLayer.h"
 
-#include "commands/CreateEntityCommand.h"
 #include "commands/TransformCommand.h"
 #include "render/Dx11Renderer.h"
 
@@ -66,7 +65,7 @@ void EditorLayer::DrawMainMenu(
             CreatePrimitive(scene, history, PrimitiveType::Plane);
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Import glTF/GLB...")) {
+        if (ImGui::MenuItem("Import Mesh...")) {
             ImportModel(scene, history, renderer);
         }
         ImGui::EndMenu();
@@ -129,17 +128,6 @@ void EditorLayer::DrawToolbar(CommandHistory& history, Dx11Renderer& renderer) {
     bool isWireframe = renderer.Effect().IsWireframe();
     if (ImGui::Checkbox("Wireframe", &isWireframe)) {
         renderer.Effect().SetWireframe(isWireframe);
-    }
-    ImGui::End();
-}
-
-void EditorLayer::DrawHierarchy(Scene& scene) {
-    ImGui::Begin("Hierarchy");
-    for (const Entity& entity : scene.Entities()) {
-        const bool isSelected = entity.id == selectedEntityId_;
-        if (ImGui::Selectable(entity.name.c_str(), isSelected)) {
-            selectedEntityId_ = entity.id;
-        }
     }
     ImGui::End();
 }
@@ -246,24 +234,6 @@ void EditorLayer::DrawViewport(
     ImGui::PopStyleVar();
 }
 
-void EditorLayer::CreatePrimitive(
-    Scene& scene, CommandHistory& history, PrimitiveType primitive) {
-    std::string baseName;
-    switch (primitive) {
-    case PrimitiveType::Cube: baseName = "Cube"; break;
-    case PrimitiveType::Sphere: baseName = "Sphere"; break;
-    case PrimitiveType::Plane: baseName = "Plane"; break;
-    }
-    Entity& entity = scene.CreateEntity(
-        primitive, baseName + " " + std::to_string(scene.Entities().size() + 1));
-    if (primitive == PrimitiveType::Plane) {
-        entity.transform.position.y = -0.5F;
-        entity.material.baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
-    }
-    selectedEntityId_ = entity.id;
-    history.PushApplied(std::make_unique<CreateEntityCommand>(scene, entity));
-}
-
 void EditorLayer::TrackPropertyEdit(
     Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl) {
     if (ImGui::IsItemActivated()) {
@@ -284,6 +254,14 @@ void EditorLayer::TrackPropertyEdit(
 void EditorLayer::ValidateSelection(const Scene& scene) {
     if (selectedEntityId_ != 0 && scene.FindEntity(selectedEntityId_) == nullptr) {
         selectedEntityId_ = 0;
+    }
+    if (selectedModelId_ != 0 && scene.FindModel(selectedModelId_) == nullptr) {
+        selectedModelId_ = 0;
+    }
+    if (selectedEntityId_ != 0) {
+        if (const Model* model = scene.FindEntityModel(selectedEntityId_)) {
+            selectedModelId_ = model->id;
+        }
     }
 }
 

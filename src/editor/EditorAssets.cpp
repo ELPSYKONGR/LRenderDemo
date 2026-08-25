@@ -6,7 +6,7 @@
  */
 #include "editor/EditorLayer.h"
 
-#include "commands/CreateEntityCommand.h"
+#include "commands/CreateModelCommand.h"
 #include "render/Dx11Renderer.h"
 #include "utils/Logger.h"
 
@@ -36,7 +36,10 @@ std::filesystem::path SelectModelFile(HWND owner) {
     OPENFILENAMEW dialog{};
     dialog.lStructSize = sizeof(dialog);
     dialog.hwndOwner = owner;
-    dialog.lpstrFilter = L"glTF models (*.gltf;*.glb)\0*.gltf;*.glb\0All files (*.*)\0*.*\0";
+    dialog.lpstrFilter =
+        L"Mesh assets (*.gltf;*.glb;*.obj)\0*.gltf;*.glb;*.obj\0"
+        L"glTF models (*.gltf;*.glb)\0*.gltf;*.glb\0"
+        L"Wavefront OBJ (*.obj)\0*.obj\0All files (*.*)\0*.*\0";
     dialog.lpstrFile = pathBuffer.data();
     dialog.nMaxFile = static_cast<DWORD>(pathBuffer.size());
     dialog.lpstrInitialDir = initialDirectory.c_str();
@@ -63,10 +66,19 @@ void EditorLayer::ImportModel(
         if (path.empty()) {
             return;
         }
-        renderer.PreloadModel(path);
-        Entity& entity = scene.CreateModelEntity(path, PathUtf8(path.stem()));
-        selectedEntityId_ = entity.id;
-        history.PushApplied(std::make_unique<CreateEntityCommand>(scene, entity));
+        const auto asset = renderer.PreloadModel(path);
+        std::vector<std::string> entityNames;
+        entityNames.reserve(asset->entities.size());
+        for (const MeshAssetEntity& entity : asset->entities) {
+            entityNames.push_back(entity.name);
+        }
+        for (const std::string& warning : asset->warnings) {
+            Logger::Instance().Info("assets", "Mesh import warning: " + warning);
+        }
+        Model& model = scene.CreateMeshModel(path, PathUtf8(path.stem()), entityNames);
+        selectedModelId_ = model.id;
+        selectedEntityId_ = model.entities.front().id;
+        history.PushApplied(std::make_unique<CreateModelCommand>(scene, model));
     } catch (const std::exception& error) {
         importError_ = error.what();
         openImportErrorPopup_ = true;
@@ -110,9 +122,9 @@ void EditorLayer::DrawLighting(Dx11Renderer& renderer) {
 
 void EditorLayer::DrawResources(Dx11Renderer& renderer) {
     ImGui::Begin("Resources");
-    ImGui::Text("Cached models: %zu", renderer.CachedModelCount());
+    ImGui::Text("Cached mesh assets: %zu", renderer.CachedMeshAssetCount());
     ImGui::Text("Cached textures: %zu", renderer.CachedTextureCount());
-    ImGui::TextDisabled("Create > Import glTF/GLB...");
+    ImGui::TextDisabled("Create > Import Mesh...");
     ImGui::End();
 }
 

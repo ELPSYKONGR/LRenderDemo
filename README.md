@@ -12,7 +12,8 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 - 创建立方体、UV 球体和水平平面
 - 实体级 Blinn-Phong 材质编辑，可调基础色、漫反射、高光、双面状态和贴图采样方式
 - BaseColor 贴图缩略图、原生文件选择、源贴图恢复和三种贴图/光照显示模式
-- 导入静态 glTF/GLB 模型，支持外部/内嵌图片、子网格、节点变换与资源缓存
+- 导入静态 glTF/GLB 和 OBJ/MTL 模型，支持多网格实体、基础材质、贴图与资源缓存
+- `Scene -> Model -> Entity` 两级场景层级；同一 Model 可混合绘制 Solid Entity 和 Mesh Entity
 - 一盏方向光和最多四盏点光，支持 Lambert 漫反射与 Blinn-Phong 高光实时调节
 - 使用 ImGuizmo 进行平移、旋转和缩放
 - 对实体创建、变换和材质编辑执行撤销/重做
@@ -81,8 +82,8 @@ powershell -ExecutionPolicy Bypass -File scripts/download-test-scenes.ps1
 模型保存在 `assets/test-scenes/downloads/`，来源、许可限制和建议用途见
 `assets/test-scenes/README.md`。第三方模型大文件不会提交到 Git。
 
-下载后可在编辑器中选择 `Create > Import glTF/GLB...`，导入成功的模型会进入层级面板，并与
-基础几何体一样支持 Gizmo、检查器变换和创建操作的撤销/重做。`Resources` 面板显示模型/纹理
+下载后可在编辑器中选择 `Create > Import Mesh...`，导入成功的模型会进入层级面板，并与
+基础几何体一样支持 Gizmo、检查器变换和创建操作的撤销/重做。`Resources` 面板显示网格资产/纹理
 缓存数量；重复导入同一路径不会重复创建 GPU 资源。`Lighting` 面板可编辑环境光、方向光和四盏
 点光。当前导入器的完整支持边界和阅读顺序见 `docs/model-import-and-material.md`。
 
@@ -105,7 +106,7 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 | 平移/旋转/缩放 | 按 `W` / `E` / `R`，或使用工具面板按钮 |
 | 撤销/重做 | 按 `Ctrl+Z` / `Ctrl+Y` |
 | 创建基础几何体 | 使用 `Create` 菜单 |
-| 导入模型 | `Create > Import glTF/GLB...` |
+| 导入模型 | `Create > Import Mesh...`，支持 `.gltf`、`.glb`、`.obj` |
 | 修改材质 | 在 `Inspector > Material` 调节颜色、光照参数和双面状态 |
 | 选择/恢复贴图 | 在材质区域使用 `Choose...` / `Use source` |
 | 切换贴图显示 | 选择 `Lit textured`、`Texture only` 或 `Lit untextured` |
@@ -119,7 +120,8 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 2. `src/render/Dx11Renderer.cpp`：设备、交换链、帧目标和绘制遍历。
 3. `src/render/Mesh.cpp`：不可变顶点/索引缓冲区和索引绘制调用。
 4. `src/render/BasicMeshEffect.cpp`：着色器常量、输入布局和渲染状态。
-5. `src/render/ResourceCache.cpp` 与 `src/render/GltfLoader.cpp`：模型、纹理和 Sampler 的缓存与导入。
+5. `src/render/ModelLoader.cpp`、`src/render/GltfLoader.cpp`、`src/render/ObjLoader.cpp` 与
+   `src/render/ResourceCache.cpp`：格式分发、网格资产导入及纹理/Sampler 缓存。
 6. `src/editor/EditorLayer.cpp`、`src/editor/EditorAssets.cpp`、`src/editor/EditorMaterial.cpp`：
    编辑器交互、导入、材质和光照控制。
 7. `src/commands/`：独立于界面的可逆操作。

@@ -85,6 +85,7 @@ try {
     Ensure-Submodule 'DirectXTK' 'https://github.com/microsoft/DirectXTK.git' 'main'
     Ensure-Submodule 'imgui' 'https://github.com/ocornut/imgui.git' 'docking'
     Ensure-Submodule 'ImGuizmo' 'https://github.com/CedricGuillemet/ImGuizmo.git' 'master'
+    Ensure-Submodule 'tinyobjloader' 'https://github.com/tinyobjloader/tinyobjloader.git' 'release'
     Invoke-Checked git @('submodule', 'update', '--init', '--recursive', '--depth', '1')
 
     Write-Step 3 6 'Generating the Visual Studio 2022 x64 solution...'
@@ -93,7 +94,7 @@ try {
     Write-Step 4 6 "Building the $Configuration configuration..."
     Invoke-Checked cmake @('--build', '--preset', "vs2022-$($Configuration.ToLowerInvariant())")
 
-    Write-Step 5 6 'Running CTest core tests...'
+    Write-Step 5 6 'Running CTest tests...'
     Invoke-Checked ctest @('--preset', "vs2022-$($Configuration.ToLowerInvariant())")
 
     Write-Step 6 6 'Bootstrap and verification completed.'

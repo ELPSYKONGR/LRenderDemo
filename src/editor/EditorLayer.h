@@ -46,6 +46,7 @@ private:
     void ValidateSelection(const Scene& scene);
 
     std::uint32_t selectedEntityId_{};
+    ModelId selectedModelId_{};
     ImGuizmo::OPERATION gizmoOperation_{ImGuizmo::TRANSLATE};
     bool wasUsingGizmo_{false};
     Transform gizmoStart_;

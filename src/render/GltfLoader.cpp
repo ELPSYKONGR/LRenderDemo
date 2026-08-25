@@ -6,6 +6,7 @@
  */
 #include "render/GltfLoader.h"
 
+#include "render/MeshImportUtils.h"
 #include "render/ResourceCache.h"
 
 #include <SimpleMath.h>
@@ -73,36 +74,6 @@ Matrix NodeWorldMatrix(const cgltf_node& node) {
         values[4], values[5], values[6], values[7],
         values[8], values[9], values[10], values[11],
         values[12], values[13], values[14], values[15]};
-}
-
-void ComputeMissingNormals(
-    std::vector<MeshVertex>& vertices, const std::vector<std::uint32_t>& indices) {
-    for (MeshVertex& vertex : vertices) {
-        vertex.normal = {};
-    }
-    for (std::size_t index = 0; index + 2 < indices.size(); index += 3) {
-        const std::uint32_t first = indices[index];
-        const std::uint32_t second = indices[index + 1];
-        const std::uint32_t third = indices[index + 2];
-        const Vector3 a{vertices[first].position};
-        const Vector3 b{vertices[second].position};
-        const Vector3 c{vertices[third].position};
-        const Vector3 face = (b - a).Cross(c - a);
-        for (const std::uint32_t vertexIndex : {first, second, third}) {
-            Vector3 normal{vertices[vertexIndex].normal};
-            normal += face;
-            vertices[vertexIndex].normal = normal;
-        }
-    }
-    for (MeshVertex& vertex : vertices) {
-        Vector3 normal{vertex.normal};
-        if (normal.LengthSquared() > 0.0F) {
-            normal.Normalize();
-        } else {
-            normal = Vector3::UnitY;
-        }
-        vertex.normal = normal;
-    }
 }
 
 D3D11_TEXTURE_ADDRESS_MODE AddressMode(cgltf_wrap_mode mode) {
@@ -184,7 +155,7 @@ Material LoadMaterial(
     return material;
 }
 
-ModelPart LoadPrimitive(
+MeshPart LoadPrimitive(
     const cgltf_data& data, const cgltf_node& node, const cgltf_primitive& primitive,
     const std::filesystem::path& modelPath, ResourceCache& resources) {
     if (primitive.type != cgltf_primitive_type_triangles) {
@@ -253,7 +224,7 @@ ModelPart LoadPrimitive(
         std::swap(indices[index + 1], indices[index + 2]);
     }
     if (normals == nullptr) {
-        ComputeMissingNormals(vertices, indices);
+        mesh_import::ComputeNormals(vertices, indices);
     }
     return {
         std::make_unique<Mesh>(resources.Device(), vertices, indices),
@@ -262,13 +233,12 @@ ModelPart LoadPrimitive(
 
 } // namespace
 
-std::shared_ptr<Model> GltfLoader::Load(
-    const std::filesystem::path& path, ResourceCache& resources) {
-    std::wstring extension = path.extension().wstring();
-    std::ranges::transform(extension, extension.begin(), ::towlower);
-    if (extension != L".gltf" && extension != L".glb") {
-        throw std::invalid_argument("Model importer supports only .gltf and .glb files");
-    }
+bool GltfLoader::SupportsExtension(std::wstring_view extension) const noexcept {
+    return extension == L".gltf" || extension == L".glb";
+}
+
+std::shared_ptr<MeshAsset> GltfLoader::Import(
+    const std::filesystem::path& path, ResourceCache& resources) const {
     if (!std::filesystem::is_regular_file(path)) {
         throw std::runtime_error("Model file does not exist: " + Utf8Path(path));
     }
@@ -293,23 +263,34 @@ std::shared_ptr<Model> GltfLoader::Load(
             "glTF validation failed " + pathText + ": " + ResultName(result));
     }
 
-    auto model = std::make_shared<Model>();
-    model->name = Utf8Path(path.filename());
+    auto asset = std::make_shared<MeshAsset>();
+    asset->name = Utf8Path(path.filename());
     for (cgltf_size nodeIndex = 0; nodeIndex < data->nodes_count; ++nodeIndex) {
         const cgltf_node& node = data->nodes[nodeIndex];
         if (node.mesh == nullptr) {
             continue;
         }
+        MeshAssetEntity entity;
+        if (node.name != nullptr) {
+            entity.name = node.name;
+        } else if (node.mesh->name != nullptr) {
+            entity.name = node.mesh->name;
+        } else {
+            entity.name = "glTF Mesh " + std::to_string(nodeIndex + 1U);
+        }
         for (cgltf_size primitiveIndex = 0;
              primitiveIndex < node.mesh->primitives_count; ++primitiveIndex) {
-            model->parts.push_back(LoadPrimitive(
+            entity.parts.push_back(LoadPrimitive(
                 *data, node, node.mesh->primitives[primitiveIndex], path, resources));
         }
+        if (!entity.parts.empty()) {
+            asset->entities.push_back(std::move(entity));
+        }
     }
-    if (model->parts.empty()) {
+    if (asset->entities.empty()) {
         throw std::runtime_error("glTF contains no supported triangle mesh: " + pathText);
     }
-    return model;
+    return asset;
 }
 
 } // namespace lrender

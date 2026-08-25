@@ -1,6 +1,7 @@
 set(LRENDER_CORE_HEADERS
     commands/CommandHistory.h
     commands/CreateEntityCommand.h
+    commands/CreateModelCommand.h
     commands/ICommand.h
     commands/MaterialCommand.h
     commands/TransformCommand.h
@@ -16,6 +17,7 @@ add_library(LRenderCore STATIC
     core/Scene.cpp
     commands/CommandHistory.cpp
     commands/CreateEntityCommand.cpp
+    commands/CreateModelCommand.cpp
     commands/MaterialCommand.cpp
     commands/TransformCommand.cpp
     utils/Logger.cpp)
@@ -27,23 +29,49 @@ target_include_directories(LRenderCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(LRenderCore PUBLIC DirectXTK)
 lrender_set_warnings(LRenderCore)
 
+set(LRENDER_ASSET_HEADERS
+    render/GltfLoader.h
+    render/IModelImporter.h
+    render/Material.h
+    render/Mesh.h
+    render/MeshAsset.h
+    render/MeshImportUtils.h
+    render/ModelLoader.h
+    render/ObjLoader.h
+    render/ResourceCache.h
+    render/SamplerState.h
+    render/Texture2D.h)
+
+add_library(LRenderAssets STATIC
+    ${LRENDER_ASSET_HEADERS}
+    render/GltfLoader.cpp
+    render/Mesh.cpp
+    render/MeshImportUtils.cpp
+    render/ModelLoader.cpp
+    render/ObjLoader.cpp
+    render/ResourceCache.cpp
+    render/SamplerState.cpp
+    render/Texture2D.cpp)
+source_group(
+    TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+    PREFIX "Header Files"
+    FILES ${LRENDER_ASSET_HEADERS})
+target_include_directories(LRenderAssets PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(LRenderAssets
+    PUBLIC LRenderCore DirectXTK d3d11
+    PRIVATE cgltf tinyobjloader)
+lrender_set_warnings(LRenderAssets)
+
 set(LRENDER_DEMO_HEADERS
     app/Application.h
     editor/EditorLayer.h
     platform/Window.h
     render/BasicMeshEffect.h
     render/Dx11Renderer.h
-    render/GltfLoader.h
     render/IRenderEffect.h
     render/Lighting.h
-    render/Material.h
-    render/Mesh.h
-    render/Model.h
     render/PrimitiveFactory.h
-    render/RenderTarget.h
-    render/ResourceCache.h
-    render/SamplerState.h
-    render/Texture2D.h)
+    render/RenderTarget.h)
 
 add_executable(LRenderDemo WIN32
     ${LRENDER_DEMO_HEADERS}
@@ -52,15 +80,11 @@ add_executable(LRenderDemo WIN32
     platform/Window.cpp
     render/BasicMeshEffect.cpp
     render/Dx11Renderer.cpp
-    render/GltfLoader.cpp
-    render/Mesh.cpp
-    render/ResourceCache.cpp
-    render/SamplerState.cpp
     render/PrimitiveFactory.cpp
     render/RenderTarget.cpp
-    render/Texture2D.cpp
     editor/EditorAssets.cpp
     editor/EditorCamera.cpp
+    editor/EditorHierarchy.cpp
     editor/EditorMaterial.cpp
     editor/EditorLayer.cpp)
 source_group(
@@ -99,7 +123,7 @@ target_compile_definitions(LRenderDemo PRIVATE
 target_include_directories(LRenderDemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(LRenderDemo PRIVATE
     LRenderCore
-    cgltf
+    LRenderAssets
     imgui
     imguizmo
     d3d11
@@ -113,3 +137,4 @@ set_target_properties(LRenderDemo PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     FOLDER "LRenderDemo")
 set_target_properties(LRenderCore PROPERTIES FOLDER "LRenderDemo")
+set_target_properties(LRenderAssets PROPERTIES FOLDER "LRenderDemo")

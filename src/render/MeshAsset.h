@@ -1,7 +1,7 @@
 /**
- * @file Imported model made of cached mesh/material parts.
+ * @file Cached imported mesh asset with entity and material-part boundaries.
  * @author Codex
- * @created 2026-08-21
+ * @created 2026-08-25
  * @depends render/Mesh.h, render/Material.h
  */
 #pragma once
@@ -15,15 +15,21 @@
 
 namespace lrender {
 
-struct ModelPart {
+struct MeshPart {
     std::unique_ptr<Mesh> mesh;
     Material material;
 };
 
-class Model final {
+struct MeshAssetEntity {
+    std::string name;
+    std::vector<MeshPart> parts;
+};
+
+class MeshAsset final {
 public:
     std::string name;
-    std::vector<ModelPart> parts;
+    std::vector<MeshAssetEntity> entities;
+    std::vector<std::string> warnings;
 };
 
 } // namespace lrender

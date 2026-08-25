@@ -73,13 +73,15 @@ void Application::Initialize() {
     }
     isImGuiInitialized_ = true;
 
-    auto& cube = scene_.CreateEntity(PrimitiveType::Cube, "Cube 1");
+    Model& defaultModel = scene_.CreateModel("Default Model");
+    const ModelId defaultModelId = defaultModel.id;
+    auto& cube = scene_.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
     cube.transform.position.x = -0.8F;
     cube.material.baseColor = {0.25F, 0.55F, 0.92F, 1.0F};
-    auto& sphere = scene_.CreateEntity(PrimitiveType::Sphere, "Sphere 2");
+    auto& sphere = scene_.CreateEntity(defaultModelId, PrimitiveType::Sphere, "Sphere 2");
     sphere.transform.position.x = 0.8F;
     sphere.material.baseColor = {0.92F, 0.42F, 0.22F, 1.0F};
-    auto& plane = scene_.CreateEntity(PrimitiveType::Plane, "Plane 3");
+    auto& plane = scene_.CreateEntity(defaultModelId, PrimitiveType::Plane, "Plane 3");
     plane.transform.position.y = -0.5F;
     plane.material.baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
 
@@ -87,9 +89,15 @@ void Application::Initialize() {
         "assets/test-scenes/downloads/suzanne/Suzanne.gltf";
     if (std::filesystem::is_regular_file(sampleModel)) {
         try {
-            renderer_.PreloadModel(sampleModel);
-            auto& model = scene_.CreateModelEntity(sampleModel, "Suzanne (glTF)");
-            model.transform.position.y = 1.8F;
+            const auto asset = renderer_.PreloadModel(sampleModel);
+            std::vector<std::string> entityNames;
+            for (const MeshAssetEntity& entity : asset->entities) {
+                entityNames.push_back(entity.name);
+            }
+            auto& model = scene_.CreateMeshModel(sampleModel, "Suzanne (glTF)", entityNames);
+            for (Entity& entity : model.entities) {
+                entity.transform.position.y = 1.8F;
+            }
             Logger::Instance().Info("assets", "Loaded optional Suzanne glTF sample");
         } catch (const std::exception& error) {
             Logger::Instance().Error(
@@ -101,7 +109,7 @@ void Application::Initialize() {
         "assets/test-scenes/downloads/damaged-helmet/DamagedHelmet.glb";
     if (std::filesystem::is_regular_file(glbValidationModel)) {
         try {
-            renderer_.PreloadModel(glbValidationModel);
+            static_cast<void>(renderer_.PreloadModel(glbValidationModel));
             Logger::Instance().Info(
                 "assets", "Validated optional Damaged Helmet GLB and embedded texture");
         } catch (const std::exception& error) {

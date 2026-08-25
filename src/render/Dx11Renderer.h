@@ -33,7 +33,8 @@ public:
     void RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId);
     void RenderEditor(ImDrawData* drawData);
     void Present();
-    void PreloadModel(const std::filesystem::path& path);
+    [[nodiscard]] std::shared_ptr<const MeshAsset> PreloadModel(
+        const std::filesystem::path& path);
     void PreloadTexture(const std::filesystem::path& path);
     [[nodiscard]] ID3D11ShaderResourceView* MaterialPreview(const Entity& entity);
 
@@ -41,7 +42,7 @@ public:
     [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return context_.Get(); }
     [[nodiscard]] RenderTarget& ViewportTarget() noexcept { return viewportTarget_; }
     [[nodiscard]] BasicMeshEffect& Effect() noexcept { return *effect_; }
-    [[nodiscard]] std::size_t CachedModelCount() const noexcept;
+    [[nodiscard]] std::size_t CachedMeshAssetCount() const noexcept;
     [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
     [[nodiscard]] HWND WindowHandle() const noexcept { return windowHandle_; }
 

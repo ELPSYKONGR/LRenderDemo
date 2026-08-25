@@ -2,11 +2,11 @@
  * @file D3D11 resource cache implementation.
  * @author Codex
  * @created 2026-08-21
- * @depends render/ResourceCache.h, render/GltfLoader.h
+ * @depends render/ResourceCache.h, render/ModelLoader.h
  */
 #include "render/ResourceCache.h"
 
-#include "render/GltfLoader.h"
+#include "render/ModelLoader.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -22,16 +22,19 @@ ResourceCache::ResourceCache(ID3D11Device* device, ID3D11DeviceContext* context)
     whiteTexture_ = Texture2D::CreateSolidWhite(device_);
     checkerTexture_ = Texture2D::CreateChecker(device_);
     defaultSampler_ = GetSampler();
+    modelLoader_ = std::make_unique<ModelLoader>();
 }
 
-std::shared_ptr<Model> ResourceCache::LoadModel(const std::filesystem::path& path) {
+ResourceCache::~ResourceCache() = default;
+
+std::shared_ptr<MeshAsset> ResourceCache::LoadMeshAsset(const std::filesystem::path& path) {
     const std::wstring key = NormalizePath(path);
-    if (const auto found = models_.find(key); found != models_.end()) {
+    if (const auto found = meshAssets_.find(key); found != meshAssets_.end()) {
         return found->second;
     }
-    auto model = GltfLoader::Load(path, *this);
-    models_.emplace(key, model);
-    return model;
+    auto asset = modelLoader_->Load(path, *this);
+    meshAssets_.emplace(key, asset);
+    return asset;
 }
 
 std::shared_ptr<Texture2D> ResourceCache::LoadTexture(const std::filesystem::path& path) {

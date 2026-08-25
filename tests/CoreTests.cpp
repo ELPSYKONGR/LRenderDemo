@@ -6,6 +6,7 @@
  */
 #include "commands/CommandHistory.h"
 #include "commands/CreateEntityCommand.h"
+#include "commands/CreateModelCommand.h"
 #include "commands/MaterialCommand.h"
 #include "commands/TransformCommand.h"
 #include "core/Camera.h"
@@ -76,7 +77,9 @@ void TestCameraViewPresets() {
 
 void TestSceneLifecycle() {
     lrender::Scene scene;
-    const auto id = scene.CreateEntity(lrender::PrimitiveType::Cube, "Cube").id;
+    const auto modelId = scene.CreateModel("Model").id;
+    const auto id = scene.CreateEntity(modelId, lrender::PrimitiveType::Cube, "Cube").id;
+    Require(scene.FindEntityModel(id)->id == modelId, "Entity should belong to its model");
     Require(scene.FindEntity(id) != nullptr, "Created entity should be findable");
     Require(scene.RemoveEntity(id).has_value(), "Remove should return a snapshot");
     Require(scene.FindEntity(id) == nullptr, "Removed entity should be absent");
@@ -85,7 +88,8 @@ void TestSceneLifecycle() {
 void TestTransformUndoRedo() {
     lrender::Scene scene;
     lrender::CommandHistory history;
-    auto& entity = scene.CreateEntity(lrender::PrimitiveType::Sphere, "Sphere");
+    const auto modelId = scene.CreateModel("Model").id;
+    auto& entity = scene.CreateEntity(modelId, lrender::PrimitiveType::Sphere, "Sphere");
     const lrender::Transform before = entity.transform;
     lrender::Transform after = before;
     after.position.x = 4.0F;
@@ -101,37 +105,50 @@ void TestTransformUndoRedo() {
 void TestCreateUndoRedo() {
     lrender::Scene scene;
     lrender::CommandHistory history;
-    const auto entity = scene.CreateEntity(lrender::PrimitiveType::Plane, "Plane");
-    history.PushApplied(std::make_unique<lrender::CreateEntityCommand>(scene, entity));
+    const auto modelId = scene.CreateModel("Model").id;
+    const auto entity = scene.CreateEntity(modelId, lrender::PrimitiveType::Plane, "Plane");
+    history.PushApplied(
+        std::make_unique<lrender::CreateEntityCommand>(scene, modelId, entity));
     Require(history.Undo(), "Creation should be undoable");
     Require(scene.FindEntity(entity.id) == nullptr, "Undo should remove created entity");
     Require(history.Redo(), "Creation should be redoable");
     const auto* restored = scene.FindEntity(entity.id);
     Require(restored != nullptr, "Redo should restore created entity");
     Require(
-        restored->primitive == lrender::PrimitiveType::Plane,
+        restored->GetPrimitiveType() == lrender::PrimitiveType::Plane,
         "Redo should preserve the plane primitive type");
 }
 
-void TestModelCreateUndoRedo() {
+void TestMixedModelCreateUndoRedo() {
     lrender::Scene scene;
     lrender::CommandHistory history;
-    const std::filesystem::path modelPath = "assets/sample.glb";
-    const auto entity = scene.CreateModelEntity(modelPath, "Sample model");
-    history.PushApplied(std::make_unique<lrender::CreateEntityCommand>(scene, entity));
+    const auto modelId = scene.CreateModel("Mixed model").id;
+    const auto solidId =
+        scene.CreateEntity(modelId, lrender::PrimitiveType::Cube, "Solid").id;
+    const std::filesystem::path assetPath = "assets/sample.obj";
+    const auto meshId = scene.CreateMeshEntity(modelId, assetPath, 2, "Mesh").id;
+    const lrender::Model snapshot = *scene.FindModel(modelId);
+    history.PushApplied(std::make_unique<lrender::CreateModelCommand>(scene, snapshot));
 
-    Require(entity.IsModel(), "Model entity should report its resource type");
-    Require(history.Undo(), "Model creation should be undoable");
-    Require(history.Redo(), "Model creation should be redoable");
-    const auto* restored = scene.FindEntity(entity.id);
-    Require(restored != nullptr, "Redo should restore the model entity");
-    Require(restored->modelPath == modelPath, "Redo should preserve the model path");
+    Require(scene.FindEntity(solidId)->IsSolid(), "Model should contain a solid entity");
+    Require(scene.FindEntity(meshId)->IsMesh(), "Model should contain a mesh entity");
+    Require(history.Undo(), "Mixed model creation should be undoable");
+    Require(scene.FindModel(modelId) == nullptr, "Undo should remove the complete model");
+    Require(scene.FindEntity(meshId) == nullptr, "Undo should remove nested mesh entities");
+    Require(history.Redo(), "Mixed model creation should be redoable");
+    const auto* restored = scene.FindEntity(meshId);
+    Require(restored != nullptr, "Redo should restore nested mesh entities");
+    Require(restored->Mesh()->assetPath == assetPath, "Redo should preserve the mesh asset path");
+    Require(
+        restored->Mesh()->assetEntityIndex == 2,
+        "Redo should preserve the mesh asset entity index");
 }
 
 void TestMaterialUndoRedo() {
     lrender::Scene scene;
     lrender::CommandHistory history;
-    auto& entity = scene.CreateEntity(lrender::PrimitiveType::Cube, "Material cube");
+    const auto modelId = scene.CreateModel("Model").id;
+    auto& entity = scene.CreateEntity(modelId, lrender::PrimitiveType::Cube, "Material cube");
     const lrender::EntityMaterial before = entity.material;
     lrender::EntityMaterial after = before;
     after.baseColor = {0.2F, 0.4F, 0.8F, 1.0F};
@@ -162,7 +179,7 @@ int main() {
         TestCameraViewPresets();
         TestTransformUndoRedo();
         TestCreateUndoRedo();
-        TestModelCreateUndoRedo();
+        TestMixedModelCreateUndoRedo();
         TestMaterialUndoRedo();
         std::cout << "LRenderCoreTests: all tests passed\n";
         return 0;
