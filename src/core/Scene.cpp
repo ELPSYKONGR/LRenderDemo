@@ -31,7 +31,7 @@ Entity& Scene::CreateModelEntity(std::filesystem::path modelPath, std::string na
     }
     Entity& entity = CreateEntity(PrimitiveType::Cube, std::move(name));
     entity.modelPath = std::move(modelPath);
-    entity.color = {1.0F, 1.0F, 1.0F, 1.0F};
+    entity.material.baseColor = {1.0F, 1.0F, 1.0F, 1.0F};
     return entity;
 }
 

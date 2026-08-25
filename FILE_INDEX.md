@@ -10,12 +10,14 @@
 | `src/app/Application.*` | 子系统生命周期和帧循环 | `Run()`、`Initialize()` | platform、editor、render、core |
 | `src/platform/Window.*` | Win32 窗口和消息泵 | `Create()`、`PumpMessages()` | Win32、ImGui 后端 |
 | `src/core/Transform.h` | 可编辑的变换值 | `ToMatrix()`、`NearlyEquals()` | SimpleMath |
-| `src/core/Scene.*` | 基础几何/模型实体的稳定存储 | `CreateEntity()`、`CreateModelEntity()` | Transform、filesystem |
+| `src/core/EntityMaterial.h` | 与图形 API 无关的实体材质参数 | `EntityMaterial`、`SurfaceDisplayMode` | SimpleMath、filesystem |
+| `src/core/Scene.*` | 基础几何/模型实体及材质的稳定存储 | `CreateEntity()`、`CreateModelEntity()` | Transform、EntityMaterial |
 | `src/core/Camera.*` | 支持环绕、标准视角和自动旋转的编辑器相机 | `SetView()`、`RotateAroundTarget()` | SimpleMath |
 | `src/commands/ICommand.h` | 可逆操作接口 | `Execute()`、`Undo()` | 无 |
 | `src/commands/CommandHistory.*` | 有界撤销/重做栈 | `Execute()`、`PushApplied()` | ICommand |
 | `src/commands/TransformCommand.*` | 可逆变换编辑 | `Execute()`、`Undo()` | Scene |
 | `src/commands/CreateEntityCommand.*` | 可逆实体创建 | `Execute()`、`Undo()` | Scene |
+| `src/commands/MaterialCommand.*` | 可逆实体材质编辑 | `Execute()`、`Undo()` | Scene、EntityMaterial |
 | `src/render/IRenderEffect.h` | 逐网格的 Effect 边界 | `Bind()` | D3D11、SimpleMath |
 | `src/render/BasicMeshEffect.*` | 纹理材质与多光源基础 Effect | `Bind()`、`Lights()` | Material、Lighting、D3DCompiler |
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | BasicMeshEffect 常量缓冲区 |
@@ -28,8 +30,8 @@
 | `src/render/Model.h`、`GltfLoader.*` | 静态 glTF/GLB 节点、网格与材质导入 | `GltfLoader::Load()` | cgltf、ResourceCache |
 | `src/render/ResourceCache.*` | 按规范化路径缓存模型/纹理/Sampler | `LoadModel()`、`LoadTexture()` | GltfLoader、Texture2D |
 | `src/render/RenderTarget.*` | 离屏视口的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
-| `src/render/Dx11Renderer.*` | 设备、交换链和场景遍历 | `Initialize()`、`RenderScene()` | Effect、Mesh、RenderTarget |
-| `src/editor/EditorLayer.*`、`EditorAssets.cpp`、`EditorCamera.cpp` | 停靠面板、模型导入、视角和光照控制 | `Draw()`、`DrawCameraControls()` | Scene、Commands、Renderer、ImGui |
+| `src/render/Dx11Renderer.*` | 设备、交换链、材质解析和场景遍历 | `RenderScene()`、`MaterialPreview()` | Effect、Mesh、ResourceCache |
+| `src/editor/EditorLayer.*`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | 停靠面板、资源、视角、材质和光照控制 | `Draw()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
 | `src/utils/Logger.*` | 按日期写入文件日志 | `Initialize()`、`Info()`、`Error()` | C++ filesystem |
 | `tests/CoreTests.cpp` | CPU 行为回归测试 | 场景/命令测试用例 | LRenderCore |
 

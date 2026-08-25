@@ -4,6 +4,7 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-25 | 功能 | 增加实体材质编辑、贴图选择和显示控制 | core、commands、editor、render、shaders | 本次提交 |
 | 08-25 | 功能 | 增加八个相机视角和自动旋转控制 | core、editor | 本次提交 |
 | 08-25 | 功能 | 增加可创建的水平 Plane 基础几何 | core、render、editor、app | 本次提交 |
 | 08-25 | 工程 | 在 VS2022 工程中显示全部项目头文件 | cmake | 本次提交 |
@@ -11,6 +12,20 @@
 | 08-20 | 文档 | 增加 DX11 教程差距分析、实施路线和素材映射 | docs、assets、scripts | 工作区 |
 
 ---
+
+## [2026-08-25] 增加实体材质编辑与贴图控制
+
+- **文件**：`src/core/EntityMaterial.h`、`src/commands/MaterialCommand.*`、
+  `src/editor/EditorMaterial.cpp`、`src/render/Dx11Renderer.*`、`src/render/BasicMeshEffect.*`、
+  `src/shaders/BasicMesh*.hlsl`
+- **范围**：实体材质属性、撤销/重做、BaseColor 贴图选择、Sampler 和显示模式
+- **改动**：把可序列化材质参数作为 `Entity::material` 保存；支持基础色、漫反射强度、高光颜色/
+  强度/指数、双面状态、Point/Linear/Anisotropic 过滤及 Wrap/Clamp/Mirror 寻址；支持贴图缩略图、
+  Windows 原生选择器、恢复模型/程序化几何源贴图，以及带光照贴图、仅贴图、带光照无贴图三种模式。
+- **边界**：glTF 各 `ModelPart` 的源材质和 GPU 资源仍由渲染层缓存；绘制时复制并应用实体参数，
+  不修改共享缓存。当前仅编辑 Blinn-Phong 与 BaseColor，不包含法线、金属粗糙度或透明混合。
+- **验证**：VS2022 Debug 构建和 CTest 通过；材质完整快照支持撤销/重做。
+- **提交**：本次提交
 
 ## [2026-08-25] 增加相机视角预设和自动旋转
 

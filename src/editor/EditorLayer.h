@@ -32,12 +32,17 @@ private:
     void DrawLighting(Dx11Renderer& renderer);
     void DrawResources(Dx11Renderer& renderer);
     void DrawHierarchy(Scene& scene);
-    void DrawInspector(Scene& scene, CommandHistory& history);
+    void DrawInspector(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
+    void DrawMaterialEditor(
+        Scene& scene, CommandHistory& history, Dx11Renderer& renderer, Entity& entity);
     void DrawViewport(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer);
     void CreatePrimitive(Scene& scene, CommandHistory& history, PrimitiveType primitive);
     void ImportModel(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void TrackPropertyEdit(
         Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl);
+    void TrackMaterialEdit(
+        Scene& scene, CommandHistory& history, Entity& entity,
+        const EntityMaterial& beforeControl);
     void ValidateSelection(const Scene& scene);
 
     std::uint32_t selectedEntityId_{};
@@ -46,8 +51,12 @@ private:
     Transform gizmoStart_;
     std::optional<Transform> propertyEditStart_;
     std::uint32_t propertyEditEntityId_{};
+    std::optional<EntityMaterial> materialEditStart_;
+    std::uint32_t materialEditEntityId_{};
     std::string importError_;
     bool openImportErrorPopup_{false};
+    std::string materialError_;
+    bool openMaterialErrorPopup_{false};
     bool autoRotate_{false};
     bool autoRotateClockwise_{false};
     float autoRotateSpeedDegrees_{20.0F};

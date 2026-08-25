@@ -36,7 +36,7 @@ void EditorLayer::Draw(
     DrawResources(renderer);
     DrawHierarchy(scene);
     ValidateSelection(scene);
-    DrawInspector(scene, history);
+    DrawInspector(scene, history, renderer);
     DrawViewport(scene, history, camera, renderer);
 }
 
@@ -144,7 +144,8 @@ void EditorLayer::DrawHierarchy(Scene& scene) {
     ImGui::End();
 }
 
-void EditorLayer::DrawInspector(Scene& scene, CommandHistory& history) {
+void EditorLayer::DrawInspector(
+    Scene& scene, CommandHistory& history, Dx11Renderer& renderer) {
     ImGui::Begin("Inspector");
     Entity* entity = scene.FindEntity(selectedEntityId_);
     if (entity == nullptr) {
@@ -165,7 +166,7 @@ void EditorLayer::DrawInspector(Scene& scene, CommandHistory& history) {
     before = entity->transform;
     ImGui::DragFloat3("Scale", &entity->transform.scale.x, 0.02F, 0.01F, 100.0F);
     TrackPropertyEdit(scene, history, *entity, before);
-    ImGui::ColorEdit3("Color", &entity->color.x);
+    DrawMaterialEditor(scene, history, renderer, *entity);
     ImGui::End();
 }
 
@@ -257,7 +258,7 @@ void EditorLayer::CreatePrimitive(
         primitive, baseName + " " + std::to_string(scene.Entities().size() + 1));
     if (primitive == PrimitiveType::Plane) {
         entity.transform.position.y = -0.5F;
-        entity.color = {0.55F, 0.58F, 0.62F, 1.0F};
+        entity.material.baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
     }
     selectedEntityId_ = entity.id;
     history.PushApplied(std::make_unique<CreateEntityCommand>(scene, entity));

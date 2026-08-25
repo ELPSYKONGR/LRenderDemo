@@ -10,11 +10,12 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 - 基于 Dear ImGui Docking 的界面，包含视口、层级、检查器和工具面板
 - 支持环绕、平移、缩放、八个标准视角和自动旋转的编辑器相机
 - 创建立方体、UV 球体和水平平面
-- `Texture2D`、Sampler、UV 与 BaseColor 材质，可为程序化几何显示棋盘纹理
+- 实体级 Blinn-Phong 材质编辑，可调基础色、漫反射、高光、双面状态和贴图采样方式
+- BaseColor 贴图缩略图、原生文件选择、源贴图恢复和三种贴图/光照显示模式
 - 导入静态 glTF/GLB 模型，支持外部/内嵌图片、子网格、节点变换与资源缓存
 - 一盏方向光和最多四盏点光，支持 Lambert 漫反射与 Blinn-Phong 高光实时调节
 - 使用 ImGuizmo 进行平移、旋转和缩放
-- 对实体创建和变换编辑执行撤销/重做
+- 对实体创建、变换和材质编辑执行撤销/重做
 - 程序化生成 D3D11 顶点缓冲区和索引缓冲区
 - 独立的 `IRenderEffect` 边界，以及可直接编辑、构建和加载的项目自有 HLSL
 - 面向 Visual Studio 2022 的 CMake Presets 和轻量级 CTest 测试
@@ -105,6 +106,9 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 | 撤销/重做 | 按 `Ctrl+Z` / `Ctrl+Y` |
 | 创建基础几何体 | 使用 `Create` 菜单 |
 | 导入模型 | `Create > Import glTF/GLB...` |
+| 修改材质 | 在 `Inspector > Material` 调节颜色、光照参数和双面状态 |
+| 选择/恢复贴图 | 在材质区域使用 `Choose...` / `Use source` |
+| 切换贴图显示 | 选择 `Lit textured`、`Texture only` 或 `Lit untextured` |
 | 调节多光源 | 使用 `Lighting` 面板 |
 
 ## 建议学习路线
@@ -116,7 +120,8 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 3. `src/render/Mesh.cpp`：不可变顶点/索引缓冲区和索引绘制调用。
 4. `src/render/BasicMeshEffect.cpp`：着色器常量、输入布局和渲染状态。
 5. `src/render/ResourceCache.cpp` 与 `src/render/GltfLoader.cpp`：模型、纹理和 Sampler 的缓存与导入。
-6. `src/editor/EditorLayer.cpp`、`src/editor/EditorAssets.cpp`：编辑器交互、导入和光照控制。
+6. `src/editor/EditorLayer.cpp`、`src/editor/EditorAssets.cpp`、`src/editor/EditorMaterial.cpp`：
+   编辑器交互、导入、材质和光照控制。
 7. `src/commands/`：独立于界面的可逆操作。
 
 添加新的渲染技术前，请先阅读 `docs/architecture.md` 和 `docs/adding-an-effect.md`。

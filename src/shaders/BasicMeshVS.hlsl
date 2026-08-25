@@ -14,6 +14,7 @@ cbuffer BasicMeshConstants : register(b0)
     float4 DirectionalDirectionAndIntensity;
     float4 DirectionalColorAndEnabled;
     float4 PointLightData[8];
+    float4 SpecularColor;
     float4 MaterialParameters;
 };
 

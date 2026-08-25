@@ -2,8 +2,10 @@ set(LRENDER_CORE_HEADERS
     commands/CommandHistory.h
     commands/CreateEntityCommand.h
     commands/ICommand.h
+    commands/MaterialCommand.h
     commands/TransformCommand.h
     core/Camera.h
+    core/EntityMaterial.h
     core/Scene.h
     core/Transform.h
     utils/Logger.h)
@@ -14,6 +16,7 @@ add_library(LRenderCore STATIC
     core/Scene.cpp
     commands/CommandHistory.cpp
     commands/CreateEntityCommand.cpp
+    commands/MaterialCommand.cpp
     commands/TransformCommand.cpp
     utils/Logger.cpp)
 source_group(
@@ -58,6 +61,7 @@ add_executable(LRenderDemo WIN32
     render/Texture2D.cpp
     editor/EditorAssets.cpp
     editor/EditorCamera.cpp
+    editor/EditorMaterial.cpp
     editor/EditorLayer.cpp)
 source_group(
     TREE "${CMAKE_CURRENT_SOURCE_DIR}"

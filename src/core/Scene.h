@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/EntityMaterial.h"
 #include "core/Transform.h"
 
 #include <SimpleMath.h>
@@ -24,7 +25,7 @@ struct Entity {
     std::string name;
     PrimitiveType primitive{PrimitiveType::Cube};
     Transform transform;
-    DirectX::SimpleMath::Color color{0.72F, 0.78F, 0.86F, 1.0F};
+    EntityMaterial material;
     std::filesystem::path modelPath;
 
     [[nodiscard]] bool IsModel() const noexcept { return !modelPath.empty(); }

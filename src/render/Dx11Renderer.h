@@ -34,6 +34,8 @@ public:
     void RenderEditor(ImDrawData* drawData);
     void Present();
     void PreloadModel(const std::filesystem::path& path);
+    void PreloadTexture(const std::filesystem::path& path);
+    [[nodiscard]] ID3D11ShaderResourceView* MaterialPreview(const Entity& entity);
 
     [[nodiscard]] ID3D11Device* Device() const noexcept { return device_.Get(); }
     [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return context_.Get(); }
@@ -45,6 +47,8 @@ public:
 
 private:
     void CreateBackBuffer();
+    [[nodiscard]] Material ResolveMaterial(
+        const Material& source, const EntityMaterial& settings);
 
     HWND windowHandle_{};
     std::uint32_t swapChainWidth_{};

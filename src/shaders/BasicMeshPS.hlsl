@@ -14,6 +14,7 @@ cbuffer BasicMeshConstants : register(b0)
     float4 DirectionalDirectionAndIntensity;
     float4 DirectionalColorAndEnabled;
     float4 PointLightData[8];
+    float4 SpecularColor;
     float4 MaterialParameters;
 };
 
@@ -32,11 +33,11 @@ float3 EvaluateLight(
     float3 normal, float3 viewDirection, float3 lightDirection,
     float3 lightColor, float intensity, float3 baseColor)
 {
-    const float diffuse = saturate(dot(normal, lightDirection));
+    const float diffuse = saturate(dot(normal, lightDirection)) * MaterialParameters.z;
     const float3 halfDirection = normalize(lightDirection + viewDirection);
     const float specular = pow(saturate(dot(normal, halfDirection)), MaterialParameters.y) *
         MaterialParameters.x;
-    return (baseColor * diffuse + specular.xxx) * lightColor * intensity;
+    return (baseColor * diffuse + SpecularColor.rgb * specular) * lightColor * intensity;
 }
 
 float4 PSMain(PixelInput input) : SV_TARGET
@@ -45,6 +46,10 @@ float4 PSMain(PixelInput input) : SV_TARGET
     const float3 viewDirection = normalize(CameraPosition.xyz - input.worldPosition);
     const float4 sampledColor = BaseColorTexture.Sample(BaseColorSampler, input.textureCoordinate);
     const float3 surfaceColor = sampledColor.rgb * BaseColor.rgb;
+    if (MaterialParameters.w > 0.5F && MaterialParameters.w < 1.5F)
+    {
+        return float4(saturate(surfaceColor), sampledColor.a * BaseColor.a);
+    }
     float3 result = surfaceColor * AmbientColor.rgb;
 
     if (DirectionalColorAndEnabled.w > 0.5F)

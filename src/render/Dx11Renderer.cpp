@@ -14,6 +14,27 @@
 #include <stdexcept>
 
 namespace lrender {
+namespace {
+
+D3D11_FILTER NativeFilter(MaterialFilter filter) {
+    switch (filter) {
+    case MaterialFilter::Point: return D3D11_FILTER_MIN_MAG_MIP_POINT;
+    case MaterialFilter::Linear: return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    case MaterialFilter::Anisotropic: return D3D11_FILTER_ANISOTROPIC;
+    }
+    throw std::invalid_argument("Unsupported material texture filter");
+}
+
+D3D11_TEXTURE_ADDRESS_MODE NativeAddressMode(MaterialAddressMode mode) {
+    switch (mode) {
+    case MaterialAddressMode::Wrap: return D3D11_TEXTURE_ADDRESS_WRAP;
+    case MaterialAddressMode::Clamp: return D3D11_TEXTURE_ADDRESS_CLAMP;
+    case MaterialAddressMode::Mirror: return D3D11_TEXTURE_ADDRESS_MIRROR;
+    }
+    throw std::invalid_argument("Unsupported material texture address mode");
+}
+
+} // namespace
 
 void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint32_t height) {
     if (windowHandle == nullptr) {
@@ -145,15 +166,17 @@ void Dx11Renderer::RenderScene(
         if (entity.IsModel()) {
             const std::shared_ptr<Model> model = resources_->LoadModel(entity.modelPath);
             for (const ModelPart& part : model->parts) {
+                const Material material = ResolveMaterial(part.material, entity.material);
                 effect_->Bind(
                     context_.Get(), world, view, projection, cameraPosition,
-                    part.material, entity.color, isSelected);
+                    material, entity.material.baseColor, isSelected);
                 part.mesh->Draw(context_.Get());
             }
         } else {
+            const Material material = ResolveMaterial(primitiveMaterial_, entity.material);
             effect_->Bind(
                 context_.Get(), world, view, projection, cameraPosition,
-                primitiveMaterial_, entity.color, isSelected);
+                material, entity.material.baseColor, isSelected);
             const Mesh* mesh = nullptr;
             switch (entity.primitive) {
             case PrimitiveType::Cube: mesh = cubeMesh_.get(); break;
@@ -178,6 +201,54 @@ void Dx11Renderer::PreloadModel(const std::filesystem::path& path) {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
     static_cast<void>(resources_->LoadModel(path));
+}
+
+void Dx11Renderer::PreloadTexture(const std::filesystem::path& path) {
+    if (!resources_) {
+        throw std::logic_error("Renderer resource cache is not initialized");
+    }
+    static_cast<void>(resources_->LoadTexture(path));
+}
+
+ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity) {
+    if (!resources_) {
+        throw std::logic_error("Renderer resource cache is not initialized");
+    }
+    const Material* source = &primitiveMaterial_;
+    std::shared_ptr<Model> model;
+    if (entity.IsModel()) {
+        model = resources_->LoadModel(entity.modelPath);
+        if (model->parts.empty()) {
+            return nullptr;
+        }
+        source = &model->parts.front().material;
+    }
+    const Material resolved = ResolveMaterial(*source, entity.material);
+    return resolved.baseColorTexture ? resolved.baseColorTexture->ShaderResourceView() : nullptr;
+}
+
+Material Dx11Renderer::ResolveMaterial(
+    const Material& source, const EntityMaterial& settings) {
+    Material resolved = source;
+    resolved.diffuseStrength = settings.diffuseStrength;
+    resolved.specularColor = settings.specularColor;
+    resolved.specularStrength = settings.specularStrength;
+    resolved.shininess = settings.shininess;
+    resolved.doubleSided = settings.doubleSided;
+    resolved.displayMode = settings.displayMode;
+
+    SamplerDescription samplerDescription;
+    samplerDescription.filter = NativeFilter(settings.filter);
+    samplerDescription.addressU = NativeAddressMode(settings.addressMode);
+    samplerDescription.addressV = samplerDescription.addressU;
+    resolved.sampler = resources_->GetSampler(samplerDescription);
+
+    if (settings.displayMode == SurfaceDisplayMode::LitUntextured) {
+        resolved.baseColorTexture = resources_->DefaultMaterial().baseColorTexture;
+    } else if (!settings.useSourceTexture && !settings.baseColorTexturePath.empty()) {
+        resolved.baseColorTexture = resources_->LoadTexture(settings.baseColorTexturePath);
+    }
+    return resolved;
 }
 
 std::size_t Dx11Renderer::CachedModelCount() const noexcept {

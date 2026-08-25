@@ -53,6 +53,7 @@ private:
         DirectX::SimpleMath::Vector4 directionalDirectionAndIntensity;
         DirectX::SimpleMath::Vector4 directionalColorAndEnabled;
         std::array<PointLightConstants, 4> pointLights;
+        DirectX::SimpleMath::Vector4 specularColor;
         DirectX::SimpleMath::Vector4 materialParameters;
     };
 

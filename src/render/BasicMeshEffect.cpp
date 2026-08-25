@@ -130,12 +130,18 @@ void BasicMeshEffect::Bind(
             light.color.x, light.color.y, light.color.z,
             light.enabled ? light.intensity : 0.0F};
     }
+    constants.specularColor = material.specularColor;
     constants.materialParameters = {
-        material.specularStrength, material.shininess, 0.0F, 0.0F};
+        material.specularStrength,
+        material.shininess,
+        material.diffuseStrength,
+        static_cast<float>(material.displayMode)};
     context->UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &constants, 0, 0);
 
     context->IASetInputLayout(inputLayout_.Get());
-    context->RSSetState(isWireframe_ ? states_->Wireframe() : states_->CullNone());
+    context->RSSetState(
+        isWireframe_ ? states_->Wireframe() :
+        (material.doubleSided ? states_->CullNone() : states_->CullClockwise()));
     context->VSSetShader(vertexShader_.Get(), nullptr, 0);
     context->PSSetShader(pixelShader_.Get(), nullptr, 0);
     ID3D11Buffer* constantBuffer = constantBuffer_.Get();

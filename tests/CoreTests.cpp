@@ -6,6 +6,7 @@
  */
 #include "commands/CommandHistory.h"
 #include "commands/CreateEntityCommand.h"
+#include "commands/MaterialCommand.h"
 #include "commands/TransformCommand.h"
 #include "core/Camera.h"
 #include "core/Scene.h"
@@ -127,6 +128,32 @@ void TestModelCreateUndoRedo() {
     Require(restored->modelPath == modelPath, "Redo should preserve the model path");
 }
 
+void TestMaterialUndoRedo() {
+    lrender::Scene scene;
+    lrender::CommandHistory history;
+    auto& entity = scene.CreateEntity(lrender::PrimitiveType::Cube, "Material cube");
+    const lrender::EntityMaterial before = entity.material;
+    lrender::EntityMaterial after = before;
+    after.baseColor = {0.2F, 0.4F, 0.8F, 1.0F};
+    after.specularStrength = 0.8F;
+    after.baseColorTexturePath = "assets/textures/test.png";
+    after.useSourceTexture = false;
+
+    history.Execute(std::make_unique<lrender::MaterialCommand>(
+        scene, entity.id, before, after));
+    Require(
+        scene.FindEntity(entity.id)->material.NearlyEquals(after),
+        "Material command should apply all material properties");
+    Require(history.Undo(), "Material edit should be undoable");
+    Require(
+        scene.FindEntity(entity.id)->material.NearlyEquals(before),
+        "Undo should restore the complete material snapshot");
+    Require(history.Redo(), "Material edit should be redoable");
+    Require(
+        scene.FindEntity(entity.id)->material.NearlyEquals(after),
+        "Redo should restore the edited material snapshot");
+}
+
 } // namespace
 
 int main() {
@@ -136,6 +163,7 @@ int main() {
         TestTransformUndoRedo();
         TestCreateUndoRedo();
         TestModelCreateUndoRedo();
+        TestMaterialUndoRedo();
         std::cout << "LRenderCoreTests: all tests passed\n";
         return 0;
     } catch (const std::exception& error) {
