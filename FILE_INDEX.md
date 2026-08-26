@@ -1,6 +1,6 @@
 # FILE_INDEX - LRenderDemo
 
-> 最后更新：2026-08-25 | 维护者：Codex
+> 最后更新：2026-08-26 | 维护者：Codex
 
 ## 源文件
 
@@ -20,9 +20,12 @@
 | `src/commands/CreateModelCommand.*` | 可逆模型整体创建 | `Execute()`、`Undo()` | Scene |
 | `src/commands/MaterialCommand.*` | 可逆实体材质编辑 | `Execute()`、`Undo()` | Scene、EntityMaterial |
 | `src/render/IRenderEffect.h` | 逐网格的 Effect 边界 | `Bind()` | D3D11、SimpleMath |
-| `src/render/BasicMeshEffect.*` | 纹理材质与多光源基础 Effect | `Bind()`、`Lights()` | Material、Lighting、D3DCompiler |
-| `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | BasicMeshEffect 常量缓冲区 |
-| `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | BasicMeshEffect 常量缓冲区 |
+| `src/render/Dx11ConstantBuffer.h` | 16 字节对齐的类型化 DX11 常量缓冲 RAII 封装 | `Update()`、`BindVS()`、`BindPS()` | D3D11、ComPtr |
+| `src/render/BasicMeshConstants.h` | BasicMesh C++ 常量布局 | `BasicMeshConstants` | SimpleMath |
+| `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `Bind()`、`Lights()` | BasicMeshConstants、Dx11ConstantBuffer、D3DCompiler |
+| `src/shaders/BasicMeshConstants.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `BasicMeshConstants` cbuffer | 无 |
+| `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | BasicMeshConstants.hlsli |
+| `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | BasicMeshConstants.hlsli |
 | `src/render/Mesh.*` | 带 UV 的 D3D11 顶点/32 位索引缓冲区 | `Draw()` | D3D11、DirectXMath |
 | `src/render/PrimitiveFactory.*` | 生成立方体、球体和平面 | `CreateCube()`、`CreateSphere()`、`CreatePlane()` | Mesh |
 | `src/render/Texture2D.*` | WIC/DDS 文件、内存与生成纹理 | `LoadFile()`、`LoadMemory()` | DirectXTK、D3D11 |

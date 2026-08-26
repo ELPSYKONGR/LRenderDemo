@@ -119,7 +119,8 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 1. `src/platform/Window.cpp`：Win32 消息和可见窗口的生命周期。
 2. `src/render/Dx11Renderer.cpp`：设备、交换链、帧目标和绘制遍历。
 3. `src/render/Mesh.cpp`：不可变顶点/索引缓冲区和索引绘制调用。
-4. `src/render/BasicMeshEffect.cpp`：着色器常量、输入布局和渲染状态。
+4. `src/render/Dx11ConstantBuffer.h`、`src/render/BasicMeshConstants.h` 与
+   `src/render/BasicMeshEffect.cpp`：常量缓冲 RAII、C++/HLSL 布局契约、参数组装和渲染状态。
 5. `src/render/ModelLoader.cpp`、`src/render/GltfLoader.cpp`、`src/render/ObjLoader.cpp` 与
    `src/render/ResourceCache.cpp`：格式分发、网格资产导入及纹理/Sampler 缓存。
 6. `src/editor/EditorLayer.cpp`、`src/editor/EditorAssets.cpp`、`src/editor/EditorMaterial.cpp`：

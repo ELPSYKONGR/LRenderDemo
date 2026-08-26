@@ -1,22 +1,9 @@
 /**
  * @file Textured multi-light basic mesh pixel shader.
- * @depends BasicMeshVS output, BasicMeshEffect constant buffer
+ * @depends BasicMeshVS output, BasicMeshConstants.hlsli
  */
 
-cbuffer BasicMeshConstants : register(b0)
-{
-    row_major float4x4 WorldViewProjection;
-    row_major float4x4 World;
-    row_major float4x4 WorldInverseTranspose;
-    float4 BaseColor;
-    float4 CameraPosition;
-    float4 AmbientColor;
-    float4 DirectionalDirectionAndIntensity;
-    float4 DirectionalColorAndEnabled;
-    float4 PointLightData[8];
-    float4 SpecularColor;
-    float4 MaterialParameters;
-};
+#include "BasicMeshConstants.hlsli"
 
 Texture2D BaseColorTexture : register(t0);
 SamplerState BaseColorSampler : register(s0);

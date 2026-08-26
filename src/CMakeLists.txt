@@ -66,7 +66,9 @@ set(LRENDER_DEMO_HEADERS
     app/Application.h
     editor/EditorLayer.h
     platform/Window.h
+    render/BasicMeshConstants.h
     render/BasicMeshEffect.h
+    render/Dx11ConstantBuffer.h
     render/Dx11Renderer.h
     render/IRenderEffect.h
     render/Lighting.h
@@ -98,6 +100,9 @@ set(LRENDER_SHADER_RUNTIME_OUTPUT_DIR "${LRENDER_SHADER_OUTPUT_ROOT}/$<CONFIG>")
 set(LRENDER_SHADER_SOURCES
     shaders/BasicMeshVS.hlsl
     shaders/BasicMeshPS.hlsl)
+set(LRENDER_SHADER_HEADERS
+    shaders/BasicMeshConstants.hlsli)
+set_source_files_properties(${LRENDER_SHADER_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 set_source_files_properties(shaders/BasicMeshVS.hlsl PROPERTIES
     VS_SHADER_TYPE Vertex
@@ -114,8 +119,8 @@ set_source_files_properties(shaders/BasicMeshPS.hlsl PROPERTIES
     VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
     VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
 
-target_sources(LRenderDemo PRIVATE ${LRENDER_SHADER_SOURCES})
-source_group("Shaders" FILES ${LRENDER_SHADER_SOURCES})
+target_sources(LRenderDemo PRIVATE ${LRENDER_SHADER_SOURCES} ${LRENDER_SHADER_HEADERS})
+source_group("Shaders" FILES ${LRENDER_SHADER_SOURCES} ${LRENDER_SHADER_HEADERS})
 add_custom_command(TARGET LRenderDemo PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${LRENDER_SHADER_RUNTIME_OUTPUT_DIR}")
 target_compile_definitions(LRenderDemo PRIVATE

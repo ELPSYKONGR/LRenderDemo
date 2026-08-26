@@ -11,11 +11,16 @@
 2. 在 `src/shaders/` 添加 VS/PS，并参考 `src/CMakeLists.txt` 登记 `FXCompile` 类型、入口点、
    Shader Model 和按配置隔离的 CSO 输出路径。
 3. 实现 `IRenderEffect::Bind`。
-4. 在类内部持有着色器、输入布局、状态和常量缓冲区；从构建目录加载 CSO，不直接加载源码目录。
-5. 验证所有设备/上下文输入；创建失败时抛出包含上下文信息的异常。
-6. 在 `Dx11Renderer` 中注册 Effect；只向 `EditorLayer` 暴露用于学习的参数。
-7. 条件允许时，为参数验证添加 CPU 侧测试。
-8. 如果边界发生变化，更新 `FILE_INDEX.md`、`CHANGELOG.md` 和本文档。
+4. 定义该 Effect 专用的 C++ 常量结构和共享 `.hlsli` 布局；在类内部持有
+   `Dx11ConstantBuffer<T>`，由 Effect 决定参数语义、寄存器槽位和使用它的 Shader 阶段。
+5. 在类内部持有着色器、输入布局和固定状态；从构建目录加载 CSO，不直接加载源码目录。
+6. 验证所有设备/上下文输入；创建失败时抛出包含上下文信息的异常。
+7. 在 `Dx11Renderer` 中注册 Effect；只向 `EditorLayer` 暴露用于学习的参数。
+8. 条件允许时，为参数验证添加 CPU 侧测试。
+9. 如果边界发生变化，更新 `FILE_INDEX.md`、`CHANGELOG.md` 和本文档。
+
+不要因为存在通用 `Dx11ConstantBuffer<T>` 就共享不同 Effect 的常量类型。C++ 结构、HLSL 布局、
+寄存器槽位和更新频率共同组成一个 Effect 契约；只有多个实际消费者需要同一份数据时才上移所有权。
 
 ## 场景级 Pass
 

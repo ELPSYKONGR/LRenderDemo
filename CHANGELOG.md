@@ -4,6 +4,7 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-26 | 重构 | 抽离类型化 DX11 常量缓冲并统一 BasicMesh VS/PS 常量布局 | render、shaders、tests、docs | 本次提交 |
 | 08-25 | 功能 | 增加 Scene/Model/Entity 层级、混合 Solid/Mesh 绘制和 OBJ/MTL 导入 | core、commands、editor、render、tests | 本次提交 |
 | 08-25 | 功能 | 增加实体材质编辑、贴图选择和显示控制 | core、commands、editor、render、shaders | 本次提交 |
 | 08-25 | 功能 | 增加八个相机视角和自动旋转控制 | core、editor | 本次提交 |
@@ -13,6 +14,19 @@
 | 08-20 | 文档 | 增加 DX11 教程差距分析、实施路线和素材映射 | docs、assets、scripts | 工作区 |
 
 ---
+
+## [2026-08-26] 抽离 DX11 常量缓冲与 BasicMesh 布局
+
+- **文件**：`src/render/Dx11ConstantBuffer.h`、`src/render/BasicMeshConstants.h`、
+  `src/render/BasicMeshEffect.*`、`src/shaders/BasicMeshConstants.hlsli`、`tests/ImportTests.cpp`
+- **范围**：Effect 内的常量缓冲资源操作，以及 C++/HLSL 常量布局边界。
+- **改动**：新增 `Dx11ConstantBuffer<T>`，统一执行 16 字节/容量编译期检查、`ComPtr` 所有权、
+  `UpdateSubresource` 和 VS/PS 槽位绑定；`BasicMeshEffect` 继续负责常量语义和数据组装，只把 GPU
+  缓冲机械操作委托给封装；VS/PS 通过同一个 `.hlsli` 使用原有 `b0` 布局。
+- **边界**：没有拆分 Frame/Object/Material 缓冲，没有修改 `IRenderEffect::Bind`、渲染器调用顺序
+  或场景/材质/资源接口。等第二个正式网格 Effect 或多 Pass 共享数据出现后再评估按更新频率拆分。
+- **验证**：VS2022 Debug 构建、HLSL include 依赖构建和 WARP 常量缓冲绑定测试。
+- **提交**：本次提交
 
 ## [2026-08-25] 增加模型实体层级与 OBJ/MTL 导入
 

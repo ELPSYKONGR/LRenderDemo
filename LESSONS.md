@@ -88,6 +88,21 @@
   glTF/OBJ 教学路径。
 - **状态**：已接受。
 
+### ADR-008：只抽离常量缓冲资源操作，保留 Effect 的参数语义
+
+- **日期**：2026-08-26
+- **背景**：`BasicMeshEffect` 内重复包含 DX11 缓冲创建、更新和阶段绑定代码，VS/PS 也分别声明
+  同一份 `cbuffer`；但当前只有一个正式网格 Effect，尚无共享 Frame/Object/Material 数据的需求。
+- **备选方案**：保持全部内置；只抽离类型化缓冲封装和布局文件；或立即让 Renderer 管理并拆分
+  所有常量缓冲。
+- **决策**：新增 `Dx11ConstantBuffer<T>` 处理 GPU 资源操作，新增独立 C++ 常量结构和共享 `.hlsli`；
+  `BasicMeshEffect` 仍决定数据含义、组装方式、`b0` 槽位和 Shader 阶段。
+- **原因**：消除稳定且真实的机械重复，同时让 DX11 调用保持可见；避免在第二个 Effect 出现前
+  推测跨 Effect 的参数系统和更新频率。
+- **结果**：新增 Effect 可以复用缓冲 RAII 封装，但应拥有自己的常量类型与 HLSL 契约。出现跨
+  Effect 共享的每帧数据后，再评估 `b0/b1/b2` 和 BeginFrame/BindObject/BindMaterial 调用协议。
+- **状态**：已接受。
+
 ## 已知问题与经验
 
 ### PIT-001：子模块初始化中断会留下受保护的 Git 元数据

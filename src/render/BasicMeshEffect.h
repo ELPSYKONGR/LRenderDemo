@@ -6,11 +6,12 @@
  */
 #pragma once
 
+#include "render/BasicMeshConstants.h"
+#include "render/Dx11ConstantBuffer.h"
 #include "render/IRenderEffect.h"
 #include "render/Lighting.h"
 
 #include <CommonStates.h>
-#include <array>
 #include <filesystem>
 #include <memory>
 #include <wrl/client.h>
@@ -38,30 +39,11 @@ public:
     [[nodiscard]] const LightingSettings& Lights() const noexcept { return lights_; }
 
 private:
-    struct alignas(16) PointLightConstants {
-        DirectX::SimpleMath::Vector4 positionAndRange;
-        DirectX::SimpleMath::Vector4 colorAndIntensity;
-    };
-
-    struct alignas(16) Constants {
-        DirectX::SimpleMath::Matrix worldViewProjection;
-        DirectX::SimpleMath::Matrix world;
-        DirectX::SimpleMath::Matrix worldInverseTranspose;
-        DirectX::SimpleMath::Vector4 baseColor;
-        DirectX::SimpleMath::Vector4 cameraPosition;
-        DirectX::SimpleMath::Vector4 ambientColor;
-        DirectX::SimpleMath::Vector4 directionalDirectionAndIntensity;
-        DirectX::SimpleMath::Vector4 directionalColorAndEnabled;
-        std::array<PointLightConstants, 4> pointLights;
-        DirectX::SimpleMath::Vector4 specularColor;
-        DirectX::SimpleMath::Vector4 materialParameters;
-    };
-
     std::unique_ptr<DirectX::CommonStates> states_;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader_;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader_;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout_;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer_;
+    Dx11ConstantBuffer<BasicMeshConstants> constantBuffer_;
     LightingSettings lights_;
     bool isWireframe_{false};
 };

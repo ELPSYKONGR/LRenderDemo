@@ -60,6 +60,29 @@ Mesh Entity。之后可继续向该 Model 添加 Solid Entity，并由同一场�
 当前注册 `GltfLoader` 和 `ObjLoader`。以后接入 Assimp 时新增一个实现 `IModelImporter` 的类并注册
 FBX 等扩展名即可；场景层级、编辑器导入流程、渲染器和缓存的公共接口无需改变。
 
+## Effect 与常量缓冲边界
+
+```mermaid
+graph TD
+    Renderer[Dx11Renderer] --> Effect[BasicMeshEffect]
+    Effect --> CpuLayout[BasicMeshConstants.h]
+    Effect --> Buffer[Dx11ConstantBuffer of BasicMeshConstants]
+    Buffer --> D3DBuffer[ID3D11Buffer]
+    Buffer --> Context[ID3D11DeviceContext]
+    HlslLayout[BasicMeshConstants.hlsli] --> VS[BasicMeshVS.hlsl]
+    HlslLayout --> PS[BasicMeshPS.hlsl]
+    Effect --> VS
+    Effect --> PS
+```
+
+`Dx11ConstantBuffer<T>` 只封装类型大小检查、`ComPtr` 所有权、数据更新和 VS/PS 槽位绑定。
+`BasicMeshEffect` 仍负责把矩阵、相机、灯光和材质组装为 `BasicMeshConstants`，并决定使用 `b0` 和
+哪些 Shader 阶段。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli` 消除重复声明。
+
+当前没有按 Frame/Object/Material 拆分多个缓冲，因为还没有第二个正式 Effect 或多个 Pass 共享同一
+份每帧数据。等真实复用关系出现后，再根据更新频率调整槽位和 `IRenderEffect` 调用协议；不让通用
+缓冲封装演变成提前设计的 RHI 参数系统。
+
 ## RHI 迁移边界
 
 仅学习 DX11 时，不应引入通用 RHI。将原生对象限制在 `src/render/` 中，避免它们泄漏到

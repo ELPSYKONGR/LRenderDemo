@@ -102,7 +102,8 @@ MeshPart`。这样不需要修改 `Scene`、`CreateModelCommand`、编辑器文�
 
 ### 多光源常量缓冲
 
-C++ 的 `BasicMeshEffect::Constants` 与 HLSL 的 `BasicMeshConstants` 保持 16 字节对齐。每盏点光占
+C++ 的 `BasicMeshConstants` 与 HLSL `BasicMeshConstants.hlsli` 中的同名 `cbuffer` 保持字段顺序和
+16 字节对齐。GPU 缓冲由 `Dx11ConstantBuffer<BasicMeshConstants>` 管理。每盏点光占
 两个 `float4`：位置/范围和颜色/强度。禁用点光时把强度写为零；像素 Shader 用距离与范围计算
 平滑衰减。方向为零时 CPU 使用向下方向回退，避免 Shader 中出现无效归一化。
 

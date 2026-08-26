@@ -4,6 +4,7 @@
  * @created 2026-08-25
  * @depends render/ResourceCache.h, D3D11 WARP
  */
+#include "render/Dx11ConstantBuffer.h"
 #include "render/ResourceCache.h"
 
 #include <cmath>
@@ -15,6 +16,10 @@
 
 namespace {
 
+struct alignas(16) TestConstants {
+    float values[4];
+};
+
 void Require(bool condition, const char* message) {
     if (!condition) {
         throw std::runtime_error(message);
@@ -23,6 +28,38 @@ void Require(bool condition, const char* message) {
 
 void RequireNear(float actual, float expected, const char* message) {
     Require(std::abs(actual - expected) < 0.001F, message);
+}
+
+void TestConstantBufferBinding() {
+    Microsoft::WRL::ComPtr<ID3D11Device> device;
+    Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
+    D3D_FEATURE_LEVEL featureLevel{};
+    const HRESULT result = D3D11CreateDevice(
+        nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr, 0,
+        D3D11_SDK_VERSION, device.GetAddressOf(), &featureLevel, context.GetAddressOf());
+    Require(SUCCEEDED(result), "WARP D3D11 device creation failed");
+
+    lrender::Dx11ConstantBuffer<TestConstants> buffer(device.Get());
+    buffer.Update(context.Get(), TestConstants{{1.0F, 2.0F, 3.0F, 4.0F}});
+    buffer.BindVS(context.Get(), 2);
+    buffer.BindPS(context.Get(), 3);
+
+    Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> pixelBuffer;
+    context->VSGetConstantBuffers(2, 1, vertexBuffer.GetAddressOf());
+    context->PSGetConstantBuffers(3, 1, pixelBuffer.GetAddressOf());
+    Require(vertexBuffer != nullptr, "Constant buffer should be bound to the vertex shader");
+    Require(pixelBuffer != nullptr, "Constant buffer should be bound to the pixel shader");
+    Require(vertexBuffer.Get() == pixelBuffer.Get(), "Shader stages should share the same buffer");
+
+    D3D11_BUFFER_DESC description{};
+    vertexBuffer->GetDesc(&description);
+    Require(
+        description.ByteWidth == static_cast<UINT>(sizeof(TestConstants)),
+        "Constant buffer size is incorrect");
+    Require(
+        (description.BindFlags & D3D11_BIND_CONSTANT_BUFFER) != 0,
+        "Constant buffer bind flag is missing");
 }
 
 void TestObjImport() {
@@ -60,6 +97,7 @@ void TestObjImport() {
 
 int main() {
     try {
+        TestConstantBufferBinding();
         TestObjImport();
         std::cout << "LRenderImportTests: all tests passed\n";
         return 0;

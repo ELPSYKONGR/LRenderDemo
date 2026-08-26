@@ -29,14 +29,18 @@ void ThrowIfFailed(HRESULT result, const char* message) {
     }
 }
 
-} // namespace
-
-BasicMeshEffect::BasicMeshEffect(
-    ID3D11Device* device, const std::filesystem::path& shaderDirectory) {
+ID3D11Device* RequireDevice(ID3D11Device* device) {
     if (device == nullptr) {
         throw std::invalid_argument("BasicMeshEffect requires a D3D11 device");
     }
+    return device;
+}
 
+} // namespace
+
+BasicMeshEffect::BasicMeshEffect(
+    ID3D11Device* device, const std::filesystem::path& shaderDirectory)
+    : constantBuffer_(RequireDevice(device)) {
     states_ = std::make_unique<DirectX::CommonStates>(device);
     const auto vertexShader = LoadShader(shaderDirectory / L"BasicMeshVS.cso");
     const auto pixelShader = LoadShader(shaderDirectory / L"BasicMeshPS.cso");
@@ -65,15 +69,6 @@ BasicMeshEffect::BasicMeshEffect(
         vertexShader->GetBufferSize(),
         inputLayout_.GetAddressOf()),
         "Failed to create basic mesh input layout");
-
-    static_assert(sizeof(Constants) % 16 == 0);
-    D3D11_BUFFER_DESC bufferDescription{};
-    bufferDescription.ByteWidth = sizeof(Constants);
-    bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-    bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    ThrowIfFailed(
-        device->CreateBuffer(&bufferDescription, nullptr, constantBuffer_.GetAddressOf()),
-        "Failed to create basic mesh constant buffer");
 }
 
 void BasicMeshEffect::Bind(
@@ -102,7 +97,7 @@ void BasicMeshEffect::Bind(
         selectedTint.z * material.baseColorFactor.z,
         selectedTint.w * material.baseColorFactor.w};
 
-    Constants constants{};
+    BasicMeshConstants constants{};
     constants.worldViewProjection = world * view * projection;
     constants.world = world;
     constants.worldInverseTranspose = world.Invert().Transpose();
@@ -136,7 +131,7 @@ void BasicMeshEffect::Bind(
         material.shininess,
         material.diffuseStrength,
         static_cast<float>(material.displayMode)};
-    context->UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &constants, 0, 0);
+    constantBuffer_.Update(context, constants);
 
     context->IASetInputLayout(inputLayout_.Get());
     context->RSSetState(
@@ -144,9 +139,8 @@ void BasicMeshEffect::Bind(
         (material.doubleSided ? states_->CullNone() : states_->CullClockwise()));
     context->VSSetShader(vertexShader_.Get(), nullptr, 0);
     context->PSSetShader(pixelShader_.Get(), nullptr, 0);
-    ID3D11Buffer* constantBuffer = constantBuffer_.Get();
-    context->VSSetConstantBuffers(0, 1, &constantBuffer);
-    context->PSSetConstantBuffers(0, 1, &constantBuffer);
+    constantBuffer_.BindVS(context, 0);
+    constantBuffer_.BindPS(context, 0);
     ID3D11ShaderResourceView* texture = material.baseColorTexture->ShaderResourceView();
     ID3D11SamplerState* sampler = material.sampler->Get();
     context->PSSetShaderResources(0, 1, &texture);
