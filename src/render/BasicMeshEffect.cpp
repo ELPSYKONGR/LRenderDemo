@@ -72,25 +72,18 @@ BasicMeshEffect::BasicMeshEffect(
 }
 
 void BasicMeshEffect::Bind(
-    ID3D11DeviceContext* context,
-    const DirectX::SimpleMath::Matrix& world,
-    const DirectX::SimpleMath::Matrix& view,
-    const DirectX::SimpleMath::Matrix& projection,
-    const DirectX::SimpleMath::Vector3& cameraPosition,
-    const Material& material,
-    const DirectX::SimpleMath::Color& tint,
-    bool isSelected) {
-    if (context == nullptr) {
-        throw std::invalid_argument("BasicMeshEffect requires a D3D11 context");
-    }
+    const EffectFrameContext& frame, const EffectDrawContext& draw) {
+    ID3D11DeviceContext* context = frame.DeviceContext();
+    const auto& world = draw.World();
+    const Material& material = draw.ResolvedMaterial();
     if (material.baseColorTexture == nullptr || material.sampler == nullptr) {
         throw std::invalid_argument("BasicMeshEffect requires a texture and sampler material");
     }
 
     constexpr DirectX::SimpleMath::Color selectionColor{1.0F, 0.84F, 0.0F, 1.0F};
-    const DirectX::SimpleMath::Color selectedTint = isSelected
-        ? DirectX::SimpleMath::Color::Lerp(tint, selectionColor, 0.28F)
-        : tint;
+    const DirectX::SimpleMath::Color selectedTint = draw.IsSelected()
+        ? DirectX::SimpleMath::Color::Lerp(draw.Tint(), selectionColor, 0.28F)
+        : draw.Tint();
     const DirectX::SimpleMath::Color finalColor{
         selectedTint.x * material.baseColorFactor.x,
         selectedTint.y * material.baseColorFactor.y,
@@ -98,10 +91,11 @@ void BasicMeshEffect::Bind(
         selectedTint.w * material.baseColorFactor.w};
 
     BasicMeshConstants constants{};
-    constants.worldViewProjection = world * view * projection;
+    constants.worldViewProjection = world * frame.View() * frame.Projection();
     constants.world = world;
     constants.worldInverseTranspose = world.Invert().Transpose();
     constants.baseColor = finalColor;
+    const auto& cameraPosition = frame.CameraPosition();
     constants.cameraPosition = {cameraPosition.x, cameraPosition.y, cameraPosition.z, 1.0F};
     constants.ambientColor = lights_.ambient;
     auto directionalDirection = lights_.directional.direction;

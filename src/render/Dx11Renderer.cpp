@@ -156,14 +156,10 @@ void Dx11Renderer::RenderScene(
     viewportTarget_.BindAndClear(context_.Get(), clearColor);
     const float aspect = static_cast<float>(viewportTarget_.Width()) /
                          static_cast<float>(viewportTarget_.Height());
-    const auto view = camera.ViewMatrix();
-    const auto projection = camera.ProjectionMatrix(aspect);
-    const auto cameraPosition = camera.Position();
+    const EffectFrameContext frameContext{context_.Get(), camera, aspect};
 
     for (const Model& sceneModel : scene.Models()) {
         for (const Entity& entity : sceneModel.entities) {
-            const auto world = entity.transform.ToMatrix();
-            const bool isSelected = entity.id == selectedEntityId;
             if (const MeshGeometry* meshGeometry = entity.Mesh()) {
                 const auto asset = resources_->LoadMeshAsset(meshGeometry->assetPath);
                 if (meshGeometry->assetEntityIndex >= asset->entities.size()) {
@@ -171,19 +167,17 @@ void Dx11Renderer::RenderScene(
                 }
                 for (const MeshPart& part :
                      asset->entities[meshGeometry->assetEntityIndex].parts) {
-                    const Material material = ResolveMaterial(part.material, entity.material);
-                    effect_->Bind(
-                        context_.Get(), world, view, projection, cameraPosition,
-                        material, entity.material.baseColor, isSelected);
+                    const EffectDrawContext drawContext{
+                        entity, ResolveMaterial(part.material, entity.material), selectedEntityId};
+                    effect_->Bind(frameContext, drawContext);
                     part.mesh->Draw(context_.Get());
                 }
                 continue;
             }
 
-            const Material material = ResolveMaterial(primitiveMaterial_, entity.material);
-            effect_->Bind(
-                context_.Get(), world, view, projection, cameraPosition,
-                material, entity.material.baseColor, isSelected);
+            const EffectDrawContext drawContext{
+                entity, ResolveMaterial(primitiveMaterial_, entity.material), selectedEntityId};
+            effect_->Bind(frameContext, drawContext);
             const Mesh* mesh = nullptr;
             switch (entity.GetPrimitiveType()) {
             case PrimitiveType::Cube: mesh = cubeMesh_.get(); break;

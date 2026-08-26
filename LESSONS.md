@@ -103,6 +103,21 @@
   Effect 共享的每帧数据后，再评估 `b0/b1/b2` 和 BeginFrame/BindObject/BindMaterial 调用协议。
 - **状态**：已接受。
 
+### ADR-009：用并列 Context 类表达 Effect 参数生命周期
+
+- **日期**：2026-08-26
+- **背景**：`IRenderEffect::Bind` 的八个位置参数混合了 D3D11 Context、每帧 Camera 数据和逐 Draw
+  的 Entity/Material/选择状态，调用点易错且无法直接看出更新频率。
+- **备选方案**：单个大参数包；共同父类加两个派生 Context；`BeginFrame` 有状态协议；或并列的
+  Frame/Draw Context 快照。
+- **决策**：使用无共同父类的两个 `final class`。Frame Context 每帧从 Camera 构造一次；Draw
+  Context 每 MeshPart 从 Entity、解析后 Material 和 selectedEntityId 构造；Effect 只接收两者。
+- **原因**：Frame 与 Draw 必须同时存在且不可相互替换，继承不符合 is-a 关系；构造快照既减少
+  重复相机计算，也不让 Effect 依赖完整 Camera/Entity 行为或保存跨调用的临时状态。
+- **结果**：`Bind(frame, draw)` 具有明确生命周期；未来真正拆分 Frame/Object/Material cbuffer 时，
+  可以在此基础上评估 `BeginFrame`，当前不提前引入时间耦合。
+- **状态**：已接受。
+
 ## 已知问题与经验
 
 ### PIT-001：子模块初始化中断会留下受保护的 Git 元数据

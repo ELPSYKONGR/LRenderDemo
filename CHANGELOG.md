@@ -4,6 +4,7 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-26 | 重构 | 用 Frame/Draw Context 收敛 Effect Bind 参数并集中生成快照 | render、docs | 本次提交 |
 | 08-26 | 重构 | 抽离类型化 DX11 常量缓冲并统一 BasicMesh VS/PS 常量布局 | render、shaders、tests、docs | 本次提交 |
 | 08-25 | 功能 | 增加 Scene/Model/Entity 层级、混合 Solid/Mesh 绘制和 OBJ/MTL 导入 | core、commands、editor、render、tests | 本次提交 |
 | 08-25 | 功能 | 增加实体材质编辑、贴图选择和显示控制 | core、commands、editor、render、shaders | 本次提交 |
@@ -14,6 +15,19 @@
 | 08-20 | 文档 | 增加 DX11 教程差距分析、实施路线和素材映射 | docs、assets、scripts | 工作区 |
 
 ---
+
+## [2026-08-26] 用 Frame/Draw Context 收敛 Effect Bind 参数
+
+- **文件**：`src/render/EffectContext.*`、`src/render/IRenderEffect.h`、
+  `src/render/BasicMeshEffect.*`、`src/render/Dx11Renderer.cpp`
+- **范围**：逐网格 Effect 的调用协议和参数生命周期。
+- **改动**：新增并列的 `EffectFrameContext final` 与 `EffectDrawContext final`；前者每帧从 Camera
+  生成 View/Projection/Position 快照并校验 D3D11 Context，后者从 Entity 生成 World/Tint/Selected
+  快照并按值持有当前 MeshPart 已解析的 GPU Material。`Bind()` 从八个参数缩减为 `frame/draw` 两个。
+- **边界**：两个 Context 不继承共同父类，因为它们不能互相替换；Camera/Entity 只在 Context 构造
+  边界出现，Effect 仍消费稳定的渲染快照。Shader、cbuffer、Scene 和资源缓存行为不变。
+- **验证**：VS2022 Debug 构建、CTest 和可见窗口运行验证。
+- **提交**：本次提交
 
 ## [2026-08-26] 抽离 DX11 常量缓冲与 BasicMesh 布局
 

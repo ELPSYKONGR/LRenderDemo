@@ -19,7 +19,8 @@
 | `src/commands/CreateEntityCommand.*` | 可逆实体创建 | `Execute()`、`Undo()` | Scene |
 | `src/commands/CreateModelCommand.*` | 可逆模型整体创建 | `Execute()`、`Undo()` | Scene |
 | `src/commands/MaterialCommand.*` | 可逆实体材质编辑 | `Execute()`、`Undo()` | Scene、EntityMaterial |
-| `src/render/IRenderEffect.h` | 逐网格的 Effect 边界 | `Bind()` | D3D11、SimpleMath |
+| `src/render/EffectContext.*` | 从 Camera/Entity/Material 构造不可变的帧与绘制快照 | `EffectFrameContext`、`EffectDrawContext` | Camera、Scene、Material、D3D11 |
+| `src/render/IRenderEffect.h` | 逐网格 Effect 的两 Context 绑定边界 | `Bind(frame, draw)` | EffectContext |
 | `src/render/Dx11ConstantBuffer.h` | 16 字节对齐的类型化 DX11 常量缓冲 RAII 封装 | `Update()`、`BindVS()`、`BindPS()` | D3D11、ComPtr |
 | `src/render/BasicMeshConstants.h` | BasicMesh C++ 常量布局 | `BasicMeshConstants` | SimpleMath |
 | `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `Bind()`、`Lights()` | BasicMeshConstants、Dx11ConstantBuffer、D3DCompiler |

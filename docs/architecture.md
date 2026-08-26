@@ -65,6 +65,12 @@ FBX 等扩展名即可；场景层级、编辑器导入流程、渲染器和缓�
 ```mermaid
 graph TD
     Renderer[Dx11Renderer] --> Effect[BasicMeshEffect]
+    Camera[Camera] --> Frame[EffectFrameContext]
+    Entity[Entity + resolved Material] --> Draw[EffectDrawContext]
+    Renderer --> Frame
+    Renderer --> Draw
+    Frame --> Effect
+    Draw --> Effect
     Effect --> CpuLayout[BasicMeshConstants.h]
     Effect --> Buffer[Dx11ConstantBuffer of BasicMeshConstants]
     Buffer --> D3DBuffer[ID3D11Buffer]
@@ -78,6 +84,10 @@ graph TD
 `Dx11ConstantBuffer<T>` 只封装类型大小检查、`ComPtr` 所有权、数据更新和 VS/PS 槽位绑定。
 `BasicMeshEffect` 仍负责把矩阵、相机、灯光和材质组装为 `BasicMeshConstants`，并决定使用 `b0` 和
 哪些 Shader 阶段。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli` 消除重复声明。
+
+`Dx11Renderer` 每帧从 Camera 构造一次 `EffectFrameContext`，每个 MeshPart 从 Entity、解析后的
+Material 和选择 ID 构造一个 `EffectDrawContext`，然后调用 `Bind(frame, draw)`。两个 Context 是
+并列的不可变快照，不继承共同父类，也不会被 Effect 跨调用保存。
 
 当前没有按 Frame/Object/Material 拆分多个缓冲，因为还没有第二个正式 Effect 或多个 Pass 共享同一
 份每帧数据。等真实复用关系出现后，再根据更新频率调整槽位和 `IRenderEffect` 调用协议；不让通用

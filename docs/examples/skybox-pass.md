@@ -24,7 +24,7 @@
 |---|---|
 | 天空盒继承哪个类？ | 新增 `IRenderPass`，然后让 `SkyboxPass final : public IRenderPass` |
 | `SkyboxEffect` 是否继承 `IRenderEffect`？ | 不继承。它是 `SkyboxPass` 内部的管线状态封装 |
-| 为什么不用 `IRenderEffect`？ | `IRenderEffect::Bind` 表示“为一个场景网格绑定 world/color/selected 状态”，天空盒每帧只绘制一次，不属于任何实体 |
+| 为什么不用 `IRenderEffect`？ | `IRenderEffect::Bind(frame, draw)` 要求逐网格的 Frame/Draw 快照，天空盒每帧只绘制一次，不属于任何实体 |
 | 谁决定绘制顺序？ | `Dx11Renderer::RenderScene` |
 | 天空盒放在什么时候画？ | 不透明物体之后，使用深度比较 `LESS_EQUAL`、关闭深度写入 |
 | 谁拥有 DDS 和立方体网格？ | `SkyboxPass` |
@@ -37,25 +37,20 @@
 
 ```cpp
 virtual void Bind(
-    ID3D11DeviceContext* context,
-    const Matrix& world,
-    const Matrix& view,
-    const Matrix& projection,
-    const Color& color,
-    bool isSelected) = 0;
+    const EffectFrameContext& frame,
+    const EffectDrawContext& draw) = 0;
 ```
 
 这个签名明确描述了逐网格工作：
 
-- `world` 来自某个实体的 `Transform`；
-- `color` 来自实体颜色；
-- `isSelected` 来自编辑器选择状态；
+- `frame` 每帧从 Camera 和 D3D11 Context 构造一次；
+- `draw` 从某个实体、解析后 Material 和编辑器选择状态构造；
 - `Dx11Renderer` 在场景实体循环中调用一次 `Bind` 和一次 `Mesh::Draw`。
 
 天空盒没有实体变换、选择颜色，也不应随实体数量重复绘制。如果强行继承 `IRenderEffect`，通常会
 出现以下问题：
 
-- 为了调用接口而伪造 world/color/selected 参数；
+- 为了调用接口而伪造 Frame/Draw Context；
 - 天空盒被错误地放进实体循环；
 - Pass 顺序、目标 RTV/DSV 和资源依赖无法从接口看出来；
 - 后续加入阴影、SSAO、SSR 时继续堆叠特殊判断。
@@ -65,7 +60,7 @@ virtual void Bind(
 ```mermaid
 classDiagram
     class IRenderEffect {
-        +Bind(context, world, view, projection, color, selected)
+        +Bind(frame, draw)
         +Name()
     }
     class BasicMeshEffect

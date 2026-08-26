@@ -10,7 +10,8 @@
 1. 添加 `src/render/effects/MyEffect.h` 和 `.cpp`。
 2. 在 `src/shaders/` 添加 VS/PS，并参考 `src/CMakeLists.txt` 登记 `FXCompile` 类型、入口点、
    Shader Model 和按配置隔离的 CSO 输出路径。
-3. 实现 `IRenderEffect::Bind`。
+3. 实现 `IRenderEffect::Bind(frame, draw)`；每帧数据从 `EffectFrameContext` 读取，每次绘制数据从
+   `EffectDrawContext` 读取，不要再次查询 Camera 或 Entity。
 4. 定义该 Effect 专用的 C++ 常量结构和共享 `.hlsli` 布局；在类内部持有
    `Dx11ConstantBuffer<T>`，由 Effect 决定参数语义、寄存器槽位和使用它的 Shader 阶段。
 5. 在类内部持有着色器、输入布局和固定状态；从构建目录加载 CSO，不直接加载源码目录。
@@ -26,7 +27,7 @@
 
 天空盒、阴影图等功能每帧按场景执行一次，不属于单个实体。此类功能应继承 `IRenderPass`，由 Pass
 负责绘制时机和资源依赖，并在内部组合专用 Effect。不要为了复用接口而伪造
-`IRenderEffect::Bind` 所需的 world、color 或 selected 参数。
+`EffectFrameContext` 或 `EffectDrawContext`。
 
 完整示例见 `docs/examples/skybox-pass.md`，其中说明了 `SkyboxPass`、`SkyboxEffect`、cubemap
 DDS、深度状态和 `Dx11Renderer` 接入方式。

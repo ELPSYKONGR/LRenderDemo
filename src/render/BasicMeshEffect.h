@@ -23,14 +23,7 @@ public:
     BasicMeshEffect(ID3D11Device* device, const std::filesystem::path& shaderDirectory);
 
     void Bind(
-        ID3D11DeviceContext* context,
-        const DirectX::SimpleMath::Matrix& world,
-        const DirectX::SimpleMath::Matrix& view,
-        const DirectX::SimpleMath::Matrix& projection,
-        const DirectX::SimpleMath::Vector3& cameraPosition,
-        const Material& material,
-        const DirectX::SimpleMath::Color& tint,
-        bool isSelected) override;
+        const EffectFrameContext& frame, const EffectDrawContext& draw) override;
 
     [[nodiscard]] std::string_view Name() const noexcept override { return "Basic Lit"; }
     void SetWireframe(bool isWireframe) noexcept { isWireframe_ = isWireframe; }

@@ -70,6 +70,7 @@ set(LRENDER_DEMO_HEADERS
     render/BasicMeshEffect.h
     render/Dx11ConstantBuffer.h
     render/Dx11Renderer.h
+    render/EffectContext.h
     render/IRenderEffect.h
     render/Lighting.h
     render/PrimitiveFactory.h
@@ -82,6 +83,7 @@ add_executable(LRenderDemo WIN32
     platform/Window.cpp
     render/BasicMeshEffect.cpp
     render/Dx11Renderer.cpp
+    render/EffectContext.cpp
     render/PrimitiveFactory.cpp
     render/RenderTarget.cpp
     editor/EditorAssets.cpp
