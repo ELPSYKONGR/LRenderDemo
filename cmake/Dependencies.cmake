@@ -14,6 +14,10 @@ if(NOT EXISTS "${LRENDER_EXTERNAL_DIR}/cgltf/cgltf.c" OR
     message(FATAL_ERROR "Missing vendored external/cgltf sources.")
 endif()
 
+if(NOT EXISTS "${LRENDER_EXTERNAL_DIR}/nlohmann_json/single_include/nlohmann/json.hpp")
+    message(FATAL_ERROR "Missing external/nlohmann_json v3.11.3 submodule.")
+endif()
+
 set(BUILD_XAUDIO_WIN7 OFF CACHE BOOL "" FORCE)
 set(BUILD_XAUDIO_REDIST OFF CACHE BOOL "" FORCE)
 set(BUILD_TOOLS OFF CACHE BOOL "Do not build DirectXTK command-line tools" FORCE)
@@ -49,3 +53,8 @@ add_library(tinyobjloader STATIC
 target_include_directories(tinyobjloader PUBLIC
     "${LRENDER_EXTERNAL_DIR}/tinyobjloader")
 set_target_properties(tinyobjloader PROPERTIES FOLDER "External")
+
+add_library(nlohmann_json INTERFACE)
+target_include_directories(nlohmann_json INTERFACE
+    "${LRENDER_EXTERNAL_DIR}/nlohmann_json/single_include")
+set_target_properties(nlohmann_json PROPERTIES FOLDER "External")

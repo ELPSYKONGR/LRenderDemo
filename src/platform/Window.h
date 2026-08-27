@@ -21,6 +21,9 @@ public:
 
     void Create(HINSTANCE instance, std::wstring_view title, std::uint32_t width, std::uint32_t height);
     [[nodiscard]] bool PumpMessages();
+    void Close();
+    [[nodiscard]] bool CloseRequested() const noexcept { return closeRequested_; }
+    void ClearCloseRequest() noexcept { closeRequested_ = false; }
     [[nodiscard]] HWND Handle() const noexcept { return handle_; }
     [[nodiscard]] std::uint32_t ClientWidth() const noexcept { return clientWidth_; }
     [[nodiscard]] std::uint32_t ClientHeight() const noexcept { return clientHeight_; }
@@ -33,6 +36,7 @@ private:
     HWND handle_{};
     std::uint32_t clientWidth_{1};
     std::uint32_t clientHeight_{1};
+    bool closeRequested_{false};
     static constexpr wchar_t kWindowClassName[] = L"LRenderDemoWindow";
 };
 

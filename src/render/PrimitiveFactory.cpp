@@ -10,6 +10,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 namespace lrender {
@@ -36,30 +37,49 @@ void AddFace(
 
 } // namespace
 
-std::unique_ptr<Mesh> PrimitiveFactory::CreateCube(ID3D11Device* device) {
-    constexpr float half = 0.5F;
+std::unique_ptr<Mesh> PrimitiveFactory::Create(
+    ID3D11Device* device, const SolidGeometry& geometry) {
+    return std::visit(
+        [device](const auto& parameters) {
+            using Parameters = std::decay_t<decltype(parameters)>;
+            if constexpr (std::is_same_v<Parameters, CubeParameters>) {
+                return CreateCube(device, parameters);
+            } else if constexpr (std::is_same_v<Parameters, SphereParameters>) {
+                return CreateSphere(device, parameters);
+            } else {
+                return CreatePlane(device, parameters);
+            }
+        },
+        geometry.Parameters());
+}
+
+std::unique_ptr<Mesh> PrimitiveFactory::CreateCube(
+    ID3D11Device* device, const CubeParameters& parameters) {
+    const auto half = parameters.size * 0.5F;
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
     vertices.reserve(24);
     indices.reserve(36);
 
-    AddFace(vertices, indices, {{{-half, -half, half}, {half, -half, half},
-                                 {half, half, half}, {-half, half, half}}}, {0, 0, 1});
-    AddFace(vertices, indices, {{{half, -half, -half}, {-half, -half, -half},
-                                 {-half, half, -half}, {half, half, -half}}}, {0, 0, -1});
-    AddFace(vertices, indices, {{{half, -half, half}, {half, -half, -half},
-                                 {half, half, -half}, {half, half, half}}}, {1, 0, 0});
-    AddFace(vertices, indices, {{{-half, -half, -half}, {-half, -half, half},
-                                 {-half, half, half}, {-half, half, -half}}}, {-1, 0, 0});
-    AddFace(vertices, indices, {{{-half, half, half}, {half, half, half},
-                                 {half, half, -half}, {-half, half, -half}}}, {0, 1, 0});
-    AddFace(vertices, indices, {{{-half, -half, -half}, {half, -half, -half},
-                                 {half, -half, half}, {-half, -half, half}}}, {0, -1, 0});
+    AddFace(vertices, indices, {{{-half.x, -half.y, half.z}, {half.x, -half.y, half.z},
+                                 {half.x, half.y, half.z}, {-half.x, half.y, half.z}}}, {0, 0, 1});
+    AddFace(vertices, indices, {{{half.x, -half.y, -half.z}, {-half.x, -half.y, -half.z},
+                                 {-half.x, half.y, -half.z}, {half.x, half.y, -half.z}}}, {0, 0, -1});
+    AddFace(vertices, indices, {{{half.x, -half.y, half.z}, {half.x, -half.y, -half.z},
+                                 {half.x, half.y, -half.z}, {half.x, half.y, half.z}}}, {1, 0, 0});
+    AddFace(vertices, indices, {{{-half.x, -half.y, -half.z}, {-half.x, -half.y, half.z},
+                                 {-half.x, half.y, half.z}, {-half.x, half.y, -half.z}}}, {-1, 0, 0});
+    AddFace(vertices, indices, {{{-half.x, half.y, half.z}, {half.x, half.y, half.z},
+                                 {half.x, half.y, -half.z}, {-half.x, half.y, -half.z}}}, {0, 1, 0});
+    AddFace(vertices, indices, {{{-half.x, -half.y, -half.z}, {half.x, -half.y, -half.z},
+                                 {half.x, -half.y, half.z}, {-half.x, -half.y, half.z}}}, {0, -1, 0});
     return std::make_unique<Mesh>(device, vertices, indices);
 }
 
 std::unique_ptr<Mesh> PrimitiveFactory::CreateSphere(
-    ID3D11Device* device, std::uint16_t slices, std::uint16_t stacks) {
+    ID3D11Device* device, const SphereParameters& parameters) {
+    const std::uint16_t slices = parameters.slices;
+    const std::uint16_t stacks = parameters.stacks;
     if (slices < 3 || stacks < 2) {
         throw std::invalid_argument("Sphere requires at least 3 slices and 2 stacks");
     }
@@ -81,7 +101,10 @@ std::unique_ptr<Mesh> PrimitiveFactory::CreateSphere(
             const float longitude = DirectX::XM_2PI * static_cast<float>(slice) / slices;
             const DirectX::XMFLOAT3 normal{
                 radius * std::sin(longitude), y, radius * std::cos(longitude)};
-            const DirectX::XMFLOAT3 position{normal.x * 0.5F, normal.y * 0.5F, normal.z * 0.5F};
+            const DirectX::XMFLOAT3 position{
+                normal.x * parameters.radius,
+                normal.y * parameters.radius,
+                normal.z * parameters.radius};
             const DirectX::XMFLOAT2 textureCoordinate{
                 static_cast<float>(slice) / slices,
                 static_cast<float>(stack) / stacks};
@@ -100,16 +123,44 @@ std::unique_ptr<Mesh> PrimitiveFactory::CreateSphere(
     return std::make_unique<Mesh>(device, vertices, indices);
 }
 
-std::unique_ptr<Mesh> PrimitiveFactory::CreatePlane(ID3D11Device* device) {
-    constexpr float halfExtent = 5.0F;
-    constexpr float uvRepeat = 5.0F;
-    constexpr std::array<Vertex, 4> vertices{{
-        {{-halfExtent, 0.0F, -halfExtent}, {0.0F, 1.0F, 0.0F}, {0.0F, uvRepeat}},
-        {{-halfExtent, 0.0F, halfExtent}, {0.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
-        {{halfExtent, 0.0F, halfExtent}, {0.0F, 1.0F, 0.0F}, {uvRepeat, 0.0F}},
-        {{halfExtent, 0.0F, -halfExtent}, {0.0F, 1.0F, 0.0F}, {uvRepeat, uvRepeat}},
-    }};
-    constexpr std::array<std::uint32_t, 6> indices{0, 1, 2, 0, 2, 3};
+std::unique_ptr<Mesh> PrimitiveFactory::CreatePlane(
+    ID3D11Device* device, const PlaneParameters& parameters) {
+    const std::uint32_t columns = static_cast<std::uint32_t>(parameters.subdivisionsZ) + 1U;
+    const std::size_t vertexCount =
+        (static_cast<std::size_t>(parameters.subdivisionsX) + 1U) * columns;
+    if (vertexCount > std::numeric_limits<std::uint32_t>::max()) {
+        throw std::overflow_error("Plane exceeds the 32-bit vertex limit");
+    }
+    std::vector<Vertex> vertices;
+    std::vector<std::uint32_t> indices;
+    vertices.reserve(vertexCount);
+    indices.reserve(
+        static_cast<std::size_t>(parameters.subdivisionsX) *
+        parameters.subdivisionsZ * 6U);
+
+    const float halfX = parameters.size.x * 0.5F;
+    const float halfZ = parameters.size.y * 0.5F;
+    const float repeatU = parameters.size.x * 0.5F;
+    const float repeatV = parameters.size.y * 0.5F;
+    for (std::uint32_t x = 0; x <= parameters.subdivisionsX; ++x) {
+        const float tx = static_cast<float>(x) / parameters.subdivisionsX;
+        for (std::uint32_t z = 0; z <= parameters.subdivisionsZ; ++z) {
+            const float tz = static_cast<float>(z) / parameters.subdivisionsZ;
+            vertices.push_back({
+                {-halfX + parameters.size.x * tx, 0.0F, -halfZ + parameters.size.y * tz},
+                {0.0F, 1.0F, 0.0F},
+                {repeatU * tx, repeatV * (1.0F - tz)}});
+        }
+    }
+    for (std::uint32_t x = 0; x < parameters.subdivisionsX; ++x) {
+        for (std::uint32_t z = 0; z < parameters.subdivisionsZ; ++z) {
+            const std::uint32_t first = x * columns + z;
+            const std::uint32_t next = first + columns;
+            indices.insert(indices.end(), {
+                first, first + 1U, next + 1U,
+                first, next + 1U, next});
+        }
+    }
     return std::make_unique<Mesh>(device, vertices, indices);
 }
 

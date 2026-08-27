@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/SolidGeometry.h"
 #include "render/Mesh.h"
 
 #include <memory>
@@ -14,10 +15,16 @@ namespace lrender {
 
 class PrimitiveFactory final {
 public:
-    [[nodiscard]] static std::unique_ptr<Mesh> CreateCube(ID3D11Device* device);
+    [[nodiscard]] static std::unique_ptr<Mesh> Create(
+        ID3D11Device* device, const SolidGeometry& geometry);
+
+private:
+    [[nodiscard]] static std::unique_ptr<Mesh> CreateCube(
+        ID3D11Device* device, const CubeParameters& parameters);
     [[nodiscard]] static std::unique_ptr<Mesh> CreateSphere(
-        ID3D11Device* device, std::uint16_t slices = 32, std::uint16_t stacks = 20);
-    [[nodiscard]] static std::unique_ptr<Mesh> CreatePlane(ID3D11Device* device);
+        ID3D11Device* device, const SphereParameters& parameters);
+    [[nodiscard]] static std::unique_ptr<Mesh> CreatePlane(
+        ID3D11Device* device, const PlaneParameters& parameters);
 };
 
 } // namespace lrender

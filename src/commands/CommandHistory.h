@@ -9,6 +9,7 @@
 #include "commands/ICommand.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -26,15 +27,29 @@ public:
 
     bool Undo();
     bool Redo();
+    void Clear() noexcept;
+    void MarkSaved() noexcept { savedRevision_ = currentRevision_; }
     [[nodiscard]] bool CanUndo() const noexcept { return !undoStack_.empty(); }
     [[nodiscard]] bool CanRedo() const noexcept { return !redoStack_.empty(); }
+    [[nodiscard]] bool IsModified() const noexcept {
+        return currentRevision_ != savedRevision_;
+    }
 
 private:
+    struct Entry {
+        std::unique_ptr<ICommand> command;
+        std::uint64_t beforeRevision{};
+        std::uint64_t afterRevision{};
+    };
+
     void Store(std::unique_ptr<ICommand> command);
 
     std::size_t capacity_;
-    std::vector<std::unique_ptr<ICommand>> undoStack_;
-    std::vector<std::unique_ptr<ICommand>> redoStack_;
+    std::vector<Entry> undoStack_;
+    std::vector<Entry> redoStack_;
+    std::uint64_t currentRevision_{};
+    std::uint64_t savedRevision_{};
+    std::uint64_t nextRevision_{1};
 };
 
 } // namespace lrender

@@ -46,13 +46,25 @@ Model& Scene::CreateMeshModel(
 }
 
 Entity& Scene::CreateEntity(ModelId modelId, PrimitiveType primitive, std::string name) {
-    if (primitive == PrimitiveType::Mesh) {
+    switch (primitive) {
+    case PrimitiveType::Cube:
+        return CreateSolidEntity(modelId, SolidGeometry::Cube(), std::move(name));
+    case PrimitiveType::Sphere:
+        return CreateSolidEntity(modelId, SolidGeometry::Sphere(), std::move(name));
+    case PrimitiveType::Plane:
+        return CreateSolidEntity(modelId, SolidGeometry::Plane(), std::move(name));
+    case PrimitiveType::Mesh:
         throw std::invalid_argument("Use CreateMeshEntity for mesh entities");
     }
+    throw std::invalid_argument("Unknown primitive type");
+}
+
+Entity& Scene::CreateSolidEntity(
+    ModelId modelId, SolidGeometry geometry, std::string name) {
     Entity entity;
     entity.id = nextEntityId_++;
     entity.name = std::move(name);
-    entity.geometry = SolidGeometry{primitive};
+    entity.geometry = std::move(geometry);
     return AddEntity(modelId, std::move(entity));
 }
 

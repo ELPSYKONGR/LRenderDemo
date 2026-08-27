@@ -6,12 +6,11 @@
  */
 #include "render/Dx11Renderer.h"
 
-#include "render/PrimitiveFactory.h"
-
 #include <backends/imgui_impl_dx11.h>
 #include <algorithm>
 #include <array>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace lrender {
 namespace {
@@ -91,9 +90,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
 
     CreateBackBuffer();
     viewportTarget_.Resize(device_.Get(), 960, 640);
-    cubeMesh_ = PrimitiveFactory::CreateCube(device_.Get());
-    sphereMesh_ = PrimitiveFactory::CreateSphere(device_.Get());
-    planeMesh_ = PrimitiveFactory::CreatePlane(device_.Get());
+    solidMeshes_ = std::make_unique<SolidMeshCache>(device_.Get());
     effect_ = std::make_unique<BasicMeshEffect>(device_.Get(), LRENDER_SHADER_OUTPUT_DIR);
     resources_ = std::make_unique<ResourceCache>(device_.Get(), context_.Get());
     primitiveMaterial_ = resources_->CheckerMaterial();
@@ -107,9 +104,7 @@ void Dx11Renderer::Shutdown() noexcept {
     effect_.reset();
     primitiveMaterial_ = {};
     resources_.reset();
-    planeMesh_.reset();
-    sphereMesh_.reset();
-    cubeMesh_.reset();
+    solidMeshes_.reset();
     viewportTarget_.Reset();
     backBufferView_.Reset();
     swapChain_.Reset();
@@ -157,6 +152,7 @@ void Dx11Renderer::RenderScene(
     const float aspect = static_cast<float>(viewportTarget_.Width()) /
                          static_cast<float>(viewportTarget_.Height());
     const EffectFrameContext frameContext{context_.Get(), camera, aspect};
+    std::unordered_set<EntityId> activeSolids;
 
     for (const Model& sceneModel : scene.Models()) {
         for (const Entity& entity : sceneModel.entities) {
@@ -178,19 +174,15 @@ void Dx11Renderer::RenderScene(
             const EffectDrawContext drawContext{
                 entity, ResolveMaterial(primitiveMaterial_, entity.material), selectedEntityId};
             effect_->Bind(frameContext, drawContext);
-            const Mesh* mesh = nullptr;
-            switch (entity.GetPrimitiveType()) {
-            case PrimitiveType::Cube: mesh = cubeMesh_.get(); break;
-            case PrimitiveType::Sphere: mesh = sphereMesh_.get(); break;
-            case PrimitiveType::Plane: mesh = planeMesh_.get(); break;
-            case PrimitiveType::Mesh: break;
+            const SolidGeometry* solid = entity.Solid();
+            if (solid == nullptr || solidMeshes_ == nullptr) {
+                throw std::runtime_error("Solid geometry cache is not initialized");
             }
-            if (mesh == nullptr) {
-                throw std::runtime_error("Solid primitive mesh is not initialized");
-            }
-            mesh->Draw(context_.Get());
+            activeSolids.insert(entity.id);
+            solidMeshes_->Resolve(entity.id, *solid).Draw(context_.Get());
         }
     }
+    solidMeshes_->Prune(activeSolids);
     nullResource = nullptr;
     ID3D11SamplerState* nullSampler = nullptr;
     context_->PSSetShaderResources(0, 1, &nullResource);
@@ -211,6 +203,12 @@ void Dx11Renderer::PreloadTexture(const std::filesystem::path& path) {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
     static_cast<void>(resources_->LoadTexture(path));
+}
+
+void Dx11Renderer::ClearRuntimeCaches() noexcept {
+    if (solidMeshes_) {
+        solidMeshes_->Clear();
+    }
 }
 
 ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity) {

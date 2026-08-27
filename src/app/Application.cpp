@@ -24,6 +24,10 @@ int Application::Run() {
     Logger::Instance().Info("app", "Application frame loop started");
 
     while (window_.PumpMessages()) {
+        if (window_.CloseRequested()) {
+            window_.ClearCloseRequest();
+            editor_.RequestExit();
+        }
         renderer_.ResizeSwapChain(window_.ClientWidth(), window_.ClientHeight());
 
         ImGui_ImplDX11_NewFrame();
@@ -31,6 +35,10 @@ int Application::Run() {
         ImGui::NewFrame();
 
         editor_.Draw(scene_, history_, camera_, renderer_);
+        if (editor_.ConsumeExitConfirmed()) {
+            window_.Close();
+            continue;
+        }
         renderer_.RenderScene(scene_, camera_, editor_.SelectedEntityId());
 
         ImGui::Render();

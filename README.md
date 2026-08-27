@@ -9,7 +9,7 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 - Win32 原生窗口，以及 D3D11 设备和交换链
 - 基于 Dear ImGui Docking 的界面，包含视口、层级、检查器和工具面板
 - 支持环绕、平移、缩放、八个标准视角和自动旋转的编辑器相机
-- 创建立方体、UV 球体和水平平面
+- 按尺寸、半径和细分参数创建并实时编辑立方体、UV 球体和水平平面
 - 实体级 Blinn-Phong 材质编辑，可调基础色、漫反射、高光、双面状态和贴图采样方式
 - BaseColor 贴图缩略图、原生文件选择、源贴图恢复和三种贴图/光照显示模式
 - 导入静态 glTF/GLB 和 OBJ/MTL 模型，支持多网格实体、基础材质、贴图与资源缓存
@@ -17,6 +17,7 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 - 一盏方向光和最多四盏点光，支持 Lambert 漫反射与 Blinn-Phong 高光实时调节
 - 使用 ImGuizmo 进行平移、旋转和缩放
 - 对实体创建、变换和材质编辑执行撤销/重做
+- 使用版本化 `.lscene` JSON 保存/打开场景，外部资源使用相对路径引用
 - 程序化生成 D3D11 顶点缓冲区和索引缓冲区
 - 独立的 `IRenderEffect` 边界，以及可直接编辑、构建和加载的项目自有 HLSL
 - 面向 Visual Studio 2022 的 CMake Presets 和轻量级 CTest 测试
@@ -106,7 +107,9 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 | 平移/旋转/缩放 | 按 `W` / `E` / `R`，或使用工具面板按钮 |
 | 撤销/重做 | 按 `Ctrl+Z` / `Ctrl+Y` |
 | 创建基础几何体 | 使用 `Create` 菜单 |
+| 修改 Solid 参数 | 在 `Inspector > Geometry` 调节尺寸、半径和细分数 |
 | 导入模型 | `Create > Import Mesh...`，支持 `.gltf`、`.glb`、`.obj` |
+| 新建/打开/保存场景 | `Ctrl+N` / `Ctrl+O` / `Ctrl+S` |
 | 修改材质 | 在 `Inspector > Material` 调节颜色、光照参数和双面状态 |
 | 选择/恢复贴图 | 在材质区域使用 `Choose...` / `Use source` |
 | 切换贴图显示 | 选择 `Lit textured`、`Texture only` 或 `Lit untextured` |
@@ -127,8 +130,11 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 6. `src/editor/EditorLayer.cpp`、`src/editor/EditorAssets.cpp`、`src/editor/EditorMaterial.cpp`：
    编辑器交互、导入、材质和光照控制。
 7. `src/commands/`：独立于界面的可逆操作。
+8. `src/core/SolidGeometry.cpp`、`src/render/SolidMeshCache.cpp`、
+   `src/persistence/SceneSerializer.cpp`：参数校验、运行时 Mesh 更新和场景持久化。
 
 添加新的渲染技术前，请先阅读 `docs/architecture.md` 和 `docs/adding-an-effect.md`。
+参数化 Solid 与 `.lscene` 字段和调用流程见 `docs/parameterized-solid-and-scene-save.md`。
 
 ## 仓库约定
 

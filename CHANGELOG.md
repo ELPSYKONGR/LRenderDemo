@@ -4,6 +4,7 @@
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |
 |---|---|---|---|---|
+| 08-26 | 功能 | 增加参数化 Solid 创建/实时编辑和版本化场景保存 | core、commands、render、editor、persistence、tests | 本次提交 |
 | 08-26 | 重构 | 用 Frame/Draw Context 收敛 Effect Bind 参数并集中生成快照 | render、docs | 本次提交 |
 | 08-26 | 重构 | 抽离类型化 DX11 常量缓冲并统一 BasicMesh VS/PS 常量布局 | render、shaders、tests、docs | 本次提交 |
 | 08-25 | 功能 | 增加 Scene/Model/Entity 层级、混合 Solid/Mesh 绘制和 OBJ/MTL 导入 | core、commands、editor、render、tests | 本次提交 |
@@ -15,6 +16,23 @@
 | 08-20 | 文档 | 增加 DX11 教程差距分析、实施路线和素材映射 | docs、assets、scripts | 工作区 |
 
 ---
+
+## [2026-08-26] 参数化 Solid 与场景保存
+
+- **文件**：`src/core/SolidGeometry.*`、`src/render/PrimitiveFactory.*`、
+  `src/render/SolidMeshCache.*`、`src/commands/SolidGeometryCommand.*`、
+  `src/persistence/SceneSerializer.*`、`src/editor/EditorSolid.cpp`、`EditorScene.cpp`。
+- **功能**：Cube 支持三轴尺寸，Sphere 支持半径/经纬分段，Plane 支持尺寸/XZ 细分；创建弹窗和
+  Inspector 可编辑参数，连续拖动只记录一次撤销。`File` 菜单支持新建、打开、保存、另存为和关闭前
+  未保存确认。
+- **运行时边界**：Scene 只保存 API 无关参数；`SolidMeshCache` 按 Entity 替换当前 CPU 生成的 DX11
+  Mesh，不保存历史参数 Mesh。未来改为 GPU 生成时无需修改 Scene 和文件格式。
+- **文件边界**：`.lscene` v1 使用 JSON 保存层级、几何、Transform、材质和相对资源引用；先写临时
+  文件再替换，加载和资源预加载成功后才替换当前 Scene。相机、灯光、GPU 缓存和资源打包不在本期。
+- **依赖**：Git 子模块锁定官方 `nlohmann/json` v3.11.3（提交 `9cca280`）。
+- **验证**：VS2022 Debug 构建和四个 CTest 目标通过；包含 Core 参数/保存点、WARP Mesh 更新和
+  `.lscene` 往返/版本拒绝测试。
+- **提交**：本次提交
 
 ## [2026-08-26] 用 Frame/Draw Context 收敛 Effect Bind 参数
 

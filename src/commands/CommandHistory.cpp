@@ -36,17 +36,20 @@ void CommandHistory::Store(std::unique_ptr<ICommand> command) {
     if (undoStack_.size() == capacity_) {
         undoStack_.erase(undoStack_.begin());
     }
-    undoStack_.push_back(std::move(command));
+    Entry entry{std::move(command), currentRevision_, nextRevision_++};
+    currentRevision_ = entry.afterRevision;
+    undoStack_.push_back(std::move(entry));
 }
 
 bool CommandHistory::Undo() {
     if (undoStack_.empty()) {
         return false;
     }
-    auto command = std::move(undoStack_.back());
+    Entry entry = std::move(undoStack_.back());
     undoStack_.pop_back();
-    command->Undo();
-    redoStack_.push_back(std::move(command));
+    entry.command->Undo();
+    currentRevision_ = entry.beforeRevision;
+    redoStack_.push_back(std::move(entry));
     return true;
 }
 
@@ -54,11 +57,20 @@ bool CommandHistory::Redo() {
     if (redoStack_.empty()) {
         return false;
     }
-    auto command = std::move(redoStack_.back());
+    Entry entry = std::move(redoStack_.back());
     redoStack_.pop_back();
-    command->Execute();
-    undoStack_.push_back(std::move(command));
+    entry.command->Execute();
+    currentRevision_ = entry.afterRevision;
+    undoStack_.push_back(std::move(entry));
     return true;
+}
+
+void CommandHistory::Clear() noexcept {
+    undoStack_.clear();
+    redoStack_.clear();
+    currentRevision_ = 0;
+    savedRevision_ = 0;
+    nextRevision_ = 1;
 }
 
 } // namespace lrender

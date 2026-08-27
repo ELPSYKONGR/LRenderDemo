@@ -26,10 +26,10 @@ sequenceDiagram
 
 - `Application` 负责子系统生命周期和帧循环。
 - `Window` 只负责 Win32 `HWND` 和消息状态。
-- `Dx11Renderer` 负责 GPU 对象、程序化网格、资源缓存和当前启用的 Effects。
+- `Dx11Renderer` 负责 GPU 对象、参数化 Solid 的运行时 Mesh、资源缓存和当前启用的 Effects。
 - `ResourceCache` 按规范化路径复用 `MeshAsset` 和纹理，并按描述复用 Sampler；缓存与 D3D 设备同生命周期。
 - `Scene` 管理 `Model`，每个 `Model` 管理一组 `Entity`。同一 Model 可以同时包含 Solid Entity 和
-  Mesh Entity；场景层只保存基础几何类型或网格资产路径/索引，不持有 GPU 资源。
+  Mesh Entity；Solid 保存尺寸/半径/细分参数，Mesh 保存资产路径/索引，场景层不持有 GPU 资源。
 - `EditorLayer` 将用户交互转换为场景编辑和命令。
 - `CommandHistory` 负责可逆操作，且不依赖界面。
 - 每项渲染技术派生自 `IRenderEffect`，或实现为后续的渲染 Pass 类。
@@ -41,7 +41,9 @@ graph TD
     Scene[Scene] --> ModelA[Model]
     ModelA --> Solid[Entity: SolidGeometry]
     ModelA --> MeshEntity[Entity: MeshGeometry]
-    Solid --> Primitive[Cube / Sphere / Plane]
+    Solid --> Primitive[Cube / Sphere / Plane 参数]
+    Solid --> SolidCache[SolidMeshCache]
+    SolidCache --> Factory[PrimitiveFactory]
     MeshEntity --> Ref[资产路径 + assetEntityIndex]
     Ref --> Cache[ResourceCache]
     Cache --> Asset[MeshAsset]
@@ -53,6 +55,23 @@ graph TD
 职责刻意分开。全局唯一 `EntityId` 让变换/材质命令不必知道实体属于哪个 Model；创建实体时则必须
 携带 `ModelId`。导入一个文件会创建一个 Model，文件内的 glTF Mesh Node 或 OBJ Shape 会分别成为
 Mesh Entity。之后可继续向该 Model 添加 Solid Entity，并由同一场景遍历绘制。
+
+`SolidMeshCache` 按 `EntityId` 保存当前参数对应的 DX11 Mesh。Inspector 实时修改参数时，只替换该
+Entity 的 Mesh；删除实体后，渲染遍历会清理失效缓存。参数是可保存的真实来源，Mesh 只是运行时产物。
+
+## 场景持久化边界
+
+```mermaid
+graph LR
+    Editor[EditorLayer 文件工作流] --> Serializer[SceneSerializer]
+    Serializer --> Json[版本化 .lscene JSON]
+    Serializer --> Core[Scene / SolidGeometry / Material]
+    Json --> Serializer
+```
+
+`LRenderPersistence` 依赖 `LRenderCore` 和固定版本 `nlohmann/json`，Core 不依赖 JSON。保存记录场景
+语义和外部资源引用，不记录 GPU 对象或缓存。加载先创建临时 Scene，编辑器再预加载资源，成功后才
+替换当前场景并清空运行时 Solid Mesh 和命令历史。
 
 ## 模型格式扩展边界
 

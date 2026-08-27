@@ -7,6 +7,7 @@
 #pragma once
 
 #include "core/EntityMaterial.h"
+#include "core/SolidGeometry.h"
 #include "core/Transform.h"
 
 #include <cstddef>
@@ -22,12 +23,6 @@ namespace lrender {
 
 using ModelId = std::uint32_t;
 using EntityId = std::uint32_t;
-
-enum class PrimitiveType { Cube, Sphere, Plane, Mesh };
-
-struct SolidGeometry {
-    PrimitiveType primitive{PrimitiveType::Cube};
-};
 
 struct MeshGeometry {
     std::filesystem::path assetPath;
@@ -48,7 +43,13 @@ struct Entity {
     }
     [[nodiscard]] bool IsSolid() const noexcept { return !IsMesh(); }
     [[nodiscard]] PrimitiveType GetPrimitiveType() const noexcept {
-        return IsMesh() ? PrimitiveType::Mesh : std::get<SolidGeometry>(geometry).primitive;
+        return IsMesh() ? PrimitiveType::Mesh : std::get<SolidGeometry>(geometry).Type();
+    }
+    [[nodiscard]] SolidGeometry* Solid() noexcept {
+        return std::get_if<SolidGeometry>(&geometry);
+    }
+    [[nodiscard]] const SolidGeometry* Solid() const noexcept {
+        return std::get_if<SolidGeometry>(&geometry);
     }
     [[nodiscard]] const MeshGeometry* Mesh() const noexcept {
         return std::get_if<MeshGeometry>(&geometry);
@@ -68,6 +69,7 @@ public:
         std::filesystem::path assetPath, std::string name,
         std::span<const std::string> assetEntityNames);
     Entity& CreateEntity(ModelId modelId, PrimitiveType primitive, std::string name);
+    Entity& CreateSolidEntity(ModelId modelId, SolidGeometry geometry, std::string name);
     Entity& CreateMeshEntity(
         ModelId modelId, std::filesystem::path assetPath,
         std::uint32_t assetEntityIndex, std::string name);

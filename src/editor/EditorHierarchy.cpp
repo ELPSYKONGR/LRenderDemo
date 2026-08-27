@@ -14,6 +14,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace lrender {
 
@@ -47,23 +48,16 @@ void EditorLayer::DrawHierarchy(Scene& scene) {
     ImGui::End();
 }
 
-void EditorLayer::CreatePrimitive(
-    Scene& scene, CommandHistory& history, PrimitiveType primitive) {
-    std::string baseName;
-    switch (primitive) {
-    case PrimitiveType::Cube: baseName = "Cube"; break;
-    case PrimitiveType::Sphere: baseName = "Sphere"; break;
-    case PrimitiveType::Plane: baseName = "Plane"; break;
-    case PrimitiveType::Mesh: throw std::invalid_argument("Mesh entities must be imported");
-    }
-
+void EditorLayer::CreateSolid(
+    Scene& scene, CommandHistory& history,
+    SolidGeometry geometry, std::string name) {
     Model* model = scene.FindModel(selectedModelId_);
     const bool createdModel = model == nullptr;
     if (createdModel) {
         model = &scene.CreateModel("Model " + std::to_string(scene.Models().size() + 1));
     }
-    Entity& entity = scene.CreateEntity(
-        model->id, primitive, baseName + " " + std::to_string(scene.EntityCount() + 1));
+    const PrimitiveType primitive = geometry.Type();
+    Entity& entity = scene.CreateSolidEntity(model->id, std::move(geometry), std::move(name));
     if (primitive == PrimitiveType::Plane) {
         entity.transform.position.y = -0.5F;
         entity.material.baseColor = {0.55F, 0.58F, 0.62F, 1.0F};

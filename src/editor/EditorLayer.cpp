@@ -44,6 +44,7 @@ void EditorLayer::DrawMainMenu(
     if (!ImGui::BeginMainMenuBar()) {
         return;
     }
+    DrawSceneFileMenu(scene, history, renderer);
     if (ImGui::BeginMenu("Edit")) {
         if (ImGui::MenuItem("Undo", "Ctrl+Z", false, history.CanUndo())) {
             history.Undo();
@@ -56,13 +57,13 @@ void EditorLayer::DrawMainMenu(
     }
     if (ImGui::BeginMenu("Create")) {
         if (ImGui::MenuItem("Cube")) {
-            CreatePrimitive(scene, history, PrimitiveType::Cube);
+            BeginSolidCreation(PrimitiveType::Cube, scene);
         }
         if (ImGui::MenuItem("Sphere")) {
-            CreatePrimitive(scene, history, PrimitiveType::Sphere);
+            BeginSolidCreation(PrimitiveType::Sphere, scene);
         }
         if (ImGui::MenuItem("Plane")) {
-            CreatePrimitive(scene, history, PrimitiveType::Plane);
+            BeginSolidCreation(PrimitiveType::Plane, scene);
         }
         ImGui::Separator();
         if (ImGui::MenuItem("Import Mesh...")) {
@@ -71,6 +72,8 @@ void EditorLayer::DrawMainMenu(
         ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
+    DrawSolidCreationPopup(scene, history);
+    DrawSceneFilePopups(scene, history, renderer);
 
     const ImGuiIO& input = ImGui::GetIO();
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false) && history.CanUndo()) {
@@ -154,6 +157,7 @@ void EditorLayer::DrawInspector(
     before = entity->transform;
     ImGui::DragFloat3("Scale", &entity->transform.scale.x, 0.02F, 0.01F, 100.0F);
     TrackPropertyEdit(scene, history, *entity, before);
+    DrawSolidGeometryEditor(scene, history, *entity);
     DrawMaterialEditor(scene, history, renderer, *entity);
     ImGui::End();
 }

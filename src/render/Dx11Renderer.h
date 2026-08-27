@@ -12,6 +12,7 @@
 #include "render/Mesh.h"
 #include "render/ResourceCache.h"
 #include "render/RenderTarget.h"
+#include "render/SolidMeshCache.h"
 
 #include <cstdint>
 #include <d3d11.h>
@@ -36,6 +37,7 @@ public:
     [[nodiscard]] std::shared_ptr<const MeshAsset> PreloadModel(
         const std::filesystem::path& path);
     void PreloadTexture(const std::filesystem::path& path);
+    void ClearRuntimeCaches() noexcept;
     [[nodiscard]] ID3D11ShaderResourceView* MaterialPreview(const Entity& entity);
 
     [[nodiscard]] ID3D11Device* Device() const noexcept { return device_.Get(); }
@@ -59,9 +61,7 @@ private:
     Microsoft::WRL::ComPtr<IDXGISwapChain> swapChain_;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> backBufferView_;
     RenderTarget viewportTarget_;
-    std::unique_ptr<Mesh> cubeMesh_;
-    std::unique_ptr<Mesh> sphereMesh_;
-    std::unique_ptr<Mesh> planeMesh_;
+    std::unique_ptr<SolidMeshCache> solidMeshes_;
     std::unique_ptr<BasicMeshEffect> effect_;
     std::unique_ptr<ResourceCache> resources_;
     Material primitiveMaterial_;

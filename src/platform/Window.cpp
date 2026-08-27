@@ -85,6 +85,12 @@ bool Window::PumpMessages() {
     return true;
 }
 
+void Window::Close() {
+    if (handle_ != nullptr) {
+        DestroyWindow(handle_);
+    }
+}
+
 LRESULT CALLBACK Window::WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     Window* self = reinterpret_cast<Window*>(GetWindowLongPtrW(window, GWLP_USERDATA));
     if (message == WM_NCCREATE) {
@@ -98,6 +104,15 @@ LRESULT CALLBACK Window::WindowProcedure(HWND window, UINT message, WPARAM wPara
 }
 
 LRESULT Window::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) {
+    if (message == WM_CLOSE) {
+        closeRequested_ = true;
+        return 0;
+    }
+    if (message == WM_DESTROY) {
+        handle_ = nullptr;
+        PostQuitMessage(0);
+        return 0;
+    }
     if (ImGui::GetCurrentContext() != nullptr &&
         ImGui_ImplWin32_WndProcHandler(handle_, message, wParam, lParam)) {
         return 1;
@@ -112,10 +127,6 @@ LRESULT Window::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         return 0;
     case WM_ERASEBKGND:
         return 1;
-    case WM_DESTROY:
-        handle_ = nullptr;
-        PostQuitMessage(0);
-        return 0;
     default:
         return DefWindowProcW(handle_, message, wParam, lParam);
     }

@@ -8,6 +8,7 @@
 #include "commands/CreateEntityCommand.h"
 #include "commands/CreateModelCommand.h"
 #include "commands/MaterialCommand.h"
+#include "commands/SolidGeometryCommand.h"
 #include "commands/TransformCommand.h"
 #include "core/Camera.h"
 #include "core/Scene.h"
@@ -28,6 +29,16 @@ void Require(bool condition, const char* message) {
 
 void RequireNear(float actual, float expected, const char* message) {
     Require(std::abs(actual - expected) < 0.001F, message);
+}
+
+template <typename Function>
+void RequireThrows(Function&& function, const char* message) {
+    try {
+        function();
+    } catch (const std::exception&) {
+        return;
+    }
+    throw std::runtime_error(message);
 }
 
 void RequireFinite(const DirectX::SimpleMath::Matrix& matrix, const char* message) {
@@ -171,6 +182,47 @@ void TestMaterialUndoRedo() {
         "Redo should restore the edited material snapshot");
 }
 
+void TestParameterizedSolidUndoAndSavedState() {
+    lrender::Scene scene;
+    lrender::CommandHistory history;
+    const auto modelId = scene.CreateModel("Model").id;
+    auto& entity = scene.CreateSolidEntity(
+        modelId,
+        lrender::SolidGeometry::Sphere({1.25F, 48, 24}),
+        "Parameterized sphere");
+    const auto* parameters = std::get_if<lrender::SphereParameters>(
+        &entity.Solid()->Parameters());
+    Require(parameters != nullptr, "Solid entity should retain sphere parameters");
+    RequireNear(parameters->radius, 1.25F, "Sphere radius should be retained");
+    Require(parameters->slices == 48 && parameters->stacks == 24,
+            "Sphere topology parameters should be retained");
+
+    const lrender::SolidGeometry before = *entity.Solid();
+    const lrender::SolidGeometry after = lrender::SolidGeometry::Sphere({2.0F, 64, 32});
+    history.Execute(std::make_unique<lrender::SolidGeometryCommand>(
+        scene, entity.id, before, after));
+    Require(history.IsModified(), "Solid edit should mark command history as modified");
+    history.MarkSaved();
+    Require(!history.IsModified(), "MarkSaved should establish a clean revision");
+
+    const lrender::SolidGeometry third = lrender::SolidGeometry::Sphere({3.0F, 64, 32});
+    history.Execute(std::make_unique<lrender::SolidGeometryCommand>(
+        scene, entity.id, after, third));
+    Require(history.IsModified(), "Edit after save should mark history as modified");
+    Require(history.Undo(), "Solid parameter edit should be undoable");
+    Require(!history.IsModified(), "Undo to saved revision should restore clean state");
+    Require(entity.Solid()->NearlyEquals(after), "Undo should restore saved solid parameters");
+    Require(history.Redo(), "Solid parameter edit should be redoable");
+    Require(entity.Solid()->NearlyEquals(third), "Redo should restore edited solid parameters");
+
+    RequireThrows(
+        [] { static_cast<void>(lrender::SolidGeometry::Sphere({0.0F, 32, 20})); },
+        "Zero sphere radius should be rejected");
+    RequireThrows(
+        [] { static_cast<void>(lrender::SolidGeometry::Plane({{10.0F, 10.0F}, 0, 1})); },
+        "Zero plane subdivisions should be rejected");
+}
+
 } // namespace
 
 int main() {
@@ -181,6 +233,7 @@ int main() {
         TestCreateUndoRedo();
         TestMixedModelCreateUndoRedo();
         TestMaterialUndoRedo();
+        TestParameterizedSolidUndoAndSavedState();
         std::cout << "LRenderCoreTests: all tests passed\n";
         return 0;
     } catch (const std::exception& error) {
