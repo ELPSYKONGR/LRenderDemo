@@ -1,9 +1,9 @@
 /**
  * @file Textured multi-light basic mesh pixel shader.
- * @depends BasicMeshVS output, BasicMeshConstants.hlsli
+ * @depends BasicMeshVS output, common.hlsli
  */
 
-#include "BasicMeshConstants.hlsli"
+#include "common.hlsli"
 
 Texture2D BaseColorTexture : register(t0);
 SamplerState BaseColorSampler : register(s0);

@@ -23,7 +23,7 @@ SamplerState::SamplerState(ID3D11Device* device, const SamplerDescription& descr
     native.ComparisonFunc = D3D11_COMPARISON_NEVER;
     native.MinLOD = 0.0F;
     native.MaxLOD = D3D11_FLOAT32_MAX;
-    if (FAILED(device->CreateSamplerState(&native, state_.GetAddressOf()))) {
+    if (FAILED(device->CreateSamplerState(&native, m_state.GetAddressOf()))) {
         throw std::runtime_error("Failed to create D3D11 sampler state");
     }
 }

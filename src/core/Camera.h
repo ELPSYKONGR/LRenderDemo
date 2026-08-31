@@ -36,10 +36,10 @@ public:
 private:
     [[nodiscard]] DirectX::SimpleMath::Vector3 UpDirection() const noexcept;
 
-    DirectX::SimpleMath::Vector3 target_{0.0F, 0.0F, 0.0F};
-    float yaw_{DirectX::XMConvertToRadians(35.0F)};
-    float pitch_{DirectX::XMConvertToRadians(-20.0F)};
-    float distance_{8.0F};
+    DirectX::SimpleMath::Vector3 m_target{0.0F, 0.0F, 0.0F};
+    float m_yaw{DirectX::XMConvertToRadians(35.0F)};
+    float m_pitch{DirectX::XMConvertToRadians(-20.0F)};
+    float m_distance{8.0F};
 };
 
 } // namespace lrender

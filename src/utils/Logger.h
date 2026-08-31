@@ -21,8 +21,8 @@ public:
 private:
     void Write(std::string_view level, std::string_view module, std::string_view message);
 
-    std::filesystem::path logFile_;
-    std::mutex mutex_;
+    std::filesystem::path m_logFile;
+    std::mutex m_mutex;
 };
 
 } // namespace lrender

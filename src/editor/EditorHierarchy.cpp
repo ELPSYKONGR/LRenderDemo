@@ -25,20 +25,20 @@ void EditorLayer::DrawHierarchy(Scene& scene) {
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen |
                                    ImGuiTreeNodeFlags_OpenOnArrow |
                                    ImGuiTreeNodeFlags_SpanAvailWidth;
-        if (model.id == selectedModelId_ && selectedEntityId_ == 0) {
+        if (model.id == m_selectedModelId && m_selectedEntityId == 0) {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
         const bool isOpen = ImGui::TreeNodeEx("##Model", flags, "%s", model.name.c_str());
         if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-            selectedModelId_ = model.id;
-            selectedEntityId_ = 0;
+            m_selectedModelId = model.id;
+            m_selectedEntityId = 0;
         }
         if (isOpen) {
             for (const Entity& entity : model.entities) {
                 if (ImGui::Selectable(
-                        entity.name.c_str(), entity.id == selectedEntityId_)) {
-                    selectedModelId_ = model.id;
-                    selectedEntityId_ = entity.id;
+                        entity.name.c_str(), entity.id == m_selectedEntityId)) {
+                    m_selectedModelId = model.id;
+                    m_selectedEntityId = entity.id;
                 }
             }
             ImGui::TreePop();
@@ -51,7 +51,7 @@ void EditorLayer::DrawHierarchy(Scene& scene) {
 void EditorLayer::CreateSolid(
     Scene& scene, CommandHistory& history,
     SolidGeometry geometry, std::string name) {
-    Model* model = scene.FindModel(selectedModelId_);
+    Model* model = scene.FindModel(m_selectedModelId);
     const bool createdModel = model == nullptr;
     if (createdModel) {
         model = &scene.CreateModel("Model " + std::to_string(scene.Models().size() + 1));
@@ -62,8 +62,8 @@ void EditorLayer::CreateSolid(
         entity.transform.position.y = -0.5F;
         entity.material.baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
     }
-    selectedModelId_ = model->id;
-    selectedEntityId_ = entity.id;
+    m_selectedModelId = model->id;
+    m_selectedEntityId = entity.id;
     if (createdModel) {
         history.PushApplied(std::make_unique<CreateModelCommand>(scene, *model));
     } else {

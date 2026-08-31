@@ -12,13 +12,13 @@
 namespace lrender {
 
 void RenderTarget::Reset() noexcept {
-    depthStencilView_.Reset();
-    depthTexture_.Reset();
-    shaderResourceView_.Reset();
-    renderTargetView_.Reset();
-    colorTexture_.Reset();
-    width_ = 0;
-    height_ = 0;
+    m_depthStencilView.Reset();
+    m_depthTexture.Reset();
+    m_shaderResourceView.Reset();
+    m_renderTargetView.Reset();
+    m_colorTexture.Reset();
+    m_width = 0;
+    m_height = 0;
 }
 
 void RenderTarget::Resize(ID3D11Device* device, std::uint32_t width, std::uint32_t height) {
@@ -27,7 +27,7 @@ void RenderTarget::Resize(ID3D11Device* device, std::uint32_t width, std::uint32
     }
     width = std::max(width, 1U);
     height = std::max(height, 1U);
-    if (width == width_ && height == height_) {
+    if (width == m_width && height == m_height) {
         return;
     }
 
@@ -60,28 +60,28 @@ void RenderTarget::Resize(ID3D11Device* device, std::uint32_t width, std::uint32
         throw std::runtime_error("Failed to create viewport depth target");
     }
 
-    width_ = width;
-    height_ = height;
-    colorTexture_ = std::move(colorTexture);
-    renderTargetView_ = std::move(renderTargetView);
-    shaderResourceView_ = std::move(shaderResourceView);
-    depthTexture_ = std::move(depthTexture);
-    depthStencilView_ = std::move(depthStencilView);
+    m_width = width;
+    m_height = height;
+    m_colorTexture = std::move(colorTexture);
+    m_renderTargetView = std::move(renderTargetView);
+    m_shaderResourceView = std::move(shaderResourceView);
+    m_depthTexture = std::move(depthTexture);
+    m_depthStencilView = std::move(depthStencilView);
 }
 
 void RenderTarget::BindAndClear(ID3D11DeviceContext* context, const float clearColor[4]) const {
-    if (context == nullptr || renderTargetView_ == nullptr || depthStencilView_ == nullptr) {
+    if (context == nullptr || m_renderTargetView == nullptr || m_depthStencilView == nullptr) {
         throw std::runtime_error("RenderTarget is not ready");
     }
-    ID3D11RenderTargetView* target = renderTargetView_.Get();
-    context->OMSetRenderTargets(1, &target, depthStencilView_.Get());
+    ID3D11RenderTargetView* target = m_renderTargetView.Get();
+    context->OMSetRenderTargets(1, &target, m_depthStencilView.Get());
     context->ClearRenderTargetView(target, clearColor);
     context->ClearDepthStencilView(
-        depthStencilView_.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0F, 0);
+        m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0F, 0);
 
     D3D11_VIEWPORT viewport{};
-    viewport.Width = static_cast<float>(width_);
-    viewport.Height = static_cast<float>(height_);
+    viewport.Width = static_cast<float>(m_width);
+    viewport.Height = static_cast<float>(m_height);
     viewport.MinDepth = 0.0F;
     viewport.MaxDepth = 1.0F;
     context->RSSetViewports(1, &viewport);

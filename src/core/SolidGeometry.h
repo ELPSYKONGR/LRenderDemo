@@ -42,7 +42,7 @@ public:
     [[nodiscard]] static SolidGeometry Plane(PlaneParameters parameters = {});
 
     [[nodiscard]] PrimitiveType Type() const noexcept;
-    [[nodiscard]] const SolidParameters& Parameters() const noexcept { return parameters_; }
+    [[nodiscard]] const SolidParameters& Parameters() const noexcept { return m_parameters; }
     [[nodiscard]] bool NearlyEquals(
         const SolidGeometry& other, float epsilon = 0.0001F) const noexcept;
 
@@ -50,7 +50,7 @@ private:
     explicit SolidGeometry(SolidParameters parameters);
     static void Validate(const SolidParameters& parameters);
 
-    SolidParameters parameters_{CubeParameters{}};
+    SolidParameters m_parameters{CubeParameters{}};
 };
 
 } // namespace lrender

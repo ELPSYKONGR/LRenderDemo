@@ -1,12 +1,9 @@
 /**
  * @file Editable HLSL effect for lit colored meshes.
- * @author Codex
- * @created 2026-08-20
- * @depends render/IRenderEffect.h, compiled BasicMesh shaders, DirectXTK CommonStates
  */
 #pragma once
 
-#include "render/BasicMeshConstants.h"
+#include "render/CommonConstants.h"
 #include "render/Dx11ConstantBuffer.h"
 #include "render/IRenderEffect.h"
 #include "render/Lighting.h"
@@ -26,19 +23,22 @@ public:
         const EffectFrameContext& frame, const EffectDrawContext& draw) override;
 
     [[nodiscard]] std::string_view Name() const noexcept override { return "Basic Lit"; }
-    void SetWireframe(bool isWireframe) noexcept { isWireframe_ = isWireframe; }
-    [[nodiscard]] bool IsWireframe() const noexcept { return isWireframe_; }
-    [[nodiscard]] LightingSettings& Lights() noexcept { return lights_; }
-    [[nodiscard]] const LightingSettings& Lights() const noexcept { return lights_; }
+    void SetWireframe(bool isWireframe) noexcept { m_isWireframe = isWireframe; }
+    [[nodiscard]] bool IsWireframe() const noexcept { return m_isWireframe; }
+    [[nodiscard]] LightingSettings& Lights() noexcept { return m_lights; }
+    [[nodiscard]] const LightingSettings& Lights() const noexcept { return m_lights; }
 
 private:
-    std::unique_ptr<DirectX::CommonStates> states_;
-    Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader_;
-    Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader_;
-    Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout_;
-    Dx11ConstantBuffer<BasicMeshConstants> constantBuffer_;
-    LightingSettings lights_;
-    bool isWireframe_{false};
+    std::unique_ptr<DirectX::CommonStates> m_states;
+    Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
+    Dx11ConstantBuffer<FrameConstants> m_frameConstants;
+    Dx11ConstantBuffer<ObjectConstants> m_objectConstants;
+    Dx11ConstantBuffer<MaterialConstants> m_materialConstants;
+    Dx11ConstantBuffer<LightConstants> m_lightConstants;
+    LightingSettings m_lights;
+    bool m_isWireframe{false};
 };
 
 } // namespace lrender

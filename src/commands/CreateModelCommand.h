@@ -19,8 +19,8 @@ public:
     [[nodiscard]] std::string_view Name() const noexcept override { return "Create model"; }
 
 private:
-    Scene& scene_;
-    Model model_;
+    Scene& m_scene;
+    Model m_model;
 };
 
 } // namespace lrender

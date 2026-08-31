@@ -1,9 +1,9 @@
 /**
  * @file Basic mesh vertex shader.
- * @depends MeshVertex, BasicMeshConstants.hlsli
+ * @depends MeshVertex, common.hlsli
  */
 
-#include "BasicMeshConstants.hlsli"
+#include "common.hlsli"
 
 struct VertexInput
 {

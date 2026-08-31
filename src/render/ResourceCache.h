@@ -34,28 +34,28 @@ public:
     [[nodiscard]] Material DefaultMaterial() const;
     [[nodiscard]] Material CheckerMaterial() const;
 
-    [[nodiscard]] std::size_t MeshAssetCount() const noexcept { return meshAssets_.size(); }
+    [[nodiscard]] std::size_t MeshAssetCount() const noexcept { return m_meshAssets.size(); }
     [[nodiscard]] std::size_t TextureCount() const noexcept {
-        return textures_.size() + embeddedTextures_.size();
+        return m_textures.size() + m_embeddedTextures.size();
     }
 
-    [[nodiscard]] ID3D11Device* Device() const noexcept { return device_; }
-    [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return context_; }
+    [[nodiscard]] ID3D11Device* Device() const noexcept { return m_device; }
+    [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return m_context; }
 
 private:
     static std::wstring NormalizePath(const std::filesystem::path& path);
     static std::uint64_t SamplerKey(const SamplerDescription& description) noexcept;
 
-    ID3D11Device* device_{};
-    ID3D11DeviceContext* context_{};
-    std::unique_ptr<ModelLoader> modelLoader_;
-    std::unordered_map<std::wstring, std::shared_ptr<MeshAsset>> meshAssets_;
-    std::unordered_map<std::wstring, std::shared_ptr<Texture2D>> textures_;
-    std::unordered_map<std::string, std::shared_ptr<Texture2D>> embeddedTextures_;
-    std::unordered_map<std::uint64_t, std::shared_ptr<SamplerState>> samplers_;
-    std::shared_ptr<Texture2D> whiteTexture_;
-    std::shared_ptr<Texture2D> checkerTexture_;
-    std::shared_ptr<SamplerState> defaultSampler_;
+    ID3D11Device* m_device{};
+    ID3D11DeviceContext* m_context{};
+    std::unique_ptr<ModelLoader> m_modelLoader;
+    std::unordered_map<std::wstring, std::shared_ptr<MeshAsset>> m_meshAssets;
+    std::unordered_map<std::wstring, std::shared_ptr<Texture2D>> m_textures;
+    std::unordered_map<std::string, std::shared_ptr<Texture2D>> m_embeddedTextures;
+    std::unordered_map<std::uint64_t, std::shared_ptr<SamplerState>> m_samplers;
+    std::shared_ptr<Texture2D> m_whiteTexture;
+    std::shared_ptr<Texture2D> m_checkerTexture;
+    std::shared_ptr<SamplerState> m_defaultSampler;
 };
 
 } // namespace lrender

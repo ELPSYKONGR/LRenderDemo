@@ -28,7 +28,7 @@ public:
         description.ByteWidth = static_cast<UINT>(sizeof(T));
         description.Usage = D3D11_USAGE_DEFAULT;
         description.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        if (FAILED(device->CreateBuffer(&description, nullptr, buffer_.GetAddressOf()))) {
+        if (FAILED(device->CreateBuffer(&description, nullptr, m_buffer.GetAddressOf()))) {
             throw std::runtime_error("Failed to create D3D11 constant buffer");
         }
     }
@@ -40,18 +40,18 @@ public:
 
     void Update(ID3D11DeviceContext* context, const T& value) const {
         ValidateContext(context);
-        context->UpdateSubresource(buffer_.Get(), 0, nullptr, &value, 0, 0);
+        context->UpdateSubresource(m_buffer.Get(), 0, nullptr, &value, 0, 0);
     }
 
     void BindVS(ID3D11DeviceContext* context, UINT slot) const {
         ValidateContext(context);
-        ID3D11Buffer* buffer = buffer_.Get();
+        ID3D11Buffer* buffer = m_buffer.Get();
         context->VSSetConstantBuffers(slot, 1, &buffer);
     }
 
     void BindPS(ID3D11DeviceContext* context, UINT slot) const {
         ValidateContext(context);
-        ID3D11Buffer* buffer = buffer_.Get();
+        ID3D11Buffer* buffer = m_buffer.Get();
         context->PSSetConstantBuffers(slot, 1, &buffer);
     }
 
@@ -62,7 +62,7 @@ private:
         }
     }
 
-    Microsoft::WRL::ComPtr<ID3D11Buffer> buffer_;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_buffer;
 };
 
 } // namespace lrender

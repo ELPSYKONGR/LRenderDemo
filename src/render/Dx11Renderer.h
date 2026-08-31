@@ -9,6 +9,7 @@
 #include "core/Camera.h"
 #include "core/Scene.h"
 #include "render/BasicMeshEffect.h"
+#include "render/ColorProcessorEffect.h"
 #include "render/Mesh.h"
 #include "render/ResourceCache.h"
 #include "render/RenderTarget.h"
@@ -40,31 +41,33 @@ public:
     void ClearRuntimeCaches() noexcept;
     [[nodiscard]] ID3D11ShaderResourceView* MaterialPreview(const Entity& entity);
 
-    [[nodiscard]] ID3D11Device* Device() const noexcept { return device_.Get(); }
-    [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return context_.Get(); }
-    [[nodiscard]] RenderTarget& ViewportTarget() noexcept { return viewportTarget_; }
-    [[nodiscard]] BasicMeshEffect& Effect() noexcept { return *effect_; }
+    [[nodiscard]] ID3D11Device* Device() const noexcept { return m_device.Get(); }
+    [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return m_context.Get(); }
+    [[nodiscard]] RenderTarget& ViewportTarget() noexcept { return m_viewportTarget; }
+    [[nodiscard]] BasicMeshEffect& Effect() noexcept { return *m_effect; }
     [[nodiscard]] std::size_t CachedMeshAssetCount() const noexcept;
     [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
-    [[nodiscard]] HWND WindowHandle() const noexcept { return windowHandle_; }
+    [[nodiscard]] HWND WindowHandle() const noexcept { return m_windowHandle; }
 
 private:
     void CreateBackBuffer();
     [[nodiscard]] Material ResolveMaterial(
         const Material& source, const EntityMaterial& settings);
 
-    HWND windowHandle_{};
-    std::uint32_t swapChainWidth_{};
-    std::uint32_t swapChainHeight_{};
-    Microsoft::WRL::ComPtr<ID3D11Device> device_;
-    Microsoft::WRL::ComPtr<ID3D11DeviceContext> context_;
-    Microsoft::WRL::ComPtr<IDXGISwapChain> swapChain_;
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> backBufferView_;
-    RenderTarget viewportTarget_;
-    std::unique_ptr<SolidMeshCache> solidMeshes_;
-    std::unique_ptr<BasicMeshEffect> effect_;
-    std::unique_ptr<ResourceCache> resources_;
-    Material primitiveMaterial_;
+    HWND m_windowHandle{};
+    std::uint32_t m_swapChainWidth{};
+    std::uint32_t m_swapChainHeight{};
+    Microsoft::WRL::ComPtr<ID3D11Device> m_device;
+    Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_context;
+    Microsoft::WRL::ComPtr<IDXGISwapChain> m_swapChain;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_backBufferView;
+    RenderTarget m_sceneTarget;
+    RenderTarget m_viewportTarget;
+    std::unique_ptr<SolidMeshCache> m_solidMeshes;
+    std::unique_ptr<BasicMeshEffect> m_effect;
+    std::unique_ptr<ColorProcessorEffect> m_colorProcessor;
+    std::unique_ptr<ResourceCache> m_resources;
+    Material m_primitiveMaterial;
 };
 
 } // namespace lrender

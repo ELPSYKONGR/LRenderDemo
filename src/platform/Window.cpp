@@ -18,11 +18,11 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
 namespace lrender {
 
 Window::~Window() {
-    if (handle_ != nullptr) {
-        DestroyWindow(handle_);
+    if (m_handle != nullptr) {
+        DestroyWindow(m_handle);
     }
-    if (instance_ != nullptr) {
-        UnregisterClassW(kWindowClassName, instance_);
+    if (m_instance != nullptr) {
+        UnregisterClassW(m_windowClassName, m_instance);
     }
 }
 
@@ -31,16 +31,16 @@ void Window::Create(
     if (instance == nullptr || title.empty() || width == 0 || height == 0) {
         throw std::invalid_argument("Window creation arguments are invalid");
     }
-    instance_ = instance;
+    m_instance = instance;
 
     WNDCLASSEXW windowClass{};
     windowClass.cbSize = sizeof(windowClass);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     windowClass.lpfnWndProc = WindowProcedure;
-    windowClass.hInstance = instance_;
+    windowClass.hInstance = m_instance;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
-    windowClass.lpszClassName = kWindowClassName;
+    windowClass.lpszClassName = m_windowClassName;
     if (RegisterClassExW(&windowClass) == 0) {
         throw std::runtime_error("RegisterClassExW failed");
     }
@@ -50,9 +50,9 @@ void Window::Create(
         throw std::runtime_error("AdjustWindowRect failed");
     }
     const std::wstring ownedTitle(title);
-    handle_ = CreateWindowExW(
+    m_handle = CreateWindowExW(
         0,
-        kWindowClassName,
+        m_windowClassName,
         ownedTitle.c_str(),
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,
@@ -61,16 +61,16 @@ void Window::Create(
         rectangle.bottom - rectangle.top,
         nullptr,
         nullptr,
-        instance_,
+        m_instance,
         this);
-    if (handle_ == nullptr) {
+    if (m_handle == nullptr) {
         throw std::runtime_error("CreateWindowExW failed");
     }
-    clientWidth_ = width;
-    clientHeight_ = height;
+    m_clientWidth = width;
+    m_clientHeight = height;
     // Use SW_SHOW so automation or IDE startup flags cannot accidentally hide the learning window.
-    ShowWindow(handle_, SW_SHOW);
-    UpdateWindow(handle_);
+    ShowWindow(m_handle, SW_SHOW);
+    UpdateWindow(m_handle);
 }
 
 bool Window::PumpMessages() {
@@ -86,8 +86,8 @@ bool Window::PumpMessages() {
 }
 
 void Window::Close() {
-    if (handle_ != nullptr) {
-        DestroyWindow(handle_);
+    if (m_handle != nullptr) {
+        DestroyWindow(m_handle);
     }
 }
 
@@ -97,7 +97,7 @@ LRESULT CALLBACK Window::WindowProcedure(HWND window, UINT message, WPARAM wPara
         const auto* create = reinterpret_cast<CREATESTRUCTW*>(lParam);
         self = static_cast<Window*>(create->lpCreateParams);
         SetWindowLongPtrW(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
-        self->handle_ = window;
+        self->m_handle = window;
     }
     return self != nullptr ? self->HandleMessage(message, wParam, lParam)
                            : DefWindowProcW(window, message, wParam, lParam);
@@ -105,30 +105,30 @@ LRESULT CALLBACK Window::WindowProcedure(HWND window, UINT message, WPARAM wPara
 
 LRESULT Window::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     if (message == WM_CLOSE) {
-        closeRequested_ = true;
+        m_closeRequested = true;
         return 0;
     }
     if (message == WM_DESTROY) {
-        handle_ = nullptr;
+        m_handle = nullptr;
         PostQuitMessage(0);
         return 0;
     }
     if (ImGui::GetCurrentContext() != nullptr &&
-        ImGui_ImplWin32_WndProcHandler(handle_, message, wParam, lParam)) {
+        ImGui_ImplWin32_WndProcHandler(m_handle, message, wParam, lParam)) {
         return 1;
     }
 
     switch (message) {
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED) {
-            clientWidth_ = std::max<std::uint32_t>(LOWORD(lParam), 1U);
-            clientHeight_ = std::max<std::uint32_t>(HIWORD(lParam), 1U);
+            m_clientWidth = std::max<std::uint32_t>(LOWORD(lParam), 1U);
+            m_clientHeight = std::max<std::uint32_t>(HIWORD(lParam), 1U);
         }
         return 0;
     case WM_ERASEBKGND:
         return 1;
     default:
-        return DefWindowProcW(handle_, message, wParam, lParam);
+        return DefWindowProcW(m_handle, message, wParam, lParam);
     }
 }
 

@@ -26,10 +26,10 @@ public:
 private:
     void Apply(const SolidGeometry& geometry);
 
-    Scene& scene_;
-    EntityId entityId_;
-    SolidGeometry before_;
-    SolidGeometry after_;
+    Scene& m_scene;
+    EntityId m_entityId;
+    SolidGeometry m_before;
+    SolidGeometry m_after;
 };
 
 } // namespace lrender

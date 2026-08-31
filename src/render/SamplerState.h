@@ -20,10 +20,10 @@ struct SamplerDescription {
 class SamplerState final {
 public:
     SamplerState(ID3D11Device* device, const SamplerDescription& description);
-    [[nodiscard]] ID3D11SamplerState* Get() const noexcept { return state_.Get(); }
+    [[nodiscard]] ID3D11SamplerState* Get() const noexcept { return m_state.Get(); }
 
 private:
-    Microsoft::WRL::ComPtr<ID3D11SamplerState> state_;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> m_state;
 };
 
 } // namespace lrender

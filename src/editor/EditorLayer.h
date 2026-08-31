@@ -25,13 +25,13 @@ class Dx11Renderer;
 class EditorLayer final {
 public:
     void Draw(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer);
-    void RequestExit() noexcept { exitRequested_ = true; }
+    void RequestExit() noexcept { m_exitRequested = true; }
     [[nodiscard]] bool ConsumeExitConfirmed() noexcept {
-        const bool result = exitConfirmed_;
-        exitConfirmed_ = false;
+        const bool result = m_exitConfirmed;
+        m_exitConfirmed = false;
         return result;
     }
-    [[nodiscard]] std::uint32_t SelectedEntityId() const noexcept { return selectedEntityId_; }
+    [[nodiscard]] std::uint32_t SelectedEntityId() const noexcept { return m_selectedEntityId; }
 
 private:
     void DrawMainMenu(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
@@ -73,39 +73,39 @@ private:
         Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void ValidateSelection(const Scene& scene);
 
-    std::uint32_t selectedEntityId_{};
-    ModelId selectedModelId_{};
-    ImGuizmo::OPERATION gizmoOperation_{ImGuizmo::TRANSLATE};
-    bool wasUsingGizmo_{false};
-    Transform gizmoStart_;
-    std::optional<Transform> propertyEditStart_;
-    std::uint32_t propertyEditEntityId_{};
-    std::optional<EntityMaterial> materialEditStart_;
-    std::uint32_t materialEditEntityId_{};
-    std::string importError_;
-    bool openImportErrorPopup_{false};
-    std::string materialError_;
-    bool openMaterialErrorPopup_{false};
-    std::optional<SolidGeometry> solidEditStart_;
-    std::uint32_t solidEditEntityId_{};
-    PrimitiveType pendingSolidType_{PrimitiveType::Cube};
-    bool openSolidCreatePopup_{false};
-    std::array<char, 128> solidCreateName_{};
-    CubeParameters cubeCreateParameters_;
-    SphereParameters sphereCreateParameters_;
-    PlaneParameters planeCreateParameters_;
-    std::string solidCreateError_;
-    std::filesystem::path currentScenePath_;
-    std::filesystem::path pendingScenePath_;
-    int pendingSceneAction_{};
-    bool openUnsavedPopup_{false};
-    bool exitRequested_{false};
-    bool exitConfirmed_{false};
-    std::string sceneFileError_;
-    bool openSceneFileErrorPopup_{false};
-    bool autoRotate_{false};
-    bool autoRotateClockwise_{false};
-    float autoRotateSpeedDegrees_{20.0F};
+    std::uint32_t m_selectedEntityId{};
+    ModelId m_selectedModelId{};
+    ImGuizmo::OPERATION m_gizmoOperation{ImGuizmo::TRANSLATE};
+    bool m_wasUsingGizmo{false};
+    Transform m_gizmoStart;
+    std::optional<Transform> m_propertyEditStart;
+    std::uint32_t m_propertyEditEntityId{};
+    std::optional<EntityMaterial> m_materialEditStart;
+    std::uint32_t m_materialEditEntityId{};
+    std::string m_importError;
+    bool m_openImportErrorPopup{false};
+    std::string m_materialError;
+    bool m_openMaterialErrorPopup{false};
+    std::optional<SolidGeometry> m_solidEditStart;
+    std::uint32_t m_solidEditEntityId{};
+    PrimitiveType m_pendingSolidType{PrimitiveType::Cube};
+    bool m_openSolidCreatePopup{false};
+    std::array<char, 128> m_solidCreateName{};
+    CubeParameters m_cubeCreateParameters;
+    SphereParameters m_sphereCreateParameters;
+    PlaneParameters m_planeCreateParameters;
+    std::string m_solidCreateError;
+    std::filesystem::path m_currentScenePath;
+    std::filesystem::path m_pendingScenePath;
+    int m_pendingSceneAction{};
+    bool m_openUnsavedPopup{false};
+    bool m_exitRequested{false};
+    bool m_exitConfirmed{false};
+    std::string m_sceneFileError;
+    bool m_openSceneFileErrorPopup{false};
+    bool m_autoRotate{false};
+    bool m_autoRotateClockwise{false};
+    float m_autoRotateSpeedDegrees{20.0F};
 };
 
 } // namespace lrender

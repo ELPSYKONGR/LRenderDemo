@@ -90,18 +90,18 @@ graph TD
     Renderer --> Draw
     Frame --> Effect
     Draw --> Effect
-    Effect --> CpuLayout[BasicMeshConstants.h]
-    Effect --> Buffer[Dx11ConstantBuffer of BasicMeshConstants]
+    Effect --> CpuLayout[CommonConstants.h]
+    Effect --> Buffer[Frame/Object/Material/Light typed buffers]
     Buffer --> D3DBuffer[ID3D11Buffer]
     Buffer --> Context[ID3D11DeviceContext]
-    HlslLayout[BasicMeshConstants.hlsli] --> VS[BasicMeshVS.hlsl]
+    HlslLayout[common.hlsli] --> VS[BasicMeshVS.hlsl]
     HlslLayout --> PS[BasicMeshPS.hlsl]
     Effect --> VS
     Effect --> PS
 ```
 
 `Dx11ConstantBuffer<T>` 只封装类型大小检查、`ComPtr` 所有权、数据更新和 VS/PS 槽位绑定。
-`BasicMeshEffect` 仍负责把矩阵、相机、灯光和材质组装为 `BasicMeshConstants`，并决定使用 `b0` 和
+`BasicMeshEffect` 仍负责把矩阵、相机、灯光和材质分别组装为公共 CBuffer 布局，并决定使用 `b0` 和
 哪些 Shader 阶段。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli` 消除重复声明。
 
 `Dx11Renderer` 每帧从 Camera 构造一次 `EffectFrameContext`，每个 MeshPart 从 Entity、解析后的

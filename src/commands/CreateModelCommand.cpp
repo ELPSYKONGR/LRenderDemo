@@ -12,16 +12,16 @@
 namespace lrender {
 
 CreateModelCommand::CreateModelCommand(Scene& scene, Model model)
-    : scene_(scene), model_(std::move(model)) {}
+    : m_scene(scene), m_model(std::move(model)) {}
 
-void CreateModelCommand::Execute() { scene_.AddModel(model_); }
+void CreateModelCommand::Execute() { m_scene.AddModel(m_model); }
 
 void CreateModelCommand::Undo() {
-    auto removed = scene_.RemoveModel(model_.id);
+    auto removed = m_scene.RemoveModel(m_model.id);
     if (!removed) {
         throw std::runtime_error("Created model no longer exists");
     }
-    model_ = std::move(*removed);
+    m_model = std::move(*removed);
 }
 
 } // namespace lrender

@@ -13,14 +13,14 @@ namespace lrender {
 
 MaterialCommand::MaterialCommand(
     Scene& scene, std::uint32_t entityId, EntityMaterial before, EntityMaterial after)
-    : scene_(scene), entityId_(entityId), before_(std::move(before)), after_(std::move(after)) {}
+    : m_scene(scene), m_entityId(entityId), m_before(std::move(before)), m_after(std::move(after)) {}
 
-void MaterialCommand::Execute() { Apply(after_); }
+void MaterialCommand::Execute() { Apply(m_after); }
 
-void MaterialCommand::Undo() { Apply(before_); }
+void MaterialCommand::Undo() { Apply(m_before); }
 
 void MaterialCommand::Apply(const EntityMaterial& value) {
-    Entity* entity = scene_.FindEntity(entityId_);
+    Entity* entity = m_scene.FindEntity(m_entityId);
     if (entity == nullptr) {
         throw std::runtime_error("Material command target no longer exists");
     }

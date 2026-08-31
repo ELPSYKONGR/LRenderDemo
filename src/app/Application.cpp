@@ -23,27 +23,27 @@ int Application::Run() {
     Initialize();
     Logger::Instance().Info("app", "Application frame loop started");
 
-    while (window_.PumpMessages()) {
-        if (window_.CloseRequested()) {
-            window_.ClearCloseRequest();
-            editor_.RequestExit();
+    while (m_window.PumpMessages()) {
+        if (m_window.CloseRequested()) {
+            m_window.ClearCloseRequest();
+            m_editor.RequestExit();
         }
-        renderer_.ResizeSwapChain(window_.ClientWidth(), window_.ClientHeight());
+        m_renderer.ResizeSwapChain(m_window.ClientWidth(), m_window.ClientHeight());
 
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        editor_.Draw(scene_, history_, camera_, renderer_);
-        if (editor_.ConsumeExitConfirmed()) {
-            window_.Close();
+        m_editor.Draw(m_scene, m_history, m_camera, m_renderer);
+        if (m_editor.ConsumeExitConfirmed()) {
+            m_window.Close();
             continue;
         }
-        renderer_.RenderScene(scene_, camera_, editor_.SelectedEntityId());
+        m_renderer.RenderScene(m_scene, m_camera, m_editor.SelectedEntityId());
 
         ImGui::Render();
-        renderer_.RenderEditor(ImGui::GetDrawData());
-        renderer_.Present();
+        m_renderer.RenderEditor(ImGui::GetDrawData());
+        m_renderer.Present();
     }
 
     Shutdown();
@@ -53,18 +53,18 @@ int Application::Run() {
 void Application::Initialize() {
     const HRESULT comResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     if (SUCCEEDED(comResult)) {
-        isComInitialized_ = true;
+        m_isComInitialized = true;
     } else if (comResult != RPC_E_CHANGED_MODE) {
         throw std::runtime_error("Failed to initialize COM for texture loading");
     }
-    window_.Create(instance_, L"LRenderDemo - DX11 Render Lab", 1440, 900);
+    m_window.Create(m_instance, L"LRenderDemo - DX11 Render Lab", 1440, 900);
     Logger::Instance().Info(
         "platform",
         std::format(
             "Window created {{handle: {}, visible: {}}}",
-            reinterpret_cast<std::uintptr_t>(window_.Handle()),
-            IsWindowVisible(window_.Handle()) != FALSE));
-    renderer_.Initialize(window_.Handle(), window_.ClientWidth(), window_.ClientHeight());
+            reinterpret_cast<std::uintptr_t>(m_window.Handle()),
+            IsWindowVisible(m_window.Handle()) != FALSE));
+    m_renderer.Initialize(m_window.Handle(), m_window.ClientWidth(), m_window.ClientHeight());
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -75,21 +75,21 @@ void Application::Initialize() {
     style.WindowRounding = 3.0F;
     style.FrameRounding = 2.0F;
 
-    if (!ImGui_ImplWin32_Init(window_.Handle()) ||
-        !ImGui_ImplDX11_Init(renderer_.Device(), renderer_.Context())) {
+    if (!ImGui_ImplWin32_Init(m_window.Handle()) ||
+        !ImGui_ImplDX11_Init(m_renderer.Device(), m_renderer.Context())) {
         throw std::runtime_error("Failed to initialize Dear ImGui backends");
     }
-    isImGuiInitialized_ = true;
+    m_isImGuiInitialized = true;
 
-    Model& defaultModel = scene_.CreateModel("Default Model");
+    Model& defaultModel = m_scene.CreateModel("Default Model");
     const ModelId defaultModelId = defaultModel.id;
-    auto& cube = scene_.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
+    auto& cube = m_scene.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
     cube.transform.position.x = -0.8F;
     cube.material.baseColor = {0.25F, 0.55F, 0.92F, 1.0F};
-    auto& sphere = scene_.CreateEntity(defaultModelId, PrimitiveType::Sphere, "Sphere 2");
+    auto& sphere = m_scene.CreateEntity(defaultModelId, PrimitiveType::Sphere, "Sphere 2");
     sphere.transform.position.x = 0.8F;
     sphere.material.baseColor = {0.92F, 0.42F, 0.22F, 1.0F};
-    auto& plane = scene_.CreateEntity(defaultModelId, PrimitiveType::Plane, "Plane 3");
+    auto& plane = m_scene.CreateEntity(defaultModelId, PrimitiveType::Plane, "Plane 3");
     plane.transform.position.y = -0.5F;
     plane.material.baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
 
@@ -97,12 +97,12 @@ void Application::Initialize() {
         "assets/test-scenes/downloads/suzanne/Suzanne.gltf";
     if (std::filesystem::is_regular_file(sampleModel)) {
         try {
-            const auto asset = renderer_.PreloadModel(sampleModel);
+            const auto asset = m_renderer.PreloadModel(sampleModel);
             std::vector<std::string> entityNames;
             for (const MeshAssetEntity& entity : asset->entities) {
                 entityNames.push_back(entity.name);
             }
-            auto& model = scene_.CreateMeshModel(sampleModel, "Suzanne (glTF)", entityNames);
+            auto& model = m_scene.CreateMeshModel(sampleModel, "Suzanne (glTF)", entityNames);
             for (Entity& entity : model.entities) {
                 entity.transform.position.y = 1.8F;
             }
@@ -117,7 +117,7 @@ void Application::Initialize() {
         "assets/test-scenes/downloads/damaged-helmet/DamagedHelmet.glb";
     if (std::filesystem::is_regular_file(glbValidationModel)) {
         try {
-            static_cast<void>(renderer_.PreloadModel(glbValidationModel));
+            static_cast<void>(m_renderer.PreloadModel(glbValidationModel));
             Logger::Instance().Info(
                 "assets", "Validated optional Damaged Helmet GLB and embedded texture");
         } catch (const std::exception& error) {
@@ -128,16 +128,16 @@ void Application::Initialize() {
 }
 
 void Application::Shutdown() noexcept {
-    if (isImGuiInitialized_) {
+    if (m_isImGuiInitialized) {
         ImGui_ImplDX11_Shutdown();
         ImGui_ImplWin32_Shutdown();
         ImGui::DestroyContext();
-        isImGuiInitialized_ = false;
+        m_isImGuiInitialized = false;
     }
-    renderer_.Shutdown();
-    if (isComInitialized_) {
+    m_renderer.Shutdown();
+    if (m_isComInitialized) {
         CoUninitialize();
-        isComInitialized_ = false;
+        m_isComInitialized = false;
     }
 }
 

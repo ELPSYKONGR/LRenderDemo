@@ -16,15 +16,15 @@
 namespace lrender {
 
 ModelLoader::ModelLoader() {
-    importers_.push_back(std::make_unique<GltfLoader>());
-    importers_.push_back(std::make_unique<ObjLoader>());
+    m_importers.push_back(std::make_unique<GltfLoader>());
+    m_importers.push_back(std::make_unique<ObjLoader>());
 }
 
 std::shared_ptr<MeshAsset> ModelLoader::Load(
     const std::filesystem::path& path, ResourceCache& resources) const {
     std::wstring extension = path.extension().wstring();
     std::ranges::transform(extension, extension.begin(), ::towlower);
-    for (const auto& importer : importers_) {
+    for (const auto& importer : m_importers) {
         if (importer->SupportsExtension(extension)) {
             return importer->Import(path, resources);
         }

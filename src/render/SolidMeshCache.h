@@ -23,7 +23,7 @@ public:
 
     [[nodiscard]] const Mesh& Resolve(EntityId entityId, const SolidGeometry& geometry);
     void Prune(const std::unordered_set<EntityId>& activeEntities);
-    void Clear() noexcept { entries_.clear(); }
+    void Clear() noexcept { m_entries.clear(); }
 
 private:
     struct Entry {
@@ -31,8 +31,8 @@ private:
         std::unique_ptr<Mesh> mesh;
     };
 
-    Microsoft::WRL::ComPtr<ID3D11Device> device_;
-    std::unordered_map<EntityId, Entry> entries_;
+    Microsoft::WRL::ComPtr<ID3D11Device> m_device;
+    std::unordered_map<EntityId, Entry> m_entries;
 };
 
 } // namespace lrender

@@ -20,7 +20,7 @@ public:
         const std::filesystem::path& path, ResourceCache& resources) const;
 
 private:
-    std::vector<std::unique_ptr<IModelImporter>> importers_;
+    std::vector<std::unique_ptr<IModelImporter>> m_importers;
 };
 
 } // namespace lrender

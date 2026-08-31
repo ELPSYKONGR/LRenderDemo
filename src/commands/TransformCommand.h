@@ -21,10 +21,10 @@ public:
 private:
     void Apply(const Transform& value);
 
-    Scene& scene_;
-    std::uint32_t entityId_;
-    Transform before_;
-    Transform after_;
+    Scene& m_scene;
+    std::uint32_t m_entityId;
+    Transform m_before;
+    Transform m_after;
 };
 
 } // namespace lrender

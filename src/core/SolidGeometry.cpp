@@ -24,8 +24,8 @@ bool Near(float left, float right, float epsilon) noexcept {
 
 } // namespace
 
-SolidGeometry::SolidGeometry(SolidParameters parameters) : parameters_(std::move(parameters)) {
-    Validate(parameters_);
+SolidGeometry::SolidGeometry(SolidParameters parameters) : m_parameters(std::move(parameters)) {
+    Validate(m_parameters);
 }
 
 SolidGeometry SolidGeometry::Cube(CubeParameters parameters) {
@@ -52,11 +52,11 @@ PrimitiveType SolidGeometry::Type() const noexcept {
                 return PrimitiveType::Plane;
             }
         },
-        parameters_);
+        m_parameters);
 }
 
 bool SolidGeometry::NearlyEquals(const SolidGeometry& other, float epsilon) const noexcept {
-    if (parameters_.index() != other.parameters_.index()) {
+    if (m_parameters.index() != other.m_parameters.index()) {
         return false;
     }
     return std::visit(
@@ -79,7 +79,7 @@ bool SolidGeometry::NearlyEquals(const SolidGeometry& other, float epsilon) cons
                        left.subdivisionsZ == right.subdivisionsZ;
             }
         },
-        parameters_, other.parameters_);
+        m_parameters, other.m_parameters);
 }
 
 void SolidGeometry::Validate(const SolidParameters& parameters) {

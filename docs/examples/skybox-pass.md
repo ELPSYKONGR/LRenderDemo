@@ -209,16 +209,16 @@ public:
 
 ```cpp
 [[nodiscard]] ID3D11RenderTargetView* RenderTargetView() const noexcept {
-    return renderTargetView_.Get();
+    return m_renderTargetView.Get();
 }
 
 [[nodiscard]] ID3D11DepthStencilView* DepthStencilView() const noexcept {
-    return depthStencilView_.Get();
+    return m_depthStencilView.Get();
 }
 ```
 
 不要返回 `ComPtr`，否则调用方会误以为需要参与所有权管理。也不要让 Pass 访问
-`colorTexture_` 或 `depthTexture_` 私有成员。
+`m_colorTexture` 或 `m_depthTexture` 私有成员。
 
 ## 8. 第三步：编写 Skybox HLSL
 
@@ -306,13 +306,13 @@ public:
         ID3D11ShaderResourceView* cubemap);
 
 private:
-    Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader_;
-    Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader_;
-    Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout_;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer_;
-    Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState_;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> depthState_;
-    Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizerState_;
+    Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
+    Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> m_samplerState;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthState;
+    Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
 };
 ```
 
@@ -350,15 +350,15 @@ rasterizerDescription.DepthClipEnable = TRUE;
 `Apply` 必须显式设置本次 draw call 使用的状态：
 
 ```cpp
-context->UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &constants, 0, 0);
-context->IASetInputLayout(inputLayout_.Get());
-context->VSSetShader(vertexShader_.Get(), nullptr, 0);
-context->VSSetConstantBuffers(0, 1, constantBuffer_.GetAddressOf());
-context->PSSetShader(pixelShader_.Get(), nullptr, 0);
+context->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &constants, 0, 0);
+context->IASetInputLayout(m_inputLayout.Get());
+context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
+context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
 context->PSSetShaderResources(0, 1, &cubemap);
-context->PSSetSamplers(0, 1, samplerState_.GetAddressOf());
-context->OMSetDepthStencilState(depthState_.Get(), 0);
-context->RSSetState(rasterizerState_.Get());
+context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
+context->OMSetDepthStencilState(m_depthState.Get(), 0);
+context->RSSetState(m_rasterizerState.Get());
 ```
 
 不要假设 `BasicMeshEffect` 留下的状态正好可用。DX11 immediate context 是状态机，每个 Effect 应绑定
@@ -389,14 +389,14 @@ public:
     void Execute(const RenderPassContext& context) override;
     [[nodiscard]] std::string_view Name() const noexcept override { return "Skybox"; }
 
-    void SetEnabled(bool enabled) noexcept { enabled_ = enabled; }
-    [[nodiscard]] bool IsEnabled() const noexcept { return enabled_; }
+    void SetEnabled(bool enabled) noexcept { m_enabled = enabled; }
+    [[nodiscard]] bool IsEnabled() const noexcept { return m_enabled; }
 
 private:
-    SkyboxEffect effect_;
-    std::unique_ptr<Mesh> cubeMesh_;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cubemap_;
-    bool enabled_{true};
+    SkyboxEffect m_effect;
+    std::unique_ptr<Mesh> m_cubeMesh;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_cubemap;
+    bool m_enabled{true};
 };
 ```
 
@@ -405,7 +405,7 @@ private:
 1. 检查 `device` 和相对资源路径。
 2. 用 `PrimitiveFactory::CreateCube(device)` 创建天空盒网格。
 3. 用 DirectXTK `CreateDDSTextureFromFile` 加载 DDS。
-4. 调用 `cubemap_->GetDesc()`，确认 `ViewDimension == D3D11_SRV_DIMENSION_TEXTURECUBE`。
+4. 调用 `m_cubemap->GetDesc()`，确认 `ViewDimension == D3D11_SRV_DIMENSION_TEXTURECUBE`。
 5. 失败时抛出包含文件路径和 HRESULT 的异常。
 
 加载示意：
@@ -416,7 +416,7 @@ const HRESULT result = DirectX::CreateDDSTextureFromFile(
     device,
     texturePath.c_str(),
     resource.GetAddressOf(),
-    cubemap_.ReleaseAndGetAddressOf());
+    m_cubemap.ReleaseAndGetAddressOf());
 ```
 
 只保存 SRV 即可；SRV 会持有底层资源引用。局部 `resource` 用于创建后检查资源描述，离开构造函数后
@@ -424,11 +424,11 @@ const HRESULT result = DirectX::CreateDDSTextureFromFile(
 
 `Execute` 负责：
 
-1. `enabled_ == false` 时立即返回。
+1. `m_enabled == false` 时立即返回。
 2. 验证 Context 中的 context、RTV、DSV 和 viewport 尺寸。
 3. 显式绑定 Context 的 RTV/DSV。
-4. 调用 `effect_.Apply(...)`。
-5. 调用 `cubeMesh_->Draw(...)`。
+4. 调用 `m_effect.Apply(...)`。
+5. 调用 `m_cubeMesh->Draw(...)`。
 6. 将 PS slot 0 的 SRV 解绑。
 7. 恢复默认 depth/rasterizer state，避免状态泄漏到后续 ImGui 渲染。
 
@@ -449,16 +449,16 @@ context.deviceContext->RSSetState(nullptr);
 在 `Dx11Renderer.h` 增加：
 
 ```cpp
-std::unique_ptr<SkyboxPass> skyboxPass_;
+std::unique_ptr<SkyboxPass> m_skyboxPass;
 
-[[nodiscard]] SkyboxPass& Skybox() noexcept { return *skyboxPass_; }
+[[nodiscard]] SkyboxPass& Skybox() noexcept { return *m_skyboxPass; }
 ```
 
 初始化时使用仓库相对路径，不得写开发机器的绝对路径：
 
 ```cpp
-skyboxPass_ = std::make_unique<SkyboxPass>(
-    device_.Get(),
+m_skyboxPass = std::make_unique<SkyboxPass>(
+    m_device.Get(),
     std::filesystem::path{
         L"assets/skyboxes/downloads/directxtk-cubemap/cubemap.dds"});
 ```
@@ -468,7 +468,7 @@ VS 调试器工作目录已经由 CMake 设置为仓库根目录，所以 F5 和
 `Shutdown` 中应在释放 D3D context/device 前调用：
 
 ```cpp
-skyboxPass_.reset();
+m_skyboxPass.reset();
 ```
 
 在 `RenderScene` 中构造 Context，并在实体循环后执行：
@@ -483,15 +483,15 @@ for (const Model& model : scene.Models()) {
 }
 
 RenderPassContext passContext{
-    .deviceContext = context_.Get(),
-    .colorTarget = viewportTarget_.RenderTargetView(),
-    .depthTarget = viewportTarget_.DepthStencilView(),
+    .deviceContext = m_context.Get(),
+    .colorTarget = m_viewportTarget.RenderTargetView(),
+    .depthTarget = m_viewportTarget.DepthStencilView(),
     .view = view,
     .projection = projection,
-    .viewportWidth = viewportTarget_.Width(),
-    .viewportHeight = viewportTarget_.Height(),
+    .viewportWidth = m_viewportTarget.Width(),
+    .viewportHeight = m_viewportTarget.Height(),
 };
-skyboxPass_->Execute(passContext);
+m_skyboxPass->Execute(passContext);
 ```
 
 推荐顺序：

@@ -39,9 +39,9 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     if (windowHandle == nullptr) {
         throw std::invalid_argument("Renderer requires a valid Win32 window");
     }
-    windowHandle_ = windowHandle;
-    swapChainWidth_ = width;
-    swapChainHeight_ = height;
+    m_windowHandle = windowHandle;
+    m_swapChainWidth = width;
+    m_swapChainHeight = height;
 
     DXGI_SWAP_CHAIN_DESC swapChainDescription{};
     swapChainDescription.BufferCount = 2;
@@ -69,19 +69,19 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
         static_cast<UINT>(featureLevels.size()),
         D3D11_SDK_VERSION,
         &swapChainDescription,
-        swapChain_.ReleaseAndGetAddressOf(),
-        device_.ReleaseAndGetAddressOf(),
+        m_swapChain.ReleaseAndGetAddressOf(),
+        m_device.ReleaseAndGetAddressOf(),
         &createdFeatureLevel,
-        context_.ReleaseAndGetAddressOf());
+        m_context.ReleaseAndGetAddressOf());
 #if defined(_DEBUG)
     if (FAILED(result)) {
         flags &= ~D3D11_CREATE_DEVICE_DEBUG;
         result = D3D11CreateDeviceAndSwapChain(
             nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, featureLevels.data(),
             static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION,
-            &swapChainDescription, swapChain_.ReleaseAndGetAddressOf(),
-            device_.ReleaseAndGetAddressOf(), &createdFeatureLevel,
-            context_.ReleaseAndGetAddressOf());
+            &swapChainDescription, m_swapChain.ReleaseAndGetAddressOf(),
+            m_device.ReleaseAndGetAddressOf(), &createdFeatureLevel,
+            m_context.ReleaseAndGetAddressOf());
     }
 #endif
     if (FAILED(result)) {
@@ -89,34 +89,39 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     }
 
     CreateBackBuffer();
-    viewportTarget_.Resize(device_.Get(), 960, 640);
-    solidMeshes_ = std::make_unique<SolidMeshCache>(device_.Get());
-    effect_ = std::make_unique<BasicMeshEffect>(device_.Get(), LRENDER_SHADER_OUTPUT_DIR);
-    resources_ = std::make_unique<ResourceCache>(device_.Get(), context_.Get());
-    primitiveMaterial_ = resources_->CheckerMaterial();
+    m_sceneTarget.Resize(m_device.Get(), 960, 640);
+    m_viewportTarget.Resize(m_device.Get(), 960, 640);
+    m_solidMeshes = std::make_unique<SolidMeshCache>(m_device.Get());
+    m_effect = std::make_unique<BasicMeshEffect>(m_device.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_colorProcessor = std::make_unique<ColorProcessorEffect>(
+        m_device.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_resources = std::make_unique<ResourceCache>(m_device.Get(), m_context.Get());
+    m_primitiveMaterial = m_resources->CheckerMaterial();
 }
 
 void Dx11Renderer::Shutdown() noexcept {
-    if (context_) {
-        context_->ClearState();
-        context_->Flush();
+    if (m_context) {
+        m_context->ClearState();
+        m_context->Flush();
     }
-    effect_.reset();
-    primitiveMaterial_ = {};
-    resources_.reset();
-    solidMeshes_.reset();
-    viewportTarget_.Reset();
-    backBufferView_.Reset();
-    swapChain_.Reset();
-    context_.Reset();
-    device_.Reset();
+    m_effect.reset();
+    m_colorProcessor.reset();
+    m_primitiveMaterial = {};
+    m_resources.reset();
+    m_solidMeshes.reset();
+    m_viewportTarget.Reset();
+    m_sceneTarget.Reset();
+    m_backBufferView.Reset();
+    m_swapChain.Reset();
+    m_context.Reset();
+    m_device.Reset();
 }
 
 void Dx11Renderer::CreateBackBuffer() {
     Microsoft::WRL::ComPtr<ID3D11Texture2D> backBuffer;
-    if (FAILED(swapChain_->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf()))) ||
-        FAILED(device_->CreateRenderTargetView(
-            backBuffer.Get(), nullptr, backBufferView_.ReleaseAndGetAddressOf()))) {
+    if (FAILED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf()))) ||
+        FAILED(m_device->CreateRenderTargetView(
+            backBuffer.Get(), nullptr, m_backBufferView.ReleaseAndGetAddressOf()))) {
         throw std::runtime_error("Failed to create swap-chain back buffer");
     }
 }
@@ -124,40 +129,41 @@ void Dx11Renderer::CreateBackBuffer() {
 void Dx11Renderer::ResizeSwapChain(std::uint32_t width, std::uint32_t height) {
     width = std::max(width, 1U);
     height = std::max(height, 1U);
-    if (width == swapChainWidth_ && height == swapChainHeight_) {
+    if (width == m_swapChainWidth && height == m_swapChainHeight) {
         return;
     }
-    backBufferView_.Reset();
-    if (FAILED(swapChain_->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))) {
+    m_backBufferView.Reset();
+    if (FAILED(m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))) {
         throw std::runtime_error("Failed to resize swap chain");
     }
-    swapChainWidth_ = width;
-    swapChainHeight_ = height;
+    m_swapChainWidth = width;
+    m_swapChainHeight = height;
     CreateBackBuffer();
 }
 
 void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height) {
     ID3D11ShaderResourceView* nullResource = nullptr;
-    context_->PSSetShaderResources(0, 1, &nullResource);
-    viewportTarget_.Resize(device_.Get(), width, height);
+    m_context->PSSetShaderResources(0, 1, &nullResource);
+    m_sceneTarget.Resize(m_device.Get(), width, height);
+    m_viewportTarget.Resize(m_device.Get(), width, height);
 }
 
 void Dx11Renderer::RenderScene(
     const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId) {
     // ImGui sampled this texture in the previous frame; unbind it before using the same resource as an RTV.
     ID3D11ShaderResourceView* nullResource = nullptr;
-    context_->PSSetShaderResources(0, 1, &nullResource);
+    m_context->PSSetShaderResources(0, 1, &nullResource);
     constexpr float clearColor[4]{0.055F, 0.065F, 0.075F, 1.0F};
-    viewportTarget_.BindAndClear(context_.Get(), clearColor);
-    const float aspect = static_cast<float>(viewportTarget_.Width()) /
-                         static_cast<float>(viewportTarget_.Height());
-    const EffectFrameContext frameContext{context_.Get(), camera, aspect};
+    m_sceneTarget.BindAndClear(m_context.Get(), clearColor);
+    const float aspect = static_cast<float>(m_sceneTarget.Width()) /
+                         static_cast<float>(m_sceneTarget.Height());
+    const EffectFrameContext frameContext{m_context.Get(), camera, aspect};
     std::unordered_set<EntityId> activeSolids;
 
     for (const Model& sceneModel : scene.Models()) {
         for (const Entity& entity : sceneModel.entities) {
             if (const MeshGeometry* meshGeometry = entity.Mesh()) {
-                const auto asset = resources_->LoadMeshAsset(meshGeometry->assetPath);
+                const auto asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
                 if (meshGeometry->assetEntityIndex >= asset->entities.size()) {
                     throw std::runtime_error("Mesh entity index is outside the cached asset");
                 }
@@ -165,60 +171,63 @@ void Dx11Renderer::RenderScene(
                      asset->entities[meshGeometry->assetEntityIndex].parts) {
                     const EffectDrawContext drawContext{
                         entity, ResolveMaterial(part.material, entity.material), selectedEntityId};
-                    effect_->Bind(frameContext, drawContext);
-                    part.mesh->Draw(context_.Get());
+                    m_effect->Bind(frameContext, drawContext);
+                    part.mesh->Draw(m_context.Get());
                 }
                 continue;
             }
 
             const EffectDrawContext drawContext{
-                entity, ResolveMaterial(primitiveMaterial_, entity.material), selectedEntityId};
-            effect_->Bind(frameContext, drawContext);
+                entity, ResolveMaterial(m_primitiveMaterial, entity.material), selectedEntityId};
+            m_effect->Bind(frameContext, drawContext);
             const SolidGeometry* solid = entity.Solid();
-            if (solid == nullptr || solidMeshes_ == nullptr) {
+            if (solid == nullptr || m_solidMeshes == nullptr) {
                 throw std::runtime_error("Solid geometry cache is not initialized");
             }
             activeSolids.insert(entity.id);
-            solidMeshes_->Resolve(entity.id, *solid).Draw(context_.Get());
+            m_solidMeshes->Resolve(entity.id, *solid).Draw(m_context.Get());
         }
     }
-    solidMeshes_->Prune(activeSolids);
+    m_solidMeshes->Prune(activeSolids);
     nullResource = nullptr;
     ID3D11SamplerState* nullSampler = nullptr;
-    context_->PSSetShaderResources(0, 1, &nullResource);
-    context_->PSSetSamplers(0, 1, &nullSampler);
-    context_->RSSetState(nullptr);
+    m_context->PSSetShaderResources(0, 1, &nullResource);
+    m_context->PSSetSamplers(0, 1, &nullSampler);
+    m_context->RSSetState(nullptr);
+
+    m_viewportTarget.BindAndClear(m_context.Get(), clearColor);
+    m_colorProcessor->Apply(m_context.Get(), m_sceneTarget.ShaderResourceView());
 }
 
 std::shared_ptr<const MeshAsset> Dx11Renderer::PreloadModel(
     const std::filesystem::path& path) {
-    if (!resources_) {
+    if (!m_resources) {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
-    return resources_->LoadMeshAsset(path);
+    return m_resources->LoadMeshAsset(path);
 }
 
 void Dx11Renderer::PreloadTexture(const std::filesystem::path& path) {
-    if (!resources_) {
+    if (!m_resources) {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
-    static_cast<void>(resources_->LoadTexture(path));
+    static_cast<void>(m_resources->LoadTexture(path));
 }
 
 void Dx11Renderer::ClearRuntimeCaches() noexcept {
-    if (solidMeshes_) {
-        solidMeshes_->Clear();
+    if (m_solidMeshes) {
+        m_solidMeshes->Clear();
     }
 }
 
 ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity) {
-    if (!resources_) {
+    if (!m_resources) {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
-    const Material* source = &primitiveMaterial_;
+    const Material* source = &m_primitiveMaterial;
     std::shared_ptr<MeshAsset> asset;
     if (const MeshGeometry* meshGeometry = entity.Mesh()) {
-        asset = resources_->LoadMeshAsset(meshGeometry->assetPath);
+        asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
         if (meshGeometry->assetEntityIndex >= asset->entities.size() ||
             asset->entities[meshGeometry->assetEntityIndex].parts.empty()) {
             return nullptr;
@@ -243,34 +252,34 @@ Material Dx11Renderer::ResolveMaterial(
     samplerDescription.filter = NativeFilter(settings.filter);
     samplerDescription.addressU = NativeAddressMode(settings.addressMode);
     samplerDescription.addressV = samplerDescription.addressU;
-    resolved.sampler = resources_->GetSampler(samplerDescription);
+    resolved.sampler = m_resources->GetSampler(samplerDescription);
 
     if (settings.displayMode == SurfaceDisplayMode::LitUntextured) {
-        resolved.baseColorTexture = resources_->DefaultMaterial().baseColorTexture;
+        resolved.baseColorTexture = m_resources->DefaultMaterial().baseColorTexture;
     } else if (!settings.useSourceTexture && !settings.baseColorTexturePath.empty()) {
-        resolved.baseColorTexture = resources_->LoadTexture(settings.baseColorTexturePath);
+        resolved.baseColorTexture = m_resources->LoadTexture(settings.baseColorTexturePath);
     }
     return resolved;
 }
 
 std::size_t Dx11Renderer::CachedMeshAssetCount() const noexcept {
-    return resources_ ? resources_->MeshAssetCount() : 0;
+    return m_resources ? m_resources->MeshAssetCount() : 0;
 }
 
 std::size_t Dx11Renderer::CachedTextureCount() const noexcept {
-    return resources_ ? resources_->TextureCount() : 0;
+    return m_resources ? m_resources->TextureCount() : 0;
 }
 
 void Dx11Renderer::RenderEditor(ImDrawData* drawData) {
     constexpr float background[4]{0.10F, 0.105F, 0.115F, 1.0F};
-    ID3D11RenderTargetView* target = backBufferView_.Get();
-    context_->OMSetRenderTargets(1, &target, nullptr);
-    context_->ClearRenderTargetView(target, background);
+    ID3D11RenderTargetView* target = m_backBufferView.Get();
+    m_context->OMSetRenderTargets(1, &target, nullptr);
+    m_context->ClearRenderTargetView(target, background);
     ImGui_ImplDX11_RenderDrawData(drawData);
 }
 
 void Dx11Renderer::Present() {
-    const HRESULT result = swapChain_->Present(1, 0);
+    const HRESULT result = m_swapChain->Present(1, 0);
     if (FAILED(result)) {
         throw std::runtime_error("Swap-chain presentation failed");
     }

@@ -19,19 +19,19 @@ public:
     void BindAndClear(ID3D11DeviceContext* context, const float clearColor[4]) const;
 
     [[nodiscard]] ID3D11ShaderResourceView* ShaderResourceView() const noexcept {
-        return shaderResourceView_.Get();
+        return m_shaderResourceView.Get();
     }
-    [[nodiscard]] std::uint32_t Width() const noexcept { return width_; }
-    [[nodiscard]] std::uint32_t Height() const noexcept { return height_; }
+    [[nodiscard]] std::uint32_t Width() const noexcept { return m_width; }
+    [[nodiscard]] std::uint32_t Height() const noexcept { return m_height; }
 
 private:
-    std::uint32_t width_{};
-    std::uint32_t height_{};
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> colorTexture_;
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> renderTargetView_;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView_;
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> depthTexture_;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthStencilView_;
+    std::uint32_t m_width{};
+    std::uint32_t m_height{};
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> m_colorTexture;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_renderTargetView;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shaderResourceView;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthTexture;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 };
 
 } // namespace lrender

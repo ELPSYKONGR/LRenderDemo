@@ -1,5 +1,12 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-08-31 公共 Shader 契约与 Effect 基类
+
+- 将 `BasicMeshConstants.hlsli` 迁移为 `common.hlsli`，拆分 `FrameInfo`、`ObjectInfo`、`MaterialInfo`、`LightInfo` 四类 CBuffer。
+- 新增 `CommonConstants.h`，让 C++ 与 HLSL 布局使用 `static_assert` 校验。
+- 修正 `IRenderEffect` 构造/析构边界，统一类成员使用 `m_` 前缀。
+- 修正 `ViewPort` 逻辑对象，并将全屏 Quad 与颜色处理 Shader 纳入 VS2022/CMake 构建。
+
 ## 近期变更
 
 | 时间 | 类型 | 摘要 | 模块 | 提交 |

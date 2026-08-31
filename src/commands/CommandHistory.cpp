@@ -10,8 +10,8 @@
 
 namespace lrender {
 
-CommandHistory::CommandHistory(std::size_t capacity) : capacity_(capacity) {
-    if (capacity_ == 0) {
+CommandHistory::CommandHistory(std::size_t capacity) : m_capacity(capacity) {
+    if (m_capacity == 0) {
         throw std::invalid_argument("Command history capacity must be positive");
     }
 }
@@ -32,45 +32,45 @@ void CommandHistory::PushApplied(std::unique_ptr<ICommand> command) {
 }
 
 void CommandHistory::Store(std::unique_ptr<ICommand> command) {
-    redoStack_.clear();
-    if (undoStack_.size() == capacity_) {
-        undoStack_.erase(undoStack_.begin());
+    m_redoStack.clear();
+    if (m_undoStack.size() == m_capacity) {
+        m_undoStack.erase(m_undoStack.begin());
     }
-    Entry entry{std::move(command), currentRevision_, nextRevision_++};
-    currentRevision_ = entry.afterRevision;
-    undoStack_.push_back(std::move(entry));
+    Entry entry{std::move(command), m_currentRevision, m_nextRevision++};
+    m_currentRevision = entry.afterRevision;
+    m_undoStack.push_back(std::move(entry));
 }
 
 bool CommandHistory::Undo() {
-    if (undoStack_.empty()) {
+    if (m_undoStack.empty()) {
         return false;
     }
-    Entry entry = std::move(undoStack_.back());
-    undoStack_.pop_back();
+    Entry entry = std::move(m_undoStack.back());
+    m_undoStack.pop_back();
     entry.command->Undo();
-    currentRevision_ = entry.beforeRevision;
-    redoStack_.push_back(std::move(entry));
+    m_currentRevision = entry.beforeRevision;
+    m_redoStack.push_back(std::move(entry));
     return true;
 }
 
 bool CommandHistory::Redo() {
-    if (redoStack_.empty()) {
+    if (m_redoStack.empty()) {
         return false;
     }
-    Entry entry = std::move(redoStack_.back());
-    redoStack_.pop_back();
+    Entry entry = std::move(m_redoStack.back());
+    m_redoStack.pop_back();
     entry.command->Execute();
-    currentRevision_ = entry.afterRevision;
-    undoStack_.push_back(std::move(entry));
+    m_currentRevision = entry.afterRevision;
+    m_undoStack.push_back(std::move(entry));
     return true;
 }
 
 void CommandHistory::Clear() noexcept {
-    undoStack_.clear();
-    redoStack_.clear();
-    currentRevision_ = 0;
-    savedRevision_ = 0;
-    nextRevision_ = 1;
+    m_undoStack.clear();
+    m_redoStack.clear();
+    m_currentRevision = 0;
+    m_savedRevision = 0;
+    m_nextRevision = 1;
 }
 
 } // namespace lrender

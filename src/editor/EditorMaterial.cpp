@@ -139,13 +139,13 @@ void EditorLayer::DrawMaterialEditor(
                         scene, entity.id, entity.material, std::move(after)));
                 }
             } catch (const std::exception& error) {
-                materialError_ = error.what();
-                openMaterialErrorPopup_ = true;
+                m_materialError = error.what();
+                m_openMaterialErrorPopup = true;
                 try {
                     Logger::Instance().Error(
                         "material", std::format("Texture selection failed: {}", error.what()));
                 } catch (const std::exception& logError) {
-                    materialError_ += std::format("\nLogging also failed: {}", logError.what());
+                    m_materialError += std::format("\nLogging also failed: {}", logError.what());
                 }
             }
         }
@@ -177,13 +177,13 @@ void EditorLayer::DrawMaterialEditor(
         }
     }
 
-    if (openMaterialErrorPopup_) {
+    if (m_openMaterialErrorPopup) {
         ImGui::OpenPopup("Texture load failed");
-        openMaterialErrorPopup_ = false;
+        m_openMaterialErrorPopup = false;
     }
     if (ImGui::BeginPopupModal(
             "Texture load failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped("%s", materialError_.c_str());
+        ImGui::TextWrapped("%s", m_materialError.c_str());
         if (ImGui::Button("Close")) {
             ImGui::CloseCurrentPopup();
         }
@@ -195,17 +195,17 @@ void EditorLayer::TrackMaterialEdit(
     Scene& scene, CommandHistory& history, Entity& entity,
     const EntityMaterial& beforeControl) {
     if (ImGui::IsItemActivated()) {
-        materialEditStart_ = beforeControl;
-        materialEditEntityId_ = entity.id;
+        m_materialEditStart = beforeControl;
+        m_materialEditEntityId = entity.id;
     }
-    if (ImGui::IsItemDeactivatedAfterEdit() && materialEditStart_ &&
-        materialEditEntityId_ == entity.id) {
-        if (!materialEditStart_->NearlyEquals(entity.material)) {
+    if (ImGui::IsItemDeactivatedAfterEdit() && m_materialEditStart &&
+        m_materialEditEntityId == entity.id) {
+        if (!m_materialEditStart->NearlyEquals(entity.material)) {
             history.PushApplied(std::make_unique<MaterialCommand>(
-                scene, entity.id, *materialEditStart_, entity.material));
+                scene, entity.id, *m_materialEditStart, entity.material));
         }
-        materialEditStart_.reset();
-        materialEditEntityId_ = 0;
+        m_materialEditStart.reset();
+        m_materialEditEntityId = 0;
     }
 }
 

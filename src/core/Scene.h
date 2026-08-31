@@ -85,15 +85,15 @@ public:
     [[nodiscard]] const Entity* FindEntity(EntityId id) const;
     [[nodiscard]] Model* FindEntityModel(EntityId id);
     [[nodiscard]] const Model* FindEntityModel(EntityId id) const;
-    [[nodiscard]] const std::vector<Model>& Models() const noexcept { return models_; }
+    [[nodiscard]] const std::vector<Model>& Models() const noexcept { return m_models; }
     [[nodiscard]] std::size_t EntityCount() const noexcept;
 
 private:
     static void ValidateEntity(const Entity& entity);
 
-    std::vector<Model> models_;
-    ModelId nextModelId_{1};
-    EntityId nextEntityId_{1};
+    std::vector<Model> m_models;
+    ModelId m_nextModelId{1};
+    EntityId m_nextEntityId{1};
 };
 
 } // namespace lrender

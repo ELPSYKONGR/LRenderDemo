@@ -11,6 +11,7 @@ set(LRENDER_CORE_HEADERS
     core/Scene.h
     core/SolidGeometry.h
     core/Transform.h
+    core/ViewPort.h
     utils/Logger.h)
 
 add_library(LRenderCore STATIC
@@ -18,6 +19,7 @@ add_library(LRenderCore STATIC
     core/Camera.cpp
     core/Scene.cpp
     core/SolidGeometry.cpp
+    core/ViewPort.cpp
     commands/CommandHistory.cpp
     commands/CreateEntityCommand.cpp
     commands/CreateModelCommand.cpp
@@ -84,8 +86,9 @@ set(LRENDER_DEMO_HEADERS
     app/Application.h
     editor/EditorLayer.h
     platform/Window.h
-    render/BasicMeshConstants.h
     render/BasicMeshEffect.h
+    render/ColorProcessorEffect.h
+    render/CommonConstants.h
     render/Dx11ConstantBuffer.h
     render/Dx11Renderer.h
     render/EffectContext.h
@@ -93,7 +96,7 @@ set(LRENDER_DEMO_HEADERS
     render/Lighting.h
     render/PrimitiveFactory.h
     render/RenderTarget.h)
-list(APPEND LRENDER_DEMO_HEADERS render/SolidMeshCache.h)
+list(APPEND LRENDER_DEMO_HEADERS render/SolidMeshCache.h render/SkyCubeEffect.h)
 
 add_executable(LRenderDemo WIN32
     ${LRENDER_DEMO_HEADERS}
@@ -101,6 +104,9 @@ add_executable(LRenderDemo WIN32
     app/Application.cpp
     platform/Window.cpp
     render/BasicMeshEffect.cpp
+    render/ColorProcessorEffect.cpp
+    render/IRenderEffect.cpp
+    render/SkyCubeEffect.cpp
     render/Dx11Renderer.cpp
     render/EffectContext.cpp
     render/PrimitiveFactory.cpp
@@ -123,9 +129,11 @@ set(LRENDER_SHADER_BUILD_OUTPUT_DIR "${LRENDER_SHADER_OUTPUT_ROOT}/$(Configurati
 set(LRENDER_SHADER_RUNTIME_OUTPUT_DIR "${LRENDER_SHADER_OUTPUT_ROOT}/$<CONFIG>")
 set(LRENDER_SHADER_SOURCES
     shaders/BasicMeshVS.hlsl
-    shaders/BasicMeshPS.hlsl)
+    shaders/BasicMeshPS.hlsl
+    shaders/QuadViewVS.hlsl
+    shaders/ColorProcessorPS.hlsl)
 set(LRENDER_SHADER_HEADERS
-    shaders/BasicMeshConstants.hlsli)
+    shaders/common.hlsli)
 set_source_files_properties(${LRENDER_SHADER_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 set_source_files_properties(shaders/BasicMeshVS.hlsl PROPERTIES
@@ -140,6 +148,20 @@ set_source_files_properties(shaders/BasicMeshPS.hlsl PROPERTIES
     VS_SHADER_MODEL 5.0
     VS_SHADER_ENTRYPOINT PSMain
     VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/BasicMeshPS.cso"
+    VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
+    VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
+set_source_files_properties(shaders/QuadViewVS.hlsl PROPERTIES
+    VS_SHADER_TYPE Vertex
+    VS_SHADER_MODEL 5.0
+    VS_SHADER_ENTRYPOINT VSMain
+    VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/QuadViewVS.cso"
+    VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
+    VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
+set_source_files_properties(shaders/ColorProcessorPS.hlsl PROPERTIES
+    VS_SHADER_TYPE Pixel
+    VS_SHADER_MODEL 5.0
+    VS_SHADER_ENTRYPOINT PSMain
+    VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/ColorProcessorPS.cso"
     VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
     VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
 

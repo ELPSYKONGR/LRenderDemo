@@ -14,15 +14,15 @@ namespace lrender {
 SolidGeometryCommand::SolidGeometryCommand(
     Scene& scene, EntityId entityId,
     SolidGeometry before, SolidGeometry after)
-    : scene_(scene), entityId_(entityId),
-      before_(std::move(before)), after_(std::move(after)) {}
+    : m_scene(scene), m_entityId(entityId),
+      m_before(std::move(before)), m_after(std::move(after)) {}
 
-void SolidGeometryCommand::Execute() { Apply(after_); }
+void SolidGeometryCommand::Execute() { Apply(m_after); }
 
-void SolidGeometryCommand::Undo() { Apply(before_); }
+void SolidGeometryCommand::Undo() { Apply(m_before); }
 
 void SolidGeometryCommand::Apply(const SolidGeometry& geometry) {
-    Entity* entity = scene_.FindEntity(entityId_);
+    Entity* entity = m_scene.FindEntity(m_entityId);
     if (entity == nullptr || entity->Solid() == nullptr) {
         throw std::runtime_error("Solid geometry command target is unavailable");
     }

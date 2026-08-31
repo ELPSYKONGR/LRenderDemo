@@ -19,10 +19,10 @@ Model& Scene::CreateModel(std::string name) {
         throw std::invalid_argument("Model name must not be empty");
     }
     Model model;
-    model.id = nextModelId_++;
+    model.id = m_nextModelId++;
     model.name = std::move(name);
-    models_.push_back(std::move(model));
-    return models_.back();
+    m_models.push_back(std::move(model));
+    return m_models.back();
 }
 
 Model& Scene::CreateMeshModel(
@@ -62,7 +62,7 @@ Entity& Scene::CreateEntity(ModelId modelId, PrimitiveType primitive, std::strin
 Entity& Scene::CreateSolidEntity(
     ModelId modelId, SolidGeometry geometry, std::string name) {
     Entity entity;
-    entity.id = nextEntityId_++;
+    entity.id = m_nextEntityId++;
     entity.name = std::move(name);
     entity.geometry = std::move(geometry);
     return AddEntity(modelId, std::move(entity));
@@ -72,7 +72,7 @@ Entity& Scene::CreateMeshEntity(
     ModelId modelId, std::filesystem::path assetPath,
     std::uint32_t assetEntityIndex, std::string name) {
     Entity entity;
-    entity.id = nextEntityId_++;
+    entity.id = m_nextEntityId++;
     entity.name = std::move(name);
     entity.material.baseColor = {1.0F, 1.0F, 1.0F, 1.0F};
     entity.geometry = MeshGeometry{std::move(assetPath), assetEntityIndex};
@@ -90,12 +90,12 @@ Model& Scene::AddModel(Model model) {
             throw std::invalid_argument("Model snapshot contains an existing entity id");
         }
     }
-    nextModelId_ = std::max(nextModelId_, model.id + 1);
+    m_nextModelId = std::max(m_nextModelId, model.id + 1);
     for (const Entity& entity : model.entities) {
-        nextEntityId_ = std::max(nextEntityId_, entity.id + 1);
+        m_nextEntityId = std::max(m_nextEntityId, entity.id + 1);
     }
-    models_.push_back(std::move(model));
-    return models_.back();
+    m_models.push_back(std::move(model));
+    return m_models.back();
 }
 
 Entity& Scene::AddEntity(ModelId modelId, Entity entity) {
@@ -107,19 +107,19 @@ Entity& Scene::AddEntity(ModelId modelId, Entity entity) {
     if (FindEntity(entity.id) != nullptr) {
         throw std::invalid_argument("Entity id already exists");
     }
-    nextEntityId_ = std::max(nextEntityId_, entity.id + 1);
+    m_nextEntityId = std::max(m_nextEntityId, entity.id + 1);
     model->entities.push_back(std::move(entity));
     return model->entities.back();
 }
 
 std::optional<Model> Scene::RemoveModel(ModelId id) {
     const auto iterator = std::find_if(
-        models_.begin(), models_.end(), [id](const Model& model) { return model.id == id; });
-    if (iterator == models_.end()) {
+        m_models.begin(), m_models.end(), [id](const Model& model) { return model.id == id; });
+    if (iterator == m_models.end()) {
         return std::nullopt;
     }
     Model removed = std::move(*iterator);
-    models_.erase(iterator);
+    m_models.erase(iterator);
     return removed;
 }
 
@@ -138,18 +138,18 @@ std::optional<Entity> Scene::RemoveEntity(EntityId id) {
 
 Model* Scene::FindModel(ModelId id) {
     const auto iterator = std::find_if(
-        models_.begin(), models_.end(), [id](const Model& model) { return model.id == id; });
-    return iterator == models_.end() ? nullptr : &*iterator;
+        m_models.begin(), m_models.end(), [id](const Model& model) { return model.id == id; });
+    return iterator == m_models.end() ? nullptr : &*iterator;
 }
 
 const Model* Scene::FindModel(ModelId id) const {
     const auto iterator = std::find_if(
-        models_.begin(), models_.end(), [id](const Model& model) { return model.id == id; });
-    return iterator == models_.end() ? nullptr : &*iterator;
+        m_models.begin(), m_models.end(), [id](const Model& model) { return model.id == id; });
+    return iterator == m_models.end() ? nullptr : &*iterator;
 }
 
 Entity* Scene::FindEntity(EntityId id) {
-    for (Model& model : models_) {
+    for (Model& model : m_models) {
         const auto iterator = std::find_if(
             model.entities.begin(), model.entities.end(),
             [id](const Entity& entity) { return entity.id == id; });
@@ -161,7 +161,7 @@ Entity* Scene::FindEntity(EntityId id) {
 }
 
 const Entity* Scene::FindEntity(EntityId id) const {
-    for (const Model& model : models_) {
+    for (const Model& model : m_models) {
         const auto iterator = std::find_if(
             model.entities.begin(), model.entities.end(),
             [id](const Entity& entity) { return entity.id == id; });
@@ -173,24 +173,24 @@ const Entity* Scene::FindEntity(EntityId id) const {
 }
 
 Model* Scene::FindEntityModel(EntityId id) {
-    const auto iterator = std::find_if(models_.begin(), models_.end(), [id](const Model& model) {
+    const auto iterator = std::find_if(m_models.begin(), m_models.end(), [id](const Model& model) {
         return std::ranges::any_of(
             model.entities, [id](const Entity& entity) { return entity.id == id; });
     });
-    return iterator == models_.end() ? nullptr : &*iterator;
+    return iterator == m_models.end() ? nullptr : &*iterator;
 }
 
 const Model* Scene::FindEntityModel(EntityId id) const {
-    const auto iterator = std::find_if(models_.begin(), models_.end(), [id](const Model& model) {
+    const auto iterator = std::find_if(m_models.begin(), m_models.end(), [id](const Model& model) {
         return std::ranges::any_of(
             model.entities, [id](const Entity& entity) { return entity.id == id; });
     });
-    return iterator == models_.end() ? nullptr : &*iterator;
+    return iterator == m_models.end() ? nullptr : &*iterator;
 }
 
 std::size_t Scene::EntityCount() const noexcept {
     std::size_t count = 0;
-    for (const Model& model : models_) {
+    for (const Model& model : m_models) {
         count += model.entities.size();
     }
     return count;

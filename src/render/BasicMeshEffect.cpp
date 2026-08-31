@@ -1,27 +1,13 @@
 /**
  * @file Editable HLSL basic mesh effect implementation.
- * @author Codex
- * @created 2026-08-20
- * @depends render/BasicMeshEffect.h
  */
 #include "render/BasicMeshEffect.h"
 
-#include <d3dcompiler.h>
 #include <iterator>
 #include <stdexcept>
-#include <string>
 
 namespace lrender {
 namespace {
-
-Microsoft::WRL::ComPtr<ID3DBlob> LoadShader(const std::filesystem::path& path) {
-    Microsoft::WRL::ComPtr<ID3DBlob> shader;
-    const HRESULT result = D3DReadFileToBlob(path.c_str(), shader.GetAddressOf());
-    if (FAILED(result)) {
-        throw std::runtime_error("Failed to load compiled shader: " + path.string());
-    }
-    return shader;
-}
 
 void ThrowIfFailed(HRESULT result, const char* message) {
     if (FAILED(result)) {
@@ -29,31 +15,32 @@ void ThrowIfFailed(HRESULT result, const char* message) {
     }
 }
 
-ID3D11Device* RequireDevice(ID3D11Device* device) {
-    if (device == nullptr) {
-        throw std::invalid_argument("BasicMeshEffect requires a D3D11 device");
-    }
-    return device;
+DirectX::SimpleMath::Vector4 ToVector4(const DirectX::SimpleMath::Color& color) {
+    return {color.x, color.y, color.z, color.w};
 }
 
 } // namespace
 
 BasicMeshEffect::BasicMeshEffect(
     ID3D11Device* device, const std::filesystem::path& shaderDirectory)
-    : constantBuffer_(RequireDevice(device)) {
-    states_ = std::make_unique<DirectX::CommonStates>(device);
+    : IRenderEffect(device),
+      m_states(std::make_unique<DirectX::CommonStates>(Device())),
+      m_frameConstants(Device()),
+      m_objectConstants(Device()),
+      m_materialConstants(Device()),
+      m_lightConstants(Device()) {
     const auto vertexShader = LoadShader(shaderDirectory / L"BasicMeshVS.cso");
     const auto pixelShader = LoadShader(shaderDirectory / L"BasicMeshPS.cso");
 
     ThrowIfFailed(
-        device->CreateVertexShader(
+        Device()->CreateVertexShader(
             vertexShader->GetBufferPointer(), vertexShader->GetBufferSize(), nullptr,
-            vertexShader_.GetAddressOf()),
+            m_vertexShader.GetAddressOf()),
         "Failed to create basic mesh vertex shader");
     ThrowIfFailed(
-        device->CreatePixelShader(
+        Device()->CreatePixelShader(
             pixelShader->GetBufferPointer(), pixelShader->GetBufferSize(), nullptr,
-            pixelShader_.GetAddressOf()),
+            m_pixelShader.GetAddressOf()),
         "Failed to create basic mesh pixel shader");
     constexpr D3D11_INPUT_ELEMENT_DESC inputElements[]{
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
@@ -62,19 +49,18 @@ BasicMeshEffect::BasicMeshEffect(
          D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT,
          D3D11_INPUT_PER_VERTEX_DATA, 0}};
-    ThrowIfFailed(device->CreateInputLayout(
+    ThrowIfFailed(Device()->CreateInputLayout(
         inputElements,
         static_cast<UINT>(std::size(inputElements)),
         vertexShader->GetBufferPointer(),
         vertexShader->GetBufferSize(),
-        inputLayout_.GetAddressOf()),
+        m_inputLayout.GetAddressOf()),
         "Failed to create basic mesh input layout");
 }
 
 void BasicMeshEffect::Bind(
     const EffectFrameContext& frame, const EffectDrawContext& draw) {
     ID3D11DeviceContext* context = frame.DeviceContext();
-    const auto& world = draw.World();
     const Material& material = draw.ResolvedMaterial();
     if (material.baseColorTexture == nullptr || material.sampler == nullptr) {
         throw std::invalid_argument("BasicMeshEffect requires a texture and sampler material");
@@ -90,51 +76,69 @@ void BasicMeshEffect::Bind(
         selectedTint.z * material.baseColorFactor.z,
         selectedTint.w * material.baseColorFactor.w};
 
-    BasicMeshConstants constants{};
-    constants.worldViewProjection = world * frame.View() * frame.Projection();
-    constants.world = world;
-    constants.worldInverseTranspose = world.Invert().Transpose();
-    constants.baseColor = finalColor;
+    FrameConstants frameData{};
+    frameData.view = frame.View();
+    frameData.projection = frame.Projection();
+    frameData.mode = {static_cast<float>(material.displayMode), 0.0F, 0.0F, 0.0F};
     const auto& cameraPosition = frame.CameraPosition();
-    constants.cameraPosition = {cameraPosition.x, cameraPosition.y, cameraPosition.z, 1.0F};
-    constants.ambientColor = lights_.ambient;
-    auto directionalDirection = lights_.directional.direction;
+    frameData.cameraPosition = {cameraPosition.x, cameraPosition.y, cameraPosition.z, 1.0F};
+    frameData.viewport = {frame.AspectRatio(), 1.0F, 0.0F, 0.0F};
+
+    ObjectConstants objectData{};
+    objectData.world = draw.World();
+    objectData.worldViewProjection = objectData.world * frame.View() * frame.Projection();
+    objectData.worldInverseTranspose = objectData.world.Invert().Transpose();
+
+    MaterialConstants materialData{};
+    materialData.baseColor = ToVector4(finalColor);
+    materialData.specularColor = ToVector4(material.specularColor);
+    materialData.materialParameters = {
+        material.specularStrength,
+        material.shininess,
+        material.diffuseStrength,
+        static_cast<float>(material.displayMode)};
+
+    LightConstants lightData{};
+    lightData.ambientColor = ToVector4(m_lights.ambient);
+    auto directionalDirection = m_lights.directional.direction;
     if (directionalDirection.LengthSquared() < 0.000001F) {
         directionalDirection = {0.0F, -1.0F, 0.0F};
     } else {
         directionalDirection.Normalize();
     }
-    constants.directionalDirectionAndIntensity = {
+    lightData.directionalDirectionAndIntensity = {
         directionalDirection.x, directionalDirection.y,
-        directionalDirection.z, lights_.directional.intensity};
-    constants.directionalColorAndEnabled = {
-        lights_.directional.color.x, lights_.directional.color.y,
-        lights_.directional.color.z, lights_.directional.enabled ? 1.0F : 0.0F};
-    for (std::size_t index = 0; index < lights_.points.size(); ++index) {
-        const PointLight& light = lights_.points[index];
-        constants.pointLights[index].positionAndRange = {
+        directionalDirection.z, m_lights.directional.intensity};
+    lightData.directionalColorAndEnabled = {
+        m_lights.directional.color.x, m_lights.directional.color.y,
+        m_lights.directional.color.z, m_lights.directional.enabled ? 1.0F : 0.0F};
+    for (std::size_t index = 0; index < m_lights.points.size(); ++index) {
+        const PointLight& light = m_lights.points[index];
+        lightData.pointLightData[index * 2] = {
             light.position.x, light.position.y, light.position.z,
             light.range > 0.0001F ? light.range : 0.0001F};
-        constants.pointLights[index].colorAndIntensity = {
+        lightData.pointLightData[index * 2 + 1] = {
             light.color.x, light.color.y, light.color.z,
             light.enabled ? light.intensity : 0.0F};
     }
-    constants.specularColor = material.specularColor;
-    constants.materialParameters = {
-        material.specularStrength,
-        material.shininess,
-        material.diffuseStrength,
-        static_cast<float>(material.displayMode)};
-    constantBuffer_.Update(context, constants);
 
-    context->IASetInputLayout(inputLayout_.Get());
+    m_frameConstants.Update(context, frameData);
+    m_objectConstants.Update(context, objectData);
+    m_materialConstants.Update(context, materialData);
+    m_lightConstants.Update(context, lightData);
+
+    context->IASetInputLayout(m_inputLayout.Get());
     context->RSSetState(
-        isWireframe_ ? states_->Wireframe() :
-        (material.doubleSided ? states_->CullNone() : states_->CullClockwise()));
-    context->VSSetShader(vertexShader_.Get(), nullptr, 0);
-    context->PSSetShader(pixelShader_.Get(), nullptr, 0);
-    constantBuffer_.BindVS(context, 0);
-    constantBuffer_.BindPS(context, 0);
+        m_isWireframe ? m_states->Wireframe() :
+        (material.doubleSided ? m_states->CullNone() : m_states->CullClockwise()));
+    context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
+    context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
+    m_frameConstants.BindVS(context, 0);
+    m_frameConstants.BindPS(context, 0);
+    m_objectConstants.BindVS(context, 1);
+    m_objectConstants.BindPS(context, 1);
+    m_materialConstants.BindPS(context, 2);
+    m_lightConstants.BindPS(context, 3);
     ID3D11ShaderResourceView* texture = material.baseColorTexture->ShaderResourceView();
     ID3D11SamplerState* sampler = material.sampler->Get();
     context->PSSetShaderResources(0, 1, &texture);

@@ -16,20 +16,21 @@ namespace lrender {
 
 EffectFrameContext::EffectFrameContext(
     ID3D11DeviceContext* deviceContext, const Camera& camera, float aspectRatio)
-    : deviceContext_(deviceContext),
-      view_(camera.ViewMatrix()),
-      projection_(camera.ProjectionMatrix(aspectRatio)),
-      cameraPosition_(camera.Position()) {
-    if (deviceContext_ == nullptr) {
+    : m_deviceContext(deviceContext),
+      m_view(camera.ViewMatrix()),
+      m_projection(camera.ProjectionMatrix(aspectRatio)),
+      m_cameraPosition(camera.Position()),
+      m_aspectRatio(aspectRatio) {
+    if (m_deviceContext == nullptr) {
         throw std::invalid_argument("EffectFrameContext requires a D3D11 context");
     }
 }
 
 EffectDrawContext::EffectDrawContext(
     const Entity& entity, Material material, std::uint32_t selectedEntityId)
-    : world_(entity.transform.ToMatrix()),
-      material_(std::move(material)),
-      tint_(entity.material.baseColor),
-      isSelected_(entity.id == selectedEntityId) {}
+    : m_world(entity.transform.ToMatrix()),
+      m_material(std::move(material)),
+      m_tint(entity.material.baseColor),
+      m_isSelected(entity.id == selectedEntityId) {}
 
 } // namespace lrender

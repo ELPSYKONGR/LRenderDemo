@@ -38,8 +38,8 @@ Texture2D::Texture2D(
     Microsoft::WRL::ComPtr<ID3D11Resource> resource,
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView,
     std::string sourceName)
-    : resource_(std::move(resource)), shaderResourceView_(std::move(shaderResourceView)),
-      sourceName_(std::move(sourceName)) {}
+    : m_resource(std::move(resource)), m_shaderResourceView(std::move(shaderResourceView)),
+      m_sourceName(std::move(sourceName)) {}
 
 std::shared_ptr<Texture2D> Texture2D::LoadFile(
     ID3D11Device* device, ID3D11DeviceContext* context,

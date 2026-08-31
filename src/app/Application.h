@@ -19,7 +19,7 @@ namespace lrender {
 
 class Application final {
 public:
-    explicit Application(HINSTANCE instance) : instance_(instance) {}
+    explicit Application(HINSTANCE instance) : m_instance(instance) {}
     ~Application() { Shutdown(); }
     int Run();
 
@@ -27,15 +27,15 @@ private:
     void Initialize();
     void Shutdown() noexcept;
 
-    HINSTANCE instance_{};
-    Window window_;
-    Dx11Renderer renderer_;
-    Scene scene_;
-    CommandHistory history_;
-    Camera camera_;
-    EditorLayer editor_;
-    bool isImGuiInitialized_{false};
-    bool isComInitialized_{false};
+    HINSTANCE m_instance{};
+    Window m_window;
+    Dx11Renderer m_renderer;
+    Scene m_scene;
+    CommandHistory m_history;
+    Camera m_camera;
+    EditorLayer m_editor;
+    bool m_isImGuiInitialized{false};
+    bool m_isComInitialized{false};
 };
 
 } // namespace lrender

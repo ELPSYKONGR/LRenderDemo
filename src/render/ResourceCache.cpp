@@ -15,71 +15,71 @@
 namespace lrender {
 
 ResourceCache::ResourceCache(ID3D11Device* device, ID3D11DeviceContext* context)
-    : device_(device), context_(context) {
-    if (device_ == nullptr || context_ == nullptr) {
+    : m_device(device), m_context(context) {
+    if (m_device == nullptr || m_context == nullptr) {
         throw std::invalid_argument("ResourceCache requires a D3D11 device and context");
     }
-    whiteTexture_ = Texture2D::CreateSolidWhite(device_);
-    checkerTexture_ = Texture2D::CreateChecker(device_);
-    defaultSampler_ = GetSampler();
-    modelLoader_ = std::make_unique<ModelLoader>();
+    m_whiteTexture = Texture2D::CreateSolidWhite(m_device);
+    m_checkerTexture = Texture2D::CreateChecker(m_device);
+    m_defaultSampler = GetSampler();
+    m_modelLoader = std::make_unique<ModelLoader>();
 }
 
 ResourceCache::~ResourceCache() = default;
 
 std::shared_ptr<MeshAsset> ResourceCache::LoadMeshAsset(const std::filesystem::path& path) {
     const std::wstring key = NormalizePath(path);
-    if (const auto found = meshAssets_.find(key); found != meshAssets_.end()) {
+    if (const auto found = m_meshAssets.find(key); found != m_meshAssets.end()) {
         return found->second;
     }
-    auto asset = modelLoader_->Load(path, *this);
-    meshAssets_.emplace(key, asset);
+    auto asset = m_modelLoader->Load(path, *this);
+    m_meshAssets.emplace(key, asset);
     return asset;
 }
 
 std::shared_ptr<Texture2D> ResourceCache::LoadTexture(const std::filesystem::path& path) {
     const std::wstring key = NormalizePath(path);
-    if (const auto found = textures_.find(key); found != textures_.end()) {
+    if (const auto found = m_textures.find(key); found != m_textures.end()) {
         return found->second;
     }
-    auto texture = Texture2D::LoadFile(device_, context_, path);
-    textures_.emplace(key, texture);
+    auto texture = Texture2D::LoadFile(m_device, m_context, path);
+    m_textures.emplace(key, texture);
     return texture;
 }
 
 std::shared_ptr<Texture2D> ResourceCache::LoadEmbeddedTexture(
     std::string key, std::span<const std::byte> bytes) {
-    if (const auto found = embeddedTextures_.find(key); found != embeddedTextures_.end()) {
+    if (const auto found = m_embeddedTextures.find(key); found != m_embeddedTextures.end()) {
         return found->second;
     }
-    auto texture = Texture2D::LoadMemory(device_, context_, bytes, key);
-    embeddedTextures_.emplace(std::move(key), texture);
+    auto texture = Texture2D::LoadMemory(m_device, m_context, bytes, key);
+    m_embeddedTextures.emplace(std::move(key), texture);
     return texture;
 }
 
 std::shared_ptr<SamplerState> ResourceCache::GetSampler(
     const SamplerDescription& description) {
     const std::uint64_t key = SamplerKey(description);
-    if (const auto found = samplers_.find(key); found != samplers_.end()) {
+    if (const auto found = m_samplers.find(key); found != m_samplers.end()) {
         return found->second;
     }
-    auto sampler = std::make_shared<SamplerState>(device_, description);
-    samplers_.emplace(key, sampler);
+    auto sampler = std::make_shared<SamplerState>(m_device, description);
+    m_samplers.emplace(key, sampler);
     return sampler;
 }
 
 Material ResourceCache::DefaultMaterial() const {
     Material material;
     material.name = "Default white";
-    material.baseColorTexture = whiteTexture_;
-    material.sampler = defaultSampler_;
+    material.baseColorTexture = m_whiteTexture;
+    material.sampler = m_defaultSampler;
     return material;
 }
 
 Material ResourceCache::CheckerMaterial() const {
     Material material = DefaultMaterial();
     material.name = "Generated checker";
-    material.baseColorTexture = checkerTexture_;
+    material.baseColorTexture = m_checkerTexture;
     return material;
 }
 

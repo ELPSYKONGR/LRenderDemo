@@ -22,22 +22,22 @@ public:
     void Create(HINSTANCE instance, std::wstring_view title, std::uint32_t width, std::uint32_t height);
     [[nodiscard]] bool PumpMessages();
     void Close();
-    [[nodiscard]] bool CloseRequested() const noexcept { return closeRequested_; }
-    void ClearCloseRequest() noexcept { closeRequested_ = false; }
-    [[nodiscard]] HWND Handle() const noexcept { return handle_; }
-    [[nodiscard]] std::uint32_t ClientWidth() const noexcept { return clientWidth_; }
-    [[nodiscard]] std::uint32_t ClientHeight() const noexcept { return clientHeight_; }
+    [[nodiscard]] bool CloseRequested() const noexcept { return m_closeRequested; }
+    void ClearCloseRequest() noexcept { m_closeRequested = false; }
+    [[nodiscard]] HWND Handle() const noexcept { return m_handle; }
+    [[nodiscard]] std::uint32_t ClientWidth() const noexcept { return m_clientWidth; }
+    [[nodiscard]] std::uint32_t ClientHeight() const noexcept { return m_clientHeight; }
 
 private:
     static LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
 
-    HINSTANCE instance_{};
-    HWND handle_{};
-    std::uint32_t clientWidth_{1};
-    std::uint32_t clientHeight_{1};
-    bool closeRequested_{false};
-    static constexpr wchar_t kWindowClassName[] = L"LRenderDemoWindow";
+    HINSTANCE m_instance{};
+    HWND m_handle{};
+    std::uint32_t m_clientWidth{1};
+    std::uint32_t m_clientHeight{1};
+    bool m_closeRequested{false};
+    static constexpr wchar_t m_windowClassName[] = L"LRenderDemoWindow";
 };
 
 } // namespace lrender

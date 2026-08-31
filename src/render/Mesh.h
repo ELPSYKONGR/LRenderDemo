@@ -28,12 +28,12 @@ public:
         std::span<const std::uint32_t> indices);
 
     void Draw(ID3D11DeviceContext* context) const;
-    [[nodiscard]] std::uint32_t IndexCount() const noexcept { return indexCount_; }
+    [[nodiscard]] std::uint32_t IndexCount() const noexcept { return m_indexCount; }
 
 private:
-    Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer_;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer_;
-    std::uint32_t indexCount_{};
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
+    std::uint32_t m_indexCount{};
 };
 
 } // namespace lrender

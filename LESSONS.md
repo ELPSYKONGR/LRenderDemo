@@ -1,5 +1,12 @@
 # LESSONS - LRenderDemo
 
+### ADR-011：公共 Shader 契约按更新频率拆分
+
+- **决策**：使用 `common.hlsli` 统一声明 Frame、Object、Material、Light CBuffer；C++ 使用 `CommonConstants.h` 对齐布局。
+- **原因**：多个 Effect 需要共享数据，但世界矩阵、材质和相机的更新频率不同，不能继续塞进一个 BasicMesh 专属缓冲。
+- **边界**：纹理类型和采样器语义由具体 Effect 声明，CPU 侧通过 `ResourceCache` 复用资源；Core 层不依赖 DX11。
+- **状态**：已接受。
+
 本文档记录长期有效的架构决策和项目专用工程知识。
 
 ## 架构决策记录

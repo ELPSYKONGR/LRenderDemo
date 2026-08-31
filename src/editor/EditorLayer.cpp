@@ -84,12 +84,12 @@ void EditorLayer::DrawMainMenu(
         history.Redo();
     }
 
-    if (openImportErrorPopup_) {
+    if (m_openImportErrorPopup) {
         ImGui::OpenPopup("Model import failed");
-        openImportErrorPopup_ = false;
+        m_openImportErrorPopup = false;
     }
     if (ImGui::BeginPopupModal("Model import failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped("%s", importError_.c_str());
+        ImGui::TextWrapped("%s", m_importError.c_str());
         if (ImGui::Button("Close")) {
             ImGui::CloseCurrentPopup();
         }
@@ -114,17 +114,17 @@ void EditorLayer::DrawToolbar(CommandHistory& history, Dx11Renderer& renderer) {
     ItemTooltip("Redo");
     ImGui::SameLine();
     if (ImGui::Button("T")) {
-        gizmoOperation_ = ImGuizmo::TRANSLATE;
+        m_gizmoOperation = ImGuizmo::TRANSLATE;
     }
     ItemTooltip("Translate");
     ImGui::SameLine();
     if (ImGui::Button("R")) {
-        gizmoOperation_ = ImGuizmo::ROTATE;
+        m_gizmoOperation = ImGuizmo::ROTATE;
     }
     ItemTooltip("Rotate");
     ImGui::SameLine();
     if (ImGui::Button("S")) {
-        gizmoOperation_ = ImGuizmo::SCALE;
+        m_gizmoOperation = ImGuizmo::SCALE;
     }
     ItemTooltip("Scale");
     ImGui::SameLine();
@@ -138,7 +138,7 @@ void EditorLayer::DrawToolbar(CommandHistory& history, Dx11Renderer& renderer) {
 void EditorLayer::DrawInspector(
     Scene& scene, CommandHistory& history, Dx11Renderer& renderer) {
     ImGui::Begin("Inspector");
-    Entity* entity = scene.FindEntity(selectedEntityId_);
+    Entity* entity = scene.FindEntity(m_selectedEntityId);
     if (entity == nullptr) {
         ImGui::TextDisabled("No entity selected");
         ImGui::End();
@@ -178,7 +178,7 @@ void EditorLayer::DrawViewport(
     const ImGuiIO& input = ImGui::GetIO();
     if (isHovered && !ImGuizmo::IsUsing()) {
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Right)) {
-            autoRotate_ = false;
+            m_autoRotate = false;
             camera.Orbit(input.MouseDelta.x, input.MouseDelta.y);
         }
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
@@ -188,17 +188,17 @@ void EditorLayer::DrawViewport(
             camera.Zoom(input.MouseWheel);
         }
         if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_W, false)) {
-            gizmoOperation_ = ImGuizmo::TRANSLATE;
+            m_gizmoOperation = ImGuizmo::TRANSLATE;
         }
         if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_E, false)) {
-            gizmoOperation_ = ImGuizmo::ROTATE;
+            m_gizmoOperation = ImGuizmo::ROTATE;
         }
         if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_R, false)) {
-            gizmoOperation_ = ImGuizmo::SCALE;
+            m_gizmoOperation = ImGuizmo::SCALE;
         }
     }
 
-    Entity* entity = scene.FindEntity(selectedEntityId_);
+    Entity* entity = scene.FindEntity(m_selectedEntityId);
     if (entity != nullptr) {
         auto world = entity->transform.ToMatrix();
         auto view = camera.ViewMatrix();
@@ -209,7 +209,7 @@ void EditorLayer::DrawViewport(
         ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
         ImGuizmo::SetRect(viewportPosition.x, viewportPosition.y, available.x, available.y);
         ImGuizmo::Manipulate(
-            &view._11, &projection._11, gizmoOperation_, ImGuizmo::LOCAL, &world._11);
+            &view._11, &projection._11, m_gizmoOperation, ImGuizmo::LOCAL, &world._11);
 
         const bool isUsing = ImGuizmo::IsUsing();
         if (isUsing) {
@@ -222,16 +222,16 @@ void EditorLayer::DrawViewport(
             entity->transform.scale = {
                 std::max(scale[0], 0.01F), std::max(scale[1], 0.01F), std::max(scale[2], 0.01F)};
         }
-        if (isUsing && !wasUsingGizmo_) {
-            gizmoStart_ = beforeManipulate;
+        if (isUsing && !m_wasUsingGizmo) {
+            m_gizmoStart = beforeManipulate;
         }
-        if (!isUsing && wasUsingGizmo_ && !gizmoStart_.NearlyEquals(entity->transform)) {
+        if (!isUsing && m_wasUsingGizmo && !m_gizmoStart.NearlyEquals(entity->transform)) {
             history.PushApplied(std::make_unique<TransformCommand>(
-                scene, entity->id, gizmoStart_, entity->transform));
+                scene, entity->id, m_gizmoStart, entity->transform));
         }
-        wasUsingGizmo_ = isUsing;
+        m_wasUsingGizmo = isUsing;
     } else {
-        wasUsingGizmo_ = false;
+        m_wasUsingGizmo = false;
     }
 
     ImGui::End();
@@ -241,30 +241,30 @@ void EditorLayer::DrawViewport(
 void EditorLayer::TrackPropertyEdit(
     Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl) {
     if (ImGui::IsItemActivated()) {
-        propertyEditStart_ = beforeControl;
-        propertyEditEntityId_ = entity.id;
+        m_propertyEditStart = beforeControl;
+        m_propertyEditEntityId = entity.id;
     }
-    if (ImGui::IsItemDeactivatedAfterEdit() && propertyEditStart_ &&
-        propertyEditEntityId_ == entity.id) {
-        if (!propertyEditStart_->NearlyEquals(entity.transform)) {
+    if (ImGui::IsItemDeactivatedAfterEdit() && m_propertyEditStart &&
+        m_propertyEditEntityId == entity.id) {
+        if (!m_propertyEditStart->NearlyEquals(entity.transform)) {
             history.PushApplied(std::make_unique<TransformCommand>(
-                scene, entity.id, *propertyEditStart_, entity.transform));
+                scene, entity.id, *m_propertyEditStart, entity.transform));
         }
-        propertyEditStart_.reset();
-        propertyEditEntityId_ = 0;
+        m_propertyEditStart.reset();
+        m_propertyEditEntityId = 0;
     }
 }
 
 void EditorLayer::ValidateSelection(const Scene& scene) {
-    if (selectedEntityId_ != 0 && scene.FindEntity(selectedEntityId_) == nullptr) {
-        selectedEntityId_ = 0;
+    if (m_selectedEntityId != 0 && scene.FindEntity(m_selectedEntityId) == nullptr) {
+        m_selectedEntityId = 0;
     }
-    if (selectedModelId_ != 0 && scene.FindModel(selectedModelId_) == nullptr) {
-        selectedModelId_ = 0;
+    if (m_selectedModelId != 0 && scene.FindModel(m_selectedModelId) == nullptr) {
+        m_selectedModelId = 0;
     }
-    if (selectedEntityId_ != 0) {
-        if (const Model* model = scene.FindEntityModel(selectedEntityId_)) {
-            selectedModelId_ = model->id;
+    if (m_selectedEntityId != 0) {
+        if (const Model* model = scene.FindEntityModel(m_selectedEntityId)) {
+            m_selectedModelId = model->id;
         }
     }
 }

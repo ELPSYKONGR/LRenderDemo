@@ -30,86 +30,86 @@ void EditorLayer::BeginSolidCreation(PrimitiveType primitive, const Scene& scene
     if (primitive == PrimitiveType::Mesh) {
         throw std::invalid_argument("Mesh entities must be imported");
     }
-    pendingSolidType_ = primitive;
-    cubeCreateParameters_ = {};
-    sphereCreateParameters_ = {};
-    planeCreateParameters_ = {};
+    m_pendingSolidType = primitive;
+    m_cubeCreateParameters = {};
+    m_sphereCreateParameters = {};
+    m_planeCreateParameters = {};
     const char* baseName = primitive == PrimitiveType::Cube ? "Cube" :
                            primitive == PrimitiveType::Sphere ? "Sphere" : "Plane";
     std::snprintf(
-        solidCreateName_.data(), solidCreateName_.size(), "%s %zu",
+        m_solidCreateName.data(), m_solidCreateName.size(), "%s %zu",
         baseName, scene.EntityCount() + 1U);
-    solidCreateError_.clear();
-    openSolidCreatePopup_ = true;
+    m_solidCreateError.clear();
+    m_openSolidCreatePopup = true;
 }
 
 void EditorLayer::DrawSolidCreationPopup(Scene& scene, CommandHistory& history) {
-    if (openSolidCreatePopup_) {
+    if (m_openSolidCreatePopup) {
         ImGui::OpenPopup("Create parameterized solid");
-        openSolidCreatePopup_ = false;
+        m_openSolidCreatePopup = false;
     }
     if (!ImGui::BeginPopupModal(
             "Create parameterized solid", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         return;
     }
 
-    ImGui::InputText("Name", solidCreateName_.data(), solidCreateName_.size());
-    switch (pendingSolidType_) {
+    ImGui::InputText("Name", m_solidCreateName.data(), m_solidCreateName.size());
+    switch (m_pendingSolidType) {
     case PrimitiveType::Cube:
         ImGui::DragFloat3(
-            "Size", &cubeCreateParameters_.size.x, 0.05F, 0.001F, 10000.0F, "%.3f");
+            "Size", &m_cubeCreateParameters.size.x, 0.05F, 0.001F, 10000.0F, "%.3f");
         break;
     case PrimitiveType::Sphere: {
         ImGui::DragFloat(
-            "Radius", &sphereCreateParameters_.radius, 0.02F, 0.001F, 10000.0F, "%.3f");
-        int slices = sphereCreateParameters_.slices;
-        int stacks = sphereCreateParameters_.stacks;
+            "Radius", &m_sphereCreateParameters.radius, 0.02F, 0.001F, 10000.0F, "%.3f");
+        int slices = m_sphereCreateParameters.slices;
+        int stacks = m_sphereCreateParameters.stacks;
         if (ImGui::DragInt("Slices", &slices, 1.0F, 3, kMaximumSubdivisions)) {
-            sphereCreateParameters_.slices = ClampSubdivision(slices, 3);
+            m_sphereCreateParameters.slices = ClampSubdivision(slices, 3);
         }
         if (ImGui::DragInt("Stacks", &stacks, 1.0F, 2, kMaximumSubdivisions)) {
-            sphereCreateParameters_.stacks = ClampSubdivision(stacks, 2);
+            m_sphereCreateParameters.stacks = ClampSubdivision(stacks, 2);
         }
         break;
     }
     case PrimitiveType::Plane: {
         ImGui::DragFloat2(
-            "Size", &planeCreateParameters_.size.x, 0.05F, 0.001F, 10000.0F, "%.3f");
-        int subdivisionsX = planeCreateParameters_.subdivisionsX;
-        int subdivisionsZ = planeCreateParameters_.subdivisionsZ;
+            "Size", &m_planeCreateParameters.size.x, 0.05F, 0.001F, 10000.0F, "%.3f");
+        int subdivisionsX = m_planeCreateParameters.subdivisionsX;
+        int subdivisionsZ = m_planeCreateParameters.subdivisionsZ;
         if (ImGui::DragInt(
                 "X subdivisions", &subdivisionsX, 1.0F, 1, kMaximumSubdivisions)) {
-            planeCreateParameters_.subdivisionsX = ClampSubdivision(subdivisionsX, 1);
+            m_planeCreateParameters.subdivisionsX = ClampSubdivision(subdivisionsX, 1);
         }
         if (ImGui::DragInt(
                 "Z subdivisions", &subdivisionsZ, 1.0F, 1, kMaximumSubdivisions)) {
-            planeCreateParameters_.subdivisionsZ = ClampSubdivision(subdivisionsZ, 1);
+            m_planeCreateParameters.subdivisionsZ = ClampSubdivision(subdivisionsZ, 1);
         }
         break;
     }
     case PrimitiveType::Mesh: break;
     }
 
-    if (!solidCreateError_.empty()) {
-        ImGui::TextWrapped("%s", solidCreateError_.c_str());
+    if (!m_solidCreateError.empty()) {
+        ImGui::TextWrapped("%s", m_solidCreateError.c_str());
     }
-    ImGui::BeginDisabled(solidCreateName_[0] == '\0');
+    ImGui::BeginDisabled(m_solidCreateName[0] == '\0');
     if (ImGui::Button("Create")) {
         try {
             SolidGeometry geometry;
-            switch (pendingSolidType_) {
-            case PrimitiveType::Cube: geometry = SolidGeometry::Cube(cubeCreateParameters_); break;
+            switch (m_pendingSolidType) {
+            case PrimitiveType::Cube: geometry = SolidGeometry::Cube(m_cubeCreateParameters); break;
             case PrimitiveType::Sphere:
-                geometry = SolidGeometry::Sphere(sphereCreateParameters_); break;
+                geometry = SolidGeometry::Sphere(m_sphereCreateParameters); break;
             case PrimitiveType::Plane:
-                geometry = SolidGeometry::Plane(planeCreateParameters_); break;
+                geometry = SolidGeometry::Plane(m_planeCreateParameters); break;
             case PrimitiveType::Mesh:
                 throw std::invalid_argument("Mesh is not a parameterized solid");
             }
-            CreateSolid(scene, history, std::move(geometry), solidCreateName_.data());
+            CreateSolid(scene, history, std::move(geometry), m_solidCreateName.data());
             ImGui::CloseCurrentPopup();
         } catch (const std::exception& error) {
-            solidCreateError_ = error.what();
+            m_solidCreateError = error.what();
         }
     }
     ImGui::EndDisabled();
@@ -203,18 +203,18 @@ void EditorLayer::TrackSolidEdit(
     Scene& scene, CommandHistory& history, Entity& entity,
     const SolidGeometry& beforeControl) {
     if (ImGui::IsItemActivated()) {
-        solidEditStart_ = beforeControl;
-        solidEditEntityId_ = entity.id;
+        m_solidEditStart = beforeControl;
+        m_solidEditEntityId = entity.id;
     }
-    if (ImGui::IsItemDeactivatedAfterEdit() && solidEditStart_ &&
-        solidEditEntityId_ == entity.id) {
+    if (ImGui::IsItemDeactivatedAfterEdit() && m_solidEditStart &&
+        m_solidEditEntityId == entity.id) {
         const SolidGeometry& after = *entity.Solid();
-        if (!solidEditStart_->NearlyEquals(after, 0.0F)) {
+        if (!m_solidEditStart->NearlyEquals(after, 0.0F)) {
             history.PushApplied(std::make_unique<SolidGeometryCommand>(
-                scene, entity.id, *solidEditStart_, after));
+                scene, entity.id, *m_solidEditStart, after));
         }
-        solidEditStart_.reset();
-        solidEditEntityId_ = 0;
+        m_solidEditStart.reset();
+        m_solidEditEntityId = 0;
     }
 }
 

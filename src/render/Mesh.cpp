@@ -29,7 +29,7 @@ Mesh::Mesh(
     vertexDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     D3D11_SUBRESOURCE_DATA vertexData{vertices.data(), 0, 0};
     if (FAILED(device->CreateBuffer(
-            &vertexDescription, &vertexData, vertexBuffer_.ReleaseAndGetAddressOf()))) {
+            &vertexDescription, &vertexData, m_vertexBuffer.ReleaseAndGetAddressOf()))) {
         throw std::runtime_error("Failed to create mesh vertex buffer");
     }
 
@@ -39,10 +39,10 @@ Mesh::Mesh(
     indexDescription.BindFlags = D3D11_BIND_INDEX_BUFFER;
     D3D11_SUBRESOURCE_DATA indexData{indices.data(), 0, 0};
     if (FAILED(device->CreateBuffer(
-            &indexDescription, &indexData, indexBuffer_.ReleaseAndGetAddressOf()))) {
+            &indexDescription, &indexData, m_indexBuffer.ReleaseAndGetAddressOf()))) {
         throw std::runtime_error("Failed to create mesh index buffer");
     }
-    indexCount_ = static_cast<std::uint32_t>(indices.size());
+    m_indexCount = static_cast<std::uint32_t>(indices.size());
 }
 
 void Mesh::Draw(ID3D11DeviceContext* context) const {
@@ -51,11 +51,11 @@ void Mesh::Draw(ID3D11DeviceContext* context) const {
     }
     constexpr UINT stride = sizeof(MeshVertex);
     constexpr UINT offset = 0;
-    ID3D11Buffer* vertexBuffer = vertexBuffer_.Get();
+    ID3D11Buffer* vertexBuffer = m_vertexBuffer.Get();
     context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-    context->IASetIndexBuffer(indexBuffer_.Get(), DXGI_FORMAT_R32_UINT, 0);
+    context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context->DrawIndexed(indexCount_, 0, 0);
+    context->DrawIndexed(m_indexCount, 0, 0);
 }
 
 } // namespace lrender

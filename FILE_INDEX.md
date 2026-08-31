@@ -1,6 +1,8 @@
 # FILE_INDEX - LRenderDemo
 
-> 最后更新：2026-08-26 | 维护者：Codex
+本次框架补充：`src/render/CommonConstants.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*`、`src/shaders/QuadViewVS.hlsl` 和 `src/shaders/ColorProcessorPS.hlsl` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 保留天空盒 Effect 边界。详细设计见 `docs/render-framework-common-shader.md`。
+
+> 最后更新：2026-08-31 | 维护者：Codex
 
 ## 源文件
 
@@ -14,6 +16,7 @@
 | `src/core/SolidGeometry.*` | Cube/Sphere/Plane 参数、校验和类型查询 | `SolidGeometry`、`SolidParameters` | SimpleMath、variant |
 | `src/core/Scene.*` | `Scene -> Model -> Entity` 层级及 Solid/Mesh 几何描述 | `CreateModel()`、`CreateEntity()`、`CreateMeshEntity()` | Transform、EntityMaterial |
 | `src/core/Camera.*` | 支持环绕、标准视角和自动旋转的编辑器相机 | `SetView()`、`RotateAroundTarget()` | SimpleMath |
+| `src/core/ViewPort.*` | API 无关的视口尺寸、编号和相机状态 | `SetSize()`、`GetCamera()` | Camera |
 | `src/commands/ICommand.h` | 可逆操作接口 | `Execute()`、`Undo()` | 无 |
 | `src/commands/CommandHistory.*` | 有界撤销/重做栈 | `Execute()`、`PushApplied()` | ICommand |
 | `src/commands/TransformCommand.*` | 可逆变换编辑 | `Execute()`、`Undo()` | Scene |
@@ -23,12 +26,14 @@
 | `src/commands/SolidGeometryCommand.*` | 可逆 Solid 参数编辑 | `Execute()`、`Undo()` | Scene、SolidGeometry |
 | `src/render/EffectContext.*` | 从 Camera/Entity/Material 构造不可变的帧与绘制快照 | `EffectFrameContext`、`EffectDrawContext` | Camera、Scene、Material、D3D11 |
 | `src/render/IRenderEffect.h` | 逐网格 Effect 的两 Context 绑定边界 | `Bind(frame, draw)` | EffectContext |
+| `src/render/ColorProcessorEffect.*` | 全屏三角形颜色后处理 | `Apply()` | IRenderEffect、RenderTarget |
+| `src/render/SkyCubeEffect.*` | 天空盒 Effect 边界（资源管线待接入） | `Bind()` | IRenderEffect |
 | `src/render/Dx11ConstantBuffer.h` | 16 字节对齐的类型化 DX11 常量缓冲 RAII 封装 | `Update()`、`BindVS()`、`BindPS()` | D3D11、ComPtr |
-| `src/render/BasicMeshConstants.h` | BasicMesh C++ 常量布局 | `BasicMeshConstants` | SimpleMath |
-| `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `Bind()`、`Lights()` | BasicMeshConstants、Dx11ConstantBuffer、D3DCompiler |
-| `src/shaders/BasicMeshConstants.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `BasicMeshConstants` cbuffer | 无 |
-| `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | BasicMeshConstants.hlsli |
-| `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | BasicMeshConstants.hlsli |
+| `src/render/CommonConstants.h` | BasicMesh C++ 常量布局 | `CommonConstants` | SimpleMath |
+| `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `Bind()`、`Lights()` | CommonConstants、Dx11ConstantBuffer、D3DCompiler |
+| `src/shaders/common.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `CommonConstants` cbuffer | 无 |
+| `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | common.hlsli |
+| `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | common.hlsli |
 | `src/render/Mesh.*` | 带 UV 的 D3D11 顶点/32 位索引缓冲区 | `Draw()` | D3D11、DirectXMath |
 | `src/render/PrimitiveFactory.*`、`SolidMeshCache.*` | 按 Solid 参数生成并按 Entity 更新运行时 Mesh | `Create()`、`Resolve()` | SolidGeometry、Mesh、D3D11 |
 | `src/render/Texture2D.*` | WIC/DDS 文件、内存与生成纹理 | `LoadFile()`、`LoadMemory()` | DirectXTK、D3D11 |

@@ -89,8 +89,8 @@ void PreloadSceneResources(const Scene& scene, Dx11Renderer& renderer) {
 
 void EditorLayer::DrawSceneFileMenu(
     Scene& scene, CommandHistory& history, Dx11Renderer& renderer) {
-    if (exitRequested_) {
-        exitRequested_ = false;
+    if (m_exitRequested) {
+        m_exitRequested = false;
         QueueSceneAction(kExitAction, scene, history, renderer);
     }
 
@@ -101,13 +101,13 @@ void EditorLayer::DrawSceneFileMenu(
         if (ImGui::MenuItem("Open...", "Ctrl+O")) {
             try {
                 const auto path = SelectSceneFile(
-                    renderer.WindowHandle(), false, currentScenePath_);
+                    renderer.WindowHandle(), false, m_currentScenePath);
                 if (!path.empty()) {
                     QueueSceneAction(kOpenSceneAction, scene, history, renderer, path);
                 }
             } catch (const std::exception& error) {
-                sceneFileError_ = error.what();
-                openSceneFileErrorPopup_ = true;
+                m_sceneFileError = error.what();
+                m_openSceneFileErrorPopup = true;
             }
         }
         if (ImGui::MenuItem("Save", "Ctrl+S")) {
@@ -125,13 +125,13 @@ void EditorLayer::DrawSceneFileMenu(
     }
     if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O, false)) {
         try {
-            const auto path = SelectSceneFile(renderer.WindowHandle(), false, currentScenePath_);
+            const auto path = SelectSceneFile(renderer.WindowHandle(), false, m_currentScenePath);
             if (!path.empty()) {
                 QueueSceneAction(kOpenSceneAction, scene, history, renderer, path);
             }
         } catch (const std::exception& error) {
-            sceneFileError_ = error.what();
-            openSceneFileErrorPopup_ = true;
+            m_sceneFileError = error.what();
+            m_openSceneFileErrorPopup = true;
         }
     }
     if (input.KeyCtrl && input.KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
@@ -144,25 +144,25 @@ void EditorLayer::DrawSceneFileMenu(
 bool EditorLayer::SaveScene(
     const Scene& scene, CommandHistory& history, Dx11Renderer& renderer, bool saveAs) {
     try {
-        std::filesystem::path path = currentScenePath_;
+        std::filesystem::path path = m_currentScenePath;
         if (saveAs || path.empty()) {
-            path = SelectSceneFile(renderer.WindowHandle(), true, currentScenePath_);
+            path = SelectSceneFile(renderer.WindowHandle(), true, m_currentScenePath);
             if (path.empty()) {
                 return false;
             }
         }
         SceneSerializer::Save(scene, path);
-        currentScenePath_ = std::filesystem::absolute(path).lexically_normal();
+        m_currentScenePath = std::filesystem::absolute(path).lexically_normal();
         history.MarkSaved();
-        Logger::Instance().Info("scene", "Saved scene: " + PathUtf8(currentScenePath_));
+        Logger::Instance().Info("scene", "Saved scene: " + PathUtf8(m_currentScenePath));
         return true;
     } catch (const std::exception& error) {
-        sceneFileError_ = error.what();
-        openSceneFileErrorPopup_ = true;
+        m_sceneFileError = error.what();
+        m_openSceneFileErrorPopup = true;
         try {
             Logger::Instance().Error("scene", std::format("Scene save failed: {}", error.what()));
         } catch (const std::exception& logError) {
-            sceneFileError_ += std::format("\nLogging also failed: {}", logError.what());
+            m_sceneFileError += std::format("\nLogging also failed: {}", logError.what());
         }
         return false;
     }
@@ -176,19 +176,19 @@ void EditorLayer::OpenScene(
     scene = std::move(loaded);
     renderer.ClearRuntimeCaches();
     history.Clear();
-    currentScenePath_ = std::filesystem::absolute(path).lexically_normal();
-    selectedEntityId_ = 0;
-    selectedModelId_ = 0;
-    Logger::Instance().Info("scene", "Opened scene: " + PathUtf8(currentScenePath_));
+    m_currentScenePath = std::filesystem::absolute(path).lexically_normal();
+    m_selectedEntityId = 0;
+    m_selectedModelId = 0;
+    Logger::Instance().Info("scene", "Opened scene: " + PathUtf8(m_currentScenePath));
 }
 
 void EditorLayer::QueueSceneAction(
     int action, Scene& scene, CommandHistory& history, Dx11Renderer& renderer,
     std::filesystem::path path) {
-    pendingSceneAction_ = action;
-    pendingScenePath_ = std::move(path);
+    m_pendingSceneAction = action;
+    m_pendingScenePath = std::move(path);
     if (history.IsModified()) {
-        openUnsavedPopup_ = true;
+        m_openUnsavedPopup = true;
     } else {
         ExecuteSceneAction(scene, history, renderer);
     }
@@ -196,39 +196,39 @@ void EditorLayer::QueueSceneAction(
 
 void EditorLayer::ExecuteSceneAction(
     Scene& scene, CommandHistory& history, Dx11Renderer& renderer) {
-    const int action = pendingSceneAction_;
-    const std::filesystem::path path = std::move(pendingScenePath_);
-    pendingSceneAction_ = kNoSceneAction;
-    pendingScenePath_.clear();
+    const int action = m_pendingSceneAction;
+    const std::filesystem::path path = std::move(m_pendingScenePath);
+    m_pendingSceneAction = kNoSceneAction;
+    m_pendingScenePath.clear();
     try {
         if (action == kNewSceneAction) {
             scene = Scene{};
             history.Clear();
             renderer.ClearRuntimeCaches();
-            currentScenePath_.clear();
-            selectedEntityId_ = 0;
-            selectedModelId_ = 0;
+            m_currentScenePath.clear();
+            m_selectedEntityId = 0;
+            m_selectedModelId = 0;
         } else if (action == kOpenSceneAction) {
             OpenScene(scene, history, renderer, path);
         } else if (action == kExitAction) {
-            exitConfirmed_ = true;
+            m_exitConfirmed = true;
         }
     } catch (const std::exception& error) {
-        sceneFileError_ = error.what();
-        openSceneFileErrorPopup_ = true;
+        m_sceneFileError = error.what();
+        m_openSceneFileErrorPopup = true;
         try {
             Logger::Instance().Error("scene", std::format("Scene action failed: {}", error.what()));
         } catch (const std::exception& logError) {
-            sceneFileError_ += std::format("\nLogging also failed: {}", logError.what());
+            m_sceneFileError += std::format("\nLogging also failed: {}", logError.what());
         }
     }
 }
 
 void EditorLayer::DrawSceneFilePopups(
     Scene& scene, CommandHistory& history, Dx11Renderer& renderer) {
-    if (openUnsavedPopup_) {
+    if (m_openUnsavedPopup) {
         ImGui::OpenPopup("Unsaved changes");
-        openUnsavedPopup_ = false;
+        m_openUnsavedPopup = false;
     }
     if (ImGui::BeginPopupModal("Unsaved changes", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextUnformatted("Save changes before continuing?");
@@ -245,19 +245,19 @@ void EditorLayer::DrawSceneFilePopups(
         }
         ImGui::SameLine();
         if (ImGui::Button("Cancel")) {
-            pendingSceneAction_ = kNoSceneAction;
-            pendingScenePath_.clear();
+            m_pendingSceneAction = kNoSceneAction;
+            m_pendingScenePath.clear();
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
 
-    if (openSceneFileErrorPopup_) {
+    if (m_openSceneFileErrorPopup) {
         ImGui::OpenPopup("Scene file error");
-        openSceneFileErrorPopup_ = false;
+        m_openSceneFileErrorPopup = false;
     }
     if (ImGui::BeginPopupModal("Scene file error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped("%s", sceneFileError_.c_str());
+        ImGui::TextWrapped("%s", m_sceneFileError.c_str());
         if (ImGui::Button("Close")) {
             ImGui::CloseCurrentPopup();
         }

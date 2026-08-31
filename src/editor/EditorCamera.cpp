@@ -39,20 +39,20 @@ void EditorLayer::DrawCameraControls(Camera& camera) {
         }
 
         ImGui::Separator();
-        ImGui::Checkbox("Auto rotate", &autoRotate_);
+        ImGui::Checkbox("Auto rotate", &m_autoRotate);
         ImGui::SameLine();
-        ImGui::Checkbox("Clockwise", &autoRotateClockwise_);
+        ImGui::Checkbox("Clockwise", &m_autoRotateClockwise);
         ImGui::TextUnformatted("Speed (deg/s)");
         ImGui::SetNextItemWidth(-FLT_MIN);
         ImGui::SliderFloat(
-            "##AutoRotateSpeed", &autoRotateSpeedDegrees_, 1.0F, 180.0F, "%.0f");
+            "##AutoRotateSpeed", &m_autoRotateSpeedDegrees, 1.0F, 180.0F, "%.0f");
     }
     ImGui::End();
 
-    if (autoRotate_) {
-        const float direction = autoRotateClockwise_ ? -1.0F : 1.0F;
+    if (m_autoRotate) {
+        const float direction = m_autoRotateClockwise ? -1.0F : 1.0F;
         camera.RotateAroundTarget(
-            direction * autoRotateSpeedDegrees_ * ImGui::GetIO().DeltaTime);
+            direction * m_autoRotateSpeedDegrees * ImGui::GetIO().DeltaTime);
     }
 }
 

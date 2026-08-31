@@ -12,16 +12,16 @@
 namespace lrender {
 
 CreateEntityCommand::CreateEntityCommand(Scene& scene, ModelId modelId, Entity entity)
-    : scene_(scene), modelId_(modelId), entity_(std::move(entity)) {}
+    : m_scene(scene), m_modelId(modelId), m_entity(std::move(entity)) {}
 
-void CreateEntityCommand::Execute() { scene_.AddEntity(modelId_, entity_); }
+void CreateEntityCommand::Execute() { m_scene.AddEntity(m_modelId, m_entity); }
 
 void CreateEntityCommand::Undo() {
-    auto removed = scene_.RemoveEntity(entity_.id);
+    auto removed = m_scene.RemoveEntity(m_entity.id);
     if (!removed) {
         throw std::runtime_error("Created entity no longer exists");
     }
-    entity_ = std::move(*removed);
+    m_entity = std::move(*removed);
 }
 
 } // namespace lrender

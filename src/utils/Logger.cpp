@@ -25,7 +25,7 @@ void Logger::Initialize(const std::filesystem::path& rootDirectory) {
     const auto logDirectory = rootDirectory / "logs";
     std::filesystem::create_directories(logDirectory);
     const auto now = std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now());
-    logFile_ = logDirectory / std::format("{:%F}.log", now);
+    m_logFile = logDirectory / std::format("{:%F}.log", now);
 }
 
 void Logger::Info(std::string_view module, std::string_view message) {
@@ -37,11 +37,11 @@ void Logger::Error(std::string_view module, std::string_view message) {
 }
 
 void Logger::Write(std::string_view level, std::string_view module, std::string_view message) {
-    std::scoped_lock lock(mutex_);
-    if (logFile_.empty()) {
+    std::scoped_lock lock(m_mutex);
+    if (m_logFile.empty()) {
         return;
     }
-    std::ofstream stream(logFile_, std::ios::app);
+    std::ofstream stream(m_logFile, std::ios::app);
     if (!stream) {
         throw std::runtime_error("Unable to open application log file");
     }

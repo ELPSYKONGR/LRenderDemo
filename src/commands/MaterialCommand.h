@@ -22,10 +22,10 @@ public:
 private:
     void Apply(const EntityMaterial& value);
 
-    Scene& scene_;
-    std::uint32_t entityId_;
-    EntityMaterial before_;
-    EntityMaterial after_;
+    Scene& m_scene;
+    std::uint32_t m_entityId;
+    EntityMaterial m_before;
+    EntityMaterial m_after;
 };
 
 } // namespace lrender

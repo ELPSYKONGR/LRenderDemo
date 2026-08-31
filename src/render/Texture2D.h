@@ -29,9 +29,9 @@ public:
     [[nodiscard]] static std::shared_ptr<Texture2D> CreateSolidWhite(ID3D11Device* device);
 
     [[nodiscard]] ID3D11ShaderResourceView* ShaderResourceView() const noexcept {
-        return shaderResourceView_.Get();
+        return m_shaderResourceView.Get();
     }
-    [[nodiscard]] const std::string& SourceName() const noexcept { return sourceName_; }
+    [[nodiscard]] const std::string& SourceName() const noexcept { return m_sourceName; }
 
 private:
     Texture2D(
@@ -39,9 +39,9 @@ private:
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView,
         std::string sourceName);
 
-    Microsoft::WRL::ComPtr<ID3D11Resource> resource_;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderResourceView_;
-    std::string sourceName_;
+    Microsoft::WRL::ComPtr<ID3D11Resource> m_resource;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shaderResourceView;
+    std::string m_sourceName;
 };
 
 } // namespace lrender

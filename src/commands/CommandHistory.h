@@ -28,11 +28,11 @@ public:
     bool Undo();
     bool Redo();
     void Clear() noexcept;
-    void MarkSaved() noexcept { savedRevision_ = currentRevision_; }
-    [[nodiscard]] bool CanUndo() const noexcept { return !undoStack_.empty(); }
-    [[nodiscard]] bool CanRedo() const noexcept { return !redoStack_.empty(); }
+    void MarkSaved() noexcept { m_savedRevision = m_currentRevision; }
+    [[nodiscard]] bool CanUndo() const noexcept { return !m_undoStack.empty(); }
+    [[nodiscard]] bool CanRedo() const noexcept { return !m_redoStack.empty(); }
     [[nodiscard]] bool IsModified() const noexcept {
-        return currentRevision_ != savedRevision_;
+        return m_currentRevision != m_savedRevision;
     }
 
 private:
@@ -44,12 +44,12 @@ private:
 
     void Store(std::unique_ptr<ICommand> command);
 
-    std::size_t capacity_;
-    std::vector<Entry> undoStack_;
-    std::vector<Entry> redoStack_;
-    std::uint64_t currentRevision_{};
-    std::uint64_t savedRevision_{};
-    std::uint64_t nextRevision_{1};
+    std::size_t m_capacity;
+    std::vector<Entry> m_undoStack;
+    std::vector<Entry> m_redoStack;
+    std::uint64_t m_currentRevision{};
+    std::uint64_t m_savedRevision{};
+    std::uint64_t m_nextRevision{1};
 };
 
 } // namespace lrender

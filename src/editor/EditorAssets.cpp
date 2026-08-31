@@ -76,17 +76,17 @@ void EditorLayer::ImportModel(
             Logger::Instance().Info("assets", "Mesh import warning: " + warning);
         }
         Model& model = scene.CreateMeshModel(path, PathUtf8(path.stem()), entityNames);
-        selectedModelId_ = model.id;
-        selectedEntityId_ = model.entities.front().id;
+        m_selectedModelId = model.id;
+        m_selectedEntityId = model.entities.front().id;
         history.PushApplied(std::make_unique<CreateModelCommand>(scene, model));
     } catch (const std::exception& error) {
-        importError_ = error.what();
-        openImportErrorPopup_ = true;
+        m_importError = error.what();
+        m_openImportErrorPopup = true;
         try {
             Logger::Instance().Error(
                 "assets", std::format("Model import failed: {}", error.what()));
         } catch (const std::exception& logError) {
-            importError_ += std::format("\nLogging also failed: {}", logError.what());
+            m_importError += std::format("\nLogging also failed: {}", logError.what());
         }
     }
 }
