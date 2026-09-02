@@ -1,5 +1,21 @@
 # LESSONS - LRenderDemo
 
+### ADR-014：资源路径使用相对布局并在构建时打包
+- **问题**：VS 调试工作目录是仓库根目录，直接启动 exe 的工作目录是 Debug 输出目录，导致相对模型和贴图路径失效。
+- **决策**：保留 `assets/...` 相对路径，CMake 构建后将 `assets` 拷贝到 exe 同级目录；不在运行时修改当前目录。ImGui 配置仍独立保存在 exe 目录。
+- **结论**：源码和部署包都采用同一目录布局，不包含机器相关绝对路径。
+
+### ADR-013：每个 Effect 必须显式恢复其依赖的关键状态
+- **问题**：全屏后处理将深度测试设为 Disabled，下一帧场景绘制沿用该状态，导致平面覆盖立方体和球。
+- **决策**：`BasicMeshEffect::Bind` 在每次 Mesh 绘制前绑定 `DepthDefault`，不依赖前一个 Effect 的状态。
+- **结论**：DX11 immediate context 是有状态机器；Effect 必须显式设置自己依赖的状态，不能假设上一调用留下正确值。
+
+### ADR-012：Effect 资源和视图状态由渲染层集中管理
+- **决策**：`IRenderEffect` 持有 `EffectResource`；高层 `Draw` 负责实际绘制，`Bind` 保留为可调试的管线绑定步骤；`ViewStateGuard` 用 RAII 保存并恢复 DX11 Context 状态。
+- **原因**：多 Pass 效果需要多个离屏目标和 SRV，且 Effect 不应把资源生命周期泄漏到 Renderer；即时 Context 的状态泄漏会影响后续 Effect 和 ImGui。
+- **边界**：当前 ViewManager 管理逻辑 View 和 HWND 记录，Renderer 仍使用单交换链；后续接入多交换链无需改变 EffectResource 接口。
+- **状态**：已接受。
+
 ### ADR-011：公共 Shader 契约按更新频率拆分
 
 - **决策**：使用 `common.hlsli` 统一声明 Frame、Object、Material、Light CBuffer；C++ 使用 `CommonConstants.h` 对齐布局。

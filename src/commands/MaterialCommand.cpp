@@ -24,7 +24,7 @@ void MaterialCommand::Apply(const EntityMaterial& value) {
     if (entity == nullptr) {
         throw std::runtime_error("Material command target no longer exists");
     }
-    entity->material = value;
+    entity->SetOverrideMaterial(value);
 }
 
 } // namespace lrender

@@ -77,9 +77,9 @@ void PreloadSceneResources(const Scene& scene, Dx11Renderer& renderer) {
                         PathUtf8(mesh->assetPath));
                 }
             }
-            if (!entity.material.useSourceTexture &&
-                !entity.material.baseColorTexturePath.empty()) {
-                renderer.PreloadTexture(entity.material.baseColorTexturePath);
+            const EntityMaterial& material = entity.EffectiveMaterial();
+            if (!material.useSourceTexture && !material.baseColorTexturePath.empty()) {
+                renderer.PreloadTexture(material.baseColorTexturePath);
             }
         }
     }

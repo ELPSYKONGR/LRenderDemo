@@ -13,9 +13,9 @@
 namespace lrender {
 
 struct Transform {
-    DirectX::SimpleMath::Vector3 position{0.0F, 0.0F, 0.0F};
-    DirectX::SimpleMath::Vector3 rotationDegrees{0.0F, 0.0F, 0.0F};
-    DirectX::SimpleMath::Vector3 scale{1.0F, 1.0F, 1.0F};
+    DirectX::SimpleMath::Vector3 position = {0.0F, 0.0F, 0.0F};
+    DirectX::SimpleMath::Vector3 rotationDegrees = {0.0F, 0.0F, 0.0F};
+    DirectX::SimpleMath::Vector3 scale = {1.0F, 1.0F, 1.0F};
 
     /** Builds a row-major world matrix suitable for DirectXMath and ImGuizmo. */
     [[nodiscard]] DirectX::SimpleMath::Matrix ToMatrix() const {

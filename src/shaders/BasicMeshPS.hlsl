@@ -27,15 +27,24 @@ float3 EvaluateLight(
     return (baseColor * diffuse + SpecularColor.rgb * specular) * lightColor * intensity;
 }
 
-float4 PSMain(PixelInput input) : SV_TARGET
+struct PixelOutput
+{
+    float4 color : SV_TARGET0;
+    float4 normal : SV_TARGET1;
+};
+
+PixelOutput PSMain(PixelInput input)
 {
     const float3 normal = normalize(input.worldNormal);
+    PixelOutput output;
+    output.normal = float4(normal * 0.5F + 0.5F, 1.0F);
     const float3 viewDirection = normalize(CameraPosition.xyz - input.worldPosition);
     const float4 sampledColor = BaseColorTexture.Sample(BaseColorSampler, input.textureCoordinate);
     const float3 surfaceColor = sampledColor.rgb * BaseColor.rgb;
     if (MaterialParameters.w > 0.5F && MaterialParameters.w < 1.5F)
     {
-        return float4(saturate(surfaceColor), sampledColor.a * BaseColor.a);
+        output.color = float4(saturate(surfaceColor), sampledColor.a * BaseColor.a);
+        return output;
     }
     float3 result = surfaceColor * AmbientColor.rgb;
 
@@ -61,5 +70,6 @@ float4 PSMain(PixelInput input) : SV_TARGET
                 colorAndIntensity.rgb, colorAndIntensity.w * attenuation, surfaceColor);
         }
     }
-    return float4(saturate(result), sampledColor.a * BaseColor.a);
+    output.color = float4(saturate(result), sampledColor.a * BaseColor.a);
+    return output;
 }

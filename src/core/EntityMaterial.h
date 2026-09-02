@@ -17,17 +17,17 @@ enum class MaterialFilter { Point, Linear, Anisotropic };
 enum class MaterialAddressMode { Wrap, Clamp, Mirror };
 
 struct EntityMaterial {
-    DirectX::SimpleMath::Color baseColor{1.0F, 1.0F, 1.0F, 1.0F};
-    float diffuseStrength{1.0F};
-    DirectX::SimpleMath::Color specularColor{1.0F, 1.0F, 1.0F, 1.0F};
-    float specularStrength{0.25F};
-    float shininess{32.0F};
-    bool doubleSided{false};
-    SurfaceDisplayMode displayMode{SurfaceDisplayMode::LitTextured};
-    bool useSourceTexture{true};
+    DirectX::SimpleMath::Color baseColor = {1.0F, 1.0F, 1.0F, 1.0F};
+    float diffuseStrength = 1.0F;
+    DirectX::SimpleMath::Color specularColor = {1.0F, 1.0F, 1.0F, 1.0F};
+    float specularStrength = 0.25F;
+    float shininess = 32.0F;
+    bool doubleSided = false;
+    SurfaceDisplayMode displayMode = SurfaceDisplayMode::LitTextured;
+    bool useSourceTexture = false;
     std::filesystem::path baseColorTexturePath;
-    MaterialFilter filter{MaterialFilter::Linear};
-    MaterialAddressMode addressMode{MaterialAddressMode::Wrap};
+    MaterialFilter filter = MaterialFilter::Linear;
+    MaterialAddressMode addressMode = MaterialAddressMode::Wrap;
 
     [[nodiscard]] bool NearlyEquals(const EntityMaterial& other, float epsilon = 0.0001F) const {
         const auto colorNear = [epsilon](

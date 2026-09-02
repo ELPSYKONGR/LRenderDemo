@@ -18,6 +18,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <utility>
 
 namespace lrender {
 
@@ -26,17 +27,46 @@ using EntityId = std::uint32_t;
 
 struct MeshGeometry {
     std::filesystem::path assetPath;
-    std::uint32_t assetEntityIndex{};
+    std::uint32_t assetEntityIndex = 0;
 };
 
 using EntityGeometry = std::variant<SolidGeometry, MeshGeometry>;
 
 struct Entity {
-    EntityId id{};
+    EntityId id = 0;
     std::string name;
     Transform transform;
-    EntityMaterial material;
     EntityGeometry geometry;
+
+    [[nodiscard]] const EntityMaterial& EntityMaterialData() const noexcept {
+        return m_entityMaterial;
+    }
+    [[nodiscard]] EntityMaterial& EntityMaterialData() noexcept {
+        return m_entityMaterial;
+    }
+    [[nodiscard]] const EntityMaterial& EffectiveMaterial() const noexcept {
+        return m_hasOverrideEntityMaterial ? m_overrideEntityMaterial : m_entityMaterial;
+    }
+    [[nodiscard]] EntityMaterial& EditableMaterial() noexcept {
+        if (!m_hasOverrideEntityMaterial) {
+            m_overrideEntityMaterial = m_entityMaterial;
+        }
+        return m_overrideEntityMaterial;
+    }
+    [[nodiscard]] bool HasMaterialOverride() const noexcept {
+        return m_hasOverrideEntityMaterial;
+    }
+    void SetOverrideMaterial(EntityMaterial material) {
+        if (material.NearlyEquals(m_entityMaterial)) {
+            m_hasOverrideEntityMaterial = false;
+            return;
+        }
+        m_overrideEntityMaterial = std::move(material);
+        m_hasOverrideEntityMaterial = true;
+    }
+    void ClearMaterialOverride() noexcept {
+        m_hasOverrideEntityMaterial = false;
+    }
 
     [[nodiscard]] bool IsMesh() const noexcept {
         return std::holds_alternative<MeshGeometry>(geometry);
@@ -54,10 +84,15 @@ struct Entity {
     [[nodiscard]] const MeshGeometry* Mesh() const noexcept {
         return std::get_if<MeshGeometry>(&geometry);
     }
+
+private:
+    EntityMaterial m_entityMaterial = EntityMaterial();
+    EntityMaterial m_overrideEntityMaterial = EntityMaterial();
+    bool m_hasOverrideEntityMaterial = false;
 };
 
 struct Model {
-    ModelId id{};
+    ModelId id = 0;
     std::string name;
     std::vector<Entity> entities;
 };
@@ -92,8 +127,8 @@ private:
     static void ValidateEntity(const Entity& entity);
 
     std::vector<Model> m_models;
-    ModelId m_nextModelId{1};
-    EntityId m_nextEntityId{1};
+    ModelId m_nextModelId = 1;
+    EntityId m_nextEntityId = 1;
 };
 
 } // namespace lrender

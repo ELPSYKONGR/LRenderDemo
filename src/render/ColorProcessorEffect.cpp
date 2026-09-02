@@ -17,8 +17,9 @@ void ThrowIfFailed(HRESULT result, const char* message) {
 } // namespace
 
 ColorProcessorEffect::ColorProcessorEffect(
-    ID3D11Device* device, const std::filesystem::path& shaderDirectory)
-    : IRenderEffect(device),
+    ID3D11Device* device, ID3D11DeviceContext* context,
+    const std::filesystem::path& shaderDirectory)
+    : IRenderEffect(device, context),
       m_states(std::make_unique<DirectX::CommonStates>(Device())) {
     const auto vertexShader = LoadShader(shaderDirectory / L"QuadViewVS.cso");
     const auto pixelShader = LoadShader(shaderDirectory / L"ColorProcessorPS.cso");
@@ -35,7 +36,7 @@ void ColorProcessorEffect::Bind(
     SetPipeline(frame.DeviceContext());
 }
 
-void ColorProcessorEffect::Apply(
+void ColorProcessorEffect::Draw(
     ID3D11DeviceContext* context, ID3D11ShaderResourceView* source) {
     if (source == nullptr) {
         throw std::invalid_argument("Color processor requires a source texture");

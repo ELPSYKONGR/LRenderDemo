@@ -74,7 +74,7 @@ Entity& Scene::CreateMeshEntity(
     Entity entity;
     entity.id = m_nextEntityId++;
     entity.name = std::move(name);
-    entity.material.baseColor = {1.0F, 1.0F, 1.0F, 1.0F};
+    entity.EntityMaterialData().useSourceTexture = true;
     entity.geometry = MeshGeometry{std::move(assetPath), assetEntityIndex};
     return AddEntity(modelId, std::move(entity));
 }

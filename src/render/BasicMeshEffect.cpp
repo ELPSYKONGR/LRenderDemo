@@ -2,6 +2,7 @@
  * @file Editable HLSL basic mesh effect implementation.
  */
 #include "render/BasicMeshEffect.h"
+#include "render/Mesh.h"
 
 #include <iterator>
 #include <stdexcept>
@@ -22,8 +23,9 @@ DirectX::SimpleMath::Vector4 ToVector4(const DirectX::SimpleMath::Color& color) 
 } // namespace
 
 BasicMeshEffect::BasicMeshEffect(
-    ID3D11Device* device, const std::filesystem::path& shaderDirectory)
-    : IRenderEffect(device),
+    ID3D11Device* device, ID3D11DeviceContext* context,
+    const std::filesystem::path& shaderDirectory)
+    : IRenderEffect(device, context),
       m_states(std::make_unique<DirectX::CommonStates>(Device())),
       m_frameConstants(Device()),
       m_objectConstants(Device()),
@@ -128,6 +130,9 @@ void BasicMeshEffect::Bind(
     m_lightConstants.Update(context, lightData);
 
     context->IASetInputLayout(m_inputLayout.Get());
+    // ColorProcessorEffect disables depth for its fullscreen pass. Restore the
+    // scene depth test before every mesh draw so state does not leak between frames.
+    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
     context->RSSetState(
         m_isWireframe ? m_states->Wireframe() :
         (material.doubleSided ? m_states->CullNone() : m_states->CullClockwise()));
@@ -143,6 +148,16 @@ void BasicMeshEffect::Bind(
     ID3D11SamplerState* sampler = material.sampler->Get();
     context->PSSetShaderResources(0, 1, &texture);
     context->PSSetSamplers(0, 1, &sampler);
+}
+
+void BasicMeshEffect::Draw(
+    const EffectFrameContext& frame, const EffectDrawContext& draw) {
+    Bind(frame, draw);
+    const Mesh* mesh = draw.MeshGeometry();
+    if (mesh == nullptr) {
+        throw std::invalid_argument("BasicMeshEffect draw requires a mesh");
+    }
+    mesh->Draw(frame.DeviceContext());
 }
 
 } // namespace lrender

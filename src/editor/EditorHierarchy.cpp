@@ -60,7 +60,7 @@ void EditorLayer::CreateSolid(
     Entity& entity = scene.CreateSolidEntity(model->id, std::move(geometry), std::move(name));
     if (primitive == PrimitiveType::Plane) {
         entity.transform.position.y = -0.5F;
-        entity.material.baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
+        entity.EntityMaterialData().baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
     }
     m_selectedModelId = model->id;
     m_selectedEntityId = entity.id;

@@ -17,9 +17,13 @@ namespace lrender {
 
 class BasicMeshEffect final : public IRenderEffect {
 public:
-    BasicMeshEffect(ID3D11Device* device, const std::filesystem::path& shaderDirectory);
+    BasicMeshEffect(
+        ID3D11Device* device, ID3D11DeviceContext* context,
+        const std::filesystem::path& shaderDirectory);
 
     void Bind(
+        const EffectFrameContext& frame, const EffectDrawContext& draw) override;
+    void Draw(
         const EffectFrameContext& frame, const EffectDrawContext& draw) override;
 
     [[nodiscard]] std::string_view Name() const noexcept override { return "Basic Lit"; }
@@ -38,7 +42,7 @@ private:
     Dx11ConstantBuffer<MaterialConstants> m_materialConstants;
     Dx11ConstantBuffer<LightConstants> m_lightConstants;
     LightingSettings m_lights;
-    bool m_isWireframe{false};
+    bool m_isWireframe = false;
 };
 
 } // namespace lrender

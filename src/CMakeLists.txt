@@ -86,6 +86,7 @@ set(LRENDER_DEMO_HEADERS
     app/Application.h
     editor/EditorLayer.h
     platform/Window.h
+    platform/RuntimePaths.h
     render/BasicMeshEffect.h
     render/ColorProcessorEffect.h
     render/CommonConstants.h
@@ -95,7 +96,8 @@ set(LRENDER_DEMO_HEADERS
     render/IRenderEffect.h
     render/Lighting.h
     render/PrimitiveFactory.h
-    render/RenderTarget.h)
+    render/RenderTarget.h
+    render/ViewManager.h)
 list(APPEND LRENDER_DEMO_HEADERS render/SolidMeshCache.h render/SkyCubeEffect.h)
 
 add_executable(LRenderDemo WIN32
@@ -103,8 +105,10 @@ add_executable(LRenderDemo WIN32
     app/Main.cpp
     app/Application.cpp
     platform/Window.cpp
+    platform/RuntimePaths.cpp
     render/BasicMeshEffect.cpp
     render/ColorProcessorEffect.cpp
+    render/ViewManager.cpp
     render/IRenderEffect.cpp
     render/SkyCubeEffect.cpp
     render/Dx11Renderer.cpp
@@ -169,6 +173,10 @@ target_sources(LRenderDemo PRIVATE ${LRENDER_SHADER_SOURCES} ${LRENDER_SHADER_HE
 source_group("Shaders" FILES ${LRENDER_SHADER_SOURCES} ${LRENDER_SHADER_HEADERS})
 add_custom_command(TARGET LRenderDemo PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${LRENDER_SHADER_RUNTIME_OUTPUT_DIR}")
+add_custom_command(TARGET LRenderDemo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_SOURCE_DIR}/assets"
+    "$<TARGET_FILE_DIR:LRenderDemo>/assets")
 target_compile_definitions(LRenderDemo PRIVATE
     LRENDER_SHADER_OUTPUT_DIR="${LRENDER_SHADER_RUNTIME_OUTPUT_DIR}")
 target_include_directories(LRenderDemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")

@@ -105,8 +105,13 @@ graph TD
 哪些 Shader 阶段。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli` 消除重复声明。
 
 `Dx11Renderer` 每帧从 Camera 构造一次 `EffectFrameContext`，每个 MeshPart 从 Entity、解析后的
-Material 和选择 ID 构造一个 `EffectDrawContext`，然后调用 `Bind(frame, draw)`。两个 Context 是
-并列的不可变快照，不继承共同父类，也不会被 Effect 跨调用保存。
+Material 和选择 ID 构造一个 `EffectDrawContext`，然后调用 `Draw(frame, draw)`。两个 Context 是
+并列的不可变快照，不继承共同父类，也不会被 Effect 跨调用保存。`Bind(frame, draw)` 仍作为低层
+管线绑定接口保留；高层 `Draw` 可以在 Effect 内部按顺序执行多个 Pass，并调用 Mesh 的绘制入口。
+
+每个 `IRenderEffect` 都持有一个 `EffectResource`，用于命名管理该 Effect 创建的 Texture2D 和
+RenderTarget。屏幕空间 Effect 可以在同一个 `Draw` 中完成 SRV/RTV 切换，避免 Renderer 维护临时
+资源表。
 
 当前没有按 Frame/Object/Material 拆分多个缓冲，因为还没有第二个正式 Effect 或多个 Pass 共享同一
 份每帧数据。等真实复用关系出现后，再根据更新频率调整槽位和 `IRenderEffect` 调用协议；不让通用

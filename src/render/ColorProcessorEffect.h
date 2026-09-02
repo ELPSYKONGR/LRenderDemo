@@ -14,11 +14,15 @@ namespace lrender {
 
 class ColorProcessorEffect final : public IRenderEffect {
 public:
-    ColorProcessorEffect(ID3D11Device* device, const std::filesystem::path& shaderDirectory);
+    using IRenderEffect::Draw;
+
+    ColorProcessorEffect(
+        ID3D11Device* device, ID3D11DeviceContext* context,
+        const std::filesystem::path& shaderDirectory);
 
     void Bind(
         const EffectFrameContext& frame, const EffectDrawContext& draw) override;
-    void Apply(ID3D11DeviceContext* context, ID3D11ShaderResourceView* source);
+    void Draw(ID3D11DeviceContext* context, ID3D11ShaderResourceView* source);
     [[nodiscard]] std::string_view Name() const noexcept override { return "Color Processor"; }
 
 private:

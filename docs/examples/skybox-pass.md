@@ -65,14 +65,14 @@ classDiagram
     }
     class BasicMeshEffect
     class IRenderPass {
-        +Execute(context)
+        +Draw(context)
         +Name()
     }
     class SkyboxPass {
         -SkyboxEffect effect
         -Mesh cube
         -ShaderResourceView cubemap
-        +Execute(context)
+        +Draw(context)
     }
     class SkyboxEffect {
         -VertexShader
@@ -81,7 +81,7 @@ classDiagram
         -DepthStencilState
         -RasterizerState
         -SamplerState
-        +Apply(context, view, projection, cubemap)
+        +Draw(context, view, projection, cubemap)
     }
 
     IRenderEffect <|-- BasicMeshEffect
@@ -186,7 +186,7 @@ struct RenderPassContext {
 class IRenderPass {
 public:
     virtual ~IRenderPass() = default;
-    virtual void Execute(const RenderPassContext& context) = 0;
+    virtual void Draw(const RenderPassContext& context) = 0;
     [[nodiscard]] virtual std::string_view Name() const noexcept = 0;
 };
 
@@ -299,7 +299,7 @@ class SkyboxEffect final {
 public:
     explicit SkyboxEffect(ID3D11Device* device);
 
-    void Apply(
+    void Draw(
         ID3D11DeviceContext* context,
         const DirectX::SimpleMath::Matrix& view,
         const DirectX::SimpleMath::Matrix& projection,
@@ -347,7 +347,7 @@ rasterizerDescription.DepthClipEnable = TRUE;
 如果第一次实现完全看不到天空，可临时切换 `D3D11_CULL_NONE` 排查顶点绕序；确认后恢复正面剔除，
 不要把关闭剔除当成最终修复。
 
-`Apply` 必须显式设置本次 draw call 使用的状态：
+`Draw` 必须显式设置本次 draw call 使用的状态：
 
 ```cpp
 context->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &constants, 0, 0);
@@ -386,7 +386,7 @@ class SkyboxPass final : public IRenderPass {
 public:
     SkyboxPass(ID3D11Device* device, const std::filesystem::path& texturePath);
 
-    void Execute(const RenderPassContext& context) override;
+    void Draw(const RenderPassContext& context) override;
     [[nodiscard]] std::string_view Name() const noexcept override { return "Skybox"; }
 
     void SetEnabled(bool enabled) noexcept { m_enabled = enabled; }
@@ -427,7 +427,7 @@ const HRESULT result = DirectX::CreateDDSTextureFromFile(
 1. `m_enabled == false` 时立即返回。
 2. 验证 Context 中的 context、RTV、DSV 和 viewport 尺寸。
 3. 显式绑定 Context 的 RTV/DSV。
-4. 调用 `m_effect.Apply(...)`。
+4. 调用 `m_effect.Draw(...)`。
 5. 调用 `m_cubeMesh->Draw(...)`。
 6. 将 PS slot 0 的 SRV 解绑。
 7. 恢复默认 depth/rasterizer state，避免状态泄漏到后续 ImGui 渲染。
@@ -488,10 +488,10 @@ RenderPassContext passContext{
     .depthTarget = m_viewportTarget.DepthStencilView(),
     .view = view,
     .projection = projection,
-    .viewportWidth = m_viewportTarget.Width(),
-    .viewportHeight = m_viewportTarget.Height(),
+    .viewportWidth = m_viewportTarget.GetWidth(),
+    .viewportHeight = m_viewportTarget.GetHeight(),
 };
-m_skyboxPass->Execute(passContext);
+m_skyboxPass->Draw(passContext);
 ```
 
 推荐顺序：
@@ -509,7 +509,7 @@ sequenceDiagram
         Renderer->>Opaque: Bind world/view/projection
         Opaque->>Target: DrawIndexed
     end
-    Renderer->>Skybox: Execute(passContext)
+    Renderer->>Skybox: Draw(passContext)
     Skybox->>Target: LESS_EQUAL 且不写深度
     Renderer->>ImGui: 将视口 SRV 显示到面板
 ```

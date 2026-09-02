@@ -229,7 +229,7 @@ Entity DeserializeEntity(const Json& value, const std::filesystem::path& sceneDi
     entity.transform.position = {position[0], position[1], position[2]};
     entity.transform.rotationDegrees = {rotation[0], rotation[1], rotation[2]};
     entity.transform.scale = {scale[0], scale[1], scale[2]};
-    entity.material = DeserializeMaterial(value.at("material"), sceneDirectory);
+    entity.EntityMaterialData() = DeserializeMaterial(value.at("material"), sceneDirectory);
 
     const Json& geometry = value.at("geometry");
     const std::string kind = geometry.at("kind").get<std::string>();
@@ -258,7 +258,7 @@ Json SerializeScene(const Scene& scene, const std::filesystem::path& sceneDirect
                     {"position", Vector(entity.transform.position)},
                     {"rotationDegrees", Vector(entity.transform.rotationDegrees)},
                     {"scale", Vector(entity.transform.scale)}}},
-                {"material", SerializeMaterial(entity.material, sceneDirectory)}});
+                {"material", SerializeMaterial(entity.EffectiveMaterial(), sceneDirectory)}});
         }
         models.push_back({{"id", model.id}, {"name", model.name}, {"entities", entities}});
     }

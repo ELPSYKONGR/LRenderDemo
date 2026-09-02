@@ -16,19 +16,19 @@ namespace lrender {
 enum class PrimitiveType { Cube, Sphere, Plane, Mesh };
 
 struct CubeParameters {
-    DirectX::SimpleMath::Vector3 size{1.0F, 1.0F, 1.0F};
+    DirectX::SimpleMath::Vector3 size = {1.0F, 1.0F, 1.0F};
 };
 
 struct SphereParameters {
-    float radius{0.5F};
-    std::uint16_t slices{32};
-    std::uint16_t stacks{20};
+    float radius = 0.5F;
+    std::uint16_t slices = 32;
+    std::uint16_t stacks = 20;
 };
 
 struct PlaneParameters {
-    DirectX::SimpleMath::Vector2 size{10.0F, 10.0F};
-    std::uint16_t subdivisionsX{1};
-    std::uint16_t subdivisionsZ{1};
+    DirectX::SimpleMath::Vector2 size = {10.0F, 10.0F};
+    std::uint16_t subdivisionsX = 1;
+    std::uint16_t subdivisionsZ = 1;
 };
 
 using SolidParameters = std::variant<CubeParameters, SphereParameters, PlaneParameters>;
@@ -50,7 +50,7 @@ private:
     explicit SolidGeometry(SolidParameters parameters);
     static void Validate(const SolidParameters& parameters);
 
-    SolidParameters m_parameters{CubeParameters{}};
+    SolidParameters m_parameters = CubeParameters();
 };
 
 } // namespace lrender

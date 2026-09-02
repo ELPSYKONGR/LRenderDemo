@@ -5,6 +5,7 @@
  * @depends render/Dx11Renderer.h, render/PrimitiveFactory.h, ImGui DX11 backend
  */
 #include "render/Dx11Renderer.h"
+#include "render/ViewManager.h"
 
 #include <backends/imgui_impl_dx11.h>
 #include <algorithm>
@@ -89,27 +90,30 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     }
 
     CreateBackBuffer();
+    ViewManager::Initialize(m_device.Get(), m_context.Get());
     m_sceneTarget.Resize(m_device.Get(), 960, 640);
+    m_normalTarget.Resize(m_device.Get(), 960, 640);
     m_viewportTarget.Resize(m_device.Get(), 960, 640);
     m_solidMeshes = std::make_unique<SolidMeshCache>(m_device.Get());
-    m_effect = std::make_unique<BasicMeshEffect>(m_device.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_effect = std::make_unique<BasicMeshEffect>(
+        m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_colorProcessor = std::make_unique<ColorProcessorEffect>(
-        m_device.Get(), LRENDER_SHADER_OUTPUT_DIR);
+        m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_resources = std::make_unique<ResourceCache>(m_device.Get(), m_context.Get());
-    m_primitiveMaterial = m_resources->CheckerMaterial();
 }
 
 void Dx11Renderer::Shutdown() noexcept {
+    ViewManager::Shutdown();
     if (m_context) {
         m_context->ClearState();
         m_context->Flush();
     }
     m_effect.reset();
     m_colorProcessor.reset();
-    m_primitiveMaterial = {};
     m_resources.reset();
     m_solidMeshes.reset();
     m_viewportTarget.Reset();
+    m_normalTarget.Reset();
     m_sceneTarget.Reset();
     m_backBufferView.Reset();
     m_swapChain.Reset();
@@ -145,6 +149,7 @@ void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height) {
     ID3D11ShaderResourceView* nullResource = nullptr;
     m_context->PSSetShaderResources(0, 1, &nullResource);
     m_sceneTarget.Resize(m_device.Get(), width, height);
+    m_normalTarget.Resize(m_device.Get(), width, height);
     m_viewportTarget.Resize(m_device.Get(), width, height);
 }
 
@@ -153,11 +158,14 @@ void Dx11Renderer::RenderScene(
     // ImGui sampled this texture in the previous frame; unbind it before using the same resource as an RTV.
     ID3D11ShaderResourceView* nullResource = nullptr;
     m_context->PSSetShaderResources(0, 1, &nullResource);
-    constexpr float clearColor[4]{0.055F, 0.065F, 0.075F, 1.0F};
-    m_sceneTarget.BindAndClear(m_context.Get(), clearColor);
-    const float aspect = static_cast<float>(m_sceneTarget.Width()) /
-                         static_cast<float>(m_sceneTarget.Height());
-    const EffectFrameContext frameContext{m_context.Get(), camera, aspect};
+    constexpr float clearColor[4] = {0.055F, 0.065F, 0.075F, 1.0F};
+    m_sceneTarget.BindAndClear(m_context.Get(), clearColor, &m_normalTarget);
+    constexpr float normalClearColor[4] = {0.5F, 0.5F, 0.5F, 1.0F};
+    m_context->ClearRenderTargetView(
+        m_normalTarget.GetRenderTargetView(), normalClearColor);
+    const float aspect = static_cast<float>(m_sceneTarget.GetWidth()) /
+                         static_cast<float>(m_sceneTarget.GetHeight());
+    const EffectFrameContext frameContext(m_context.Get(), camera, aspect);
     std::unordered_set<EntityId> activeSolids;
 
     for (const Model& sceneModel : scene.Models()) {
@@ -169,23 +177,24 @@ void Dx11Renderer::RenderScene(
                 }
                 for (const MeshPart& part :
                      asset->entities[meshGeometry->assetEntityIndex].parts) {
-                    const EffectDrawContext drawContext{
-                        entity, ResolveMaterial(part.material, entity.material), selectedEntityId};
-                    m_effect->Bind(frameContext, drawContext);
-                    part.mesh->Draw(m_context.Get());
+                    const EffectDrawContext drawContext(
+                        entity, ResolveMaterial(part.material, entity.EffectiveMaterial()),
+                        selectedEntityId, part.mesh.get());
+                    m_effect->Draw(frameContext, drawContext);
                 }
                 continue;
             }
 
-            const EffectDrawContext drawContext{
-                entity, ResolveMaterial(m_primitiveMaterial, entity.material), selectedEntityId};
-            m_effect->Bind(frameContext, drawContext);
             const SolidGeometry* solid = entity.Solid();
             if (solid == nullptr || m_solidMeshes == nullptr) {
                 throw std::runtime_error("Solid geometry cache is not initialized");
             }
             activeSolids.insert(entity.id);
-            m_solidMeshes->Resolve(entity.id, *solid).Draw(m_context.Get());
+            const Mesh& mesh = m_solidMeshes->Resolve(entity.id, *solid);
+            const EffectDrawContext drawContext(
+                entity, ResolveMaterial(m_resources->DefaultMaterial(), entity.EffectiveMaterial()),
+                selectedEntityId, &mesh);
+            m_effect->Draw(frameContext, drawContext);
         }
     }
     m_solidMeshes->Prune(activeSolids);
@@ -196,7 +205,7 @@ void Dx11Renderer::RenderScene(
     m_context->RSSetState(nullptr);
 
     m_viewportTarget.BindAndClear(m_context.Get(), clearColor);
-    m_colorProcessor->Apply(m_context.Get(), m_sceneTarget.ShaderResourceView());
+    m_colorProcessor->Draw(m_context.Get(), m_sceneTarget.GetShaderResourceView());
 }
 
 std::shared_ptr<const MeshAsset> Dx11Renderer::PreloadModel(
@@ -224,7 +233,7 @@ ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity) {
     if (!m_resources) {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
-    const Material* source = &m_primitiveMaterial;
+    const Material* source = nullptr;
     std::shared_ptr<MeshAsset> asset;
     if (const MeshGeometry* meshGeometry = entity.Mesh()) {
         asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
@@ -234,7 +243,12 @@ ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity) {
         }
         source = &asset->entities[meshGeometry->assetEntityIndex].parts.front().material;
     }
-    const Material resolved = ResolveMaterial(*source, entity.material);
+    Material defaultMaterial;
+    if (source == nullptr) {
+        defaultMaterial = m_resources->DefaultMaterial();
+        source = &defaultMaterial;
+    }
+    const Material resolved = ResolveMaterial(*source, entity.EffectiveMaterial());
     return resolved.baseColorTexture ? resolved.baseColorTexture->ShaderResourceView() : nullptr;
 }
 

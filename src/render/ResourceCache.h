@@ -46,8 +46,8 @@ private:
     static std::wstring NormalizePath(const std::filesystem::path& path);
     static std::uint64_t SamplerKey(const SamplerDescription& description) noexcept;
 
-    ID3D11Device* m_device{};
-    ID3D11DeviceContext* m_context{};
+    ID3D11Device* m_device = nullptr;
+    ID3D11DeviceContext* m_context = nullptr;
     std::unique_ptr<ModelLoader> m_modelLoader;
     std::unordered_map<std::wstring, std::shared_ptr<MeshAsset>> m_meshAssets;
     std::unordered_map<std::wstring, std::shared_ptr<Texture2D>> m_textures;

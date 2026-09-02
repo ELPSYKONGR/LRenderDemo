@@ -32,11 +32,11 @@ private:
     static LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
 
-    HINSTANCE m_instance{};
-    HWND m_handle{};
-    std::uint32_t m_clientWidth{1};
-    std::uint32_t m_clientHeight{1};
-    bool m_closeRequested{false};
+    HINSTANCE m_instance = nullptr;
+    HWND m_handle = nullptr;
+    std::uint32_t m_clientWidth = 1;
+    std::uint32_t m_clientHeight = 1;
+    bool m_closeRequested = false;
     static constexpr wchar_t m_windowClassName[] = L"LRenderDemoWindow";
 };
 

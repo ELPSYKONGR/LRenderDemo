@@ -9,8 +9,9 @@
 namespace lrender {
 
 SkyCubeEffect::SkyCubeEffect(
-    ID3D11Device* device, std::filesystem::path shaderDirectory)
-    : IRenderEffect(device), m_shaderDirectory(std::move(shaderDirectory)) {}
+    ID3D11Device* device, ID3D11DeviceContext* context,
+    std::filesystem::path shaderDirectory)
+    : IRenderEffect(device, context), m_shaderDirectory(std::move(shaderDirectory)) {}
 
 void SkyCubeEffect::Bind(
     const EffectFrameContext&, const EffectDrawContext&) {

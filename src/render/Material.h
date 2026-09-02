@@ -17,14 +17,14 @@
 namespace lrender {
 
 struct Material {
-    std::string name{"Default"};
-    DirectX::SimpleMath::Color baseColorFactor{1.0F, 1.0F, 1.0F, 1.0F};
-    float diffuseStrength{1.0F};
-    DirectX::SimpleMath::Color specularColor{1.0F, 1.0F, 1.0F, 1.0F};
-    float specularStrength{0.25F};
-    float shininess{32.0F};
-    bool doubleSided{false};
-    SurfaceDisplayMode displayMode{SurfaceDisplayMode::LitTextured};
+    std::string name = "Default";
+    DirectX::SimpleMath::Color baseColorFactor = {1.0F, 1.0F, 1.0F, 1.0F};
+    float diffuseStrength = 1.0F;
+    DirectX::SimpleMath::Color specularColor = {1.0F, 1.0F, 1.0F, 1.0F};
+    float specularStrength = 0.25F;
+    float shininess = 32.0F;
+    bool doubleSided = false;
+    SurfaceDisplayMode displayMode = SurfaceDisplayMode::LitTextured;
     std::shared_ptr<Texture2D> baseColorTexture;
     std::shared_ptr<SamplerState> sampler;
 };

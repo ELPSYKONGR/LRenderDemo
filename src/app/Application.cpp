@@ -6,6 +6,7 @@
  */
 #include "app/Application.h"
 
+#include "platform/RuntimePaths.h"
 #include "utils/Logger.h"
 
 #include <backends/imgui_impl_dx11.h>
@@ -18,6 +19,13 @@
 #include <stdexcept>
 
 namespace lrender {
+namespace {
+
+std::string ImGuiIniPath() {
+    return (RuntimePaths::ExecutableDirectory() / "imgui.ini").string();
+}
+
+} // namespace
 
 int Application::Run() {
     Initialize();
@@ -69,6 +77,8 @@ void Application::Initialize() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& input = ImGui::GetIO();
+    static const std::string imguiIniPath = ImGuiIniPath();
+    input.IniFilename = imguiIniPath.c_str();
     input.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -85,16 +95,17 @@ void Application::Initialize() {
     const ModelId defaultModelId = defaultModel.id;
     auto& cube = m_scene.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
     cube.transform.position.x = -0.8F;
-    cube.material.baseColor = {0.25F, 0.55F, 0.92F, 1.0F};
+    cube.EntityMaterialData().baseColor = {0.25F, 0.55F, 0.92F, 1.0F};
     auto& sphere = m_scene.CreateEntity(defaultModelId, PrimitiveType::Sphere, "Sphere 2");
     sphere.transform.position.x = 0.8F;
-    sphere.material.baseColor = {0.92F, 0.42F, 0.22F, 1.0F};
+    sphere.EntityMaterialData().baseColor = {0.92F, 0.42F, 0.22F, 1.0F};
     auto& plane = m_scene.CreateEntity(defaultModelId, PrimitiveType::Plane, "Plane 3");
     plane.transform.position.y = -0.5F;
-    plane.material.baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
+    plane.EntityMaterialData().baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
 
     const std::filesystem::path sampleModel =
         "assets/test-scenes/downloads/suzanne/Suzanne.gltf";
+        //"assets/test-scenes/downloads/sponza/Sponza.gltf";
     if (std::filesystem::is_regular_file(sampleModel)) {
         try {
             const auto asset = m_renderer.PreloadModel(sampleModel);

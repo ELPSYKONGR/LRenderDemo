@@ -35,11 +35,11 @@ void TestSceneRoundTrip() {
     auto& sphere = source.CreateSolidEntity(
         modelId, lrender::SolidGeometry::Sphere({1.75F, 40, 22}), "Sphere");
     sphere.transform.position = {2.0F, 3.0F, 4.0F};
-    sphere.material.baseColor = {0.2F, 0.4F, 0.8F, 1.0F};
-    sphere.material.baseColorTexturePath = "assets/textures/custom.png";
-    sphere.material.useSourceTexture = false;
+    sphere.EntityMaterialData().baseColor = {0.2F, 0.4F, 0.8F, 1.0F};
+    sphere.EntityMaterialData().baseColorTexturePath = "assets/textures/custom.png";
+    sphere.EntityMaterialData().useSourceTexture = false;
     const lrender::EntityId sphereId = sphere.id;
-    lrender::EntityMaterial expectedMaterial = sphere.material;
+    lrender::EntityMaterial expectedMaterial = sphere.EffectiveMaterial();
     expectedMaterial.baseColorTexturePath =
         std::filesystem::absolute(expectedMaterial.baseColorTexturePath).lexically_normal();
     const auto& mesh = source.CreateMeshEntity(
@@ -63,7 +63,7 @@ void TestSceneRoundTrip() {
             "Sphere topology should survive round trip");
     RequireNear(loadedSphere->transform.position.y, 3.0F,
                 "Transform should survive round trip");
-    Require(loadedSphere->material.NearlyEquals(expectedMaterial),
+    Require(loadedSphere->EffectiveMaterial().NearlyEquals(expectedMaterial),
             "Material should survive round trip");
 
     const lrender::Entity* loadedMesh = loaded.FindEntity(meshId);

@@ -160,7 +160,7 @@ void TestMaterialUndoRedo() {
     lrender::CommandHistory history;
     const auto modelId = scene.CreateModel("Model").id;
     auto& entity = scene.CreateEntity(modelId, lrender::PrimitiveType::Cube, "Material cube");
-    const lrender::EntityMaterial before = entity.material;
+    const lrender::EntityMaterial before = entity.EffectiveMaterial();
     lrender::EntityMaterial after = before;
     after.baseColor = {0.2F, 0.4F, 0.8F, 1.0F};
     after.specularStrength = 0.8F;
@@ -170,16 +170,33 @@ void TestMaterialUndoRedo() {
     history.Execute(std::make_unique<lrender::MaterialCommand>(
         scene, entity.id, before, after));
     Require(
-        scene.FindEntity(entity.id)->material.NearlyEquals(after),
+        scene.FindEntity(entity.id)->EffectiveMaterial().NearlyEquals(after),
         "Material command should apply all material properties");
     Require(history.Undo(), "Material edit should be undoable");
     Require(
-        scene.FindEntity(entity.id)->material.NearlyEquals(before),
+        scene.FindEntity(entity.id)->EffectiveMaterial().NearlyEquals(before),
         "Undo should restore the complete material snapshot");
     Require(history.Redo(), "Material edit should be redoable");
     Require(
-        scene.FindEntity(entity.id)->material.NearlyEquals(after),
+        scene.FindEntity(entity.id)->EffectiveMaterial().NearlyEquals(after),
         "Redo should restore the edited material snapshot");
+
+    history.Execute(std::make_unique<lrender::MaterialCommand>(
+        scene, entity.id, after, entity.EntityMaterialData()));
+    Require(
+        !scene.FindEntity(entity.id)->HasMaterialOverride(),
+        "Reset material command should clear the entity override");
+    Require(
+        scene.FindEntity(entity.id)->EffectiveMaterial().NearlyEquals(before),
+        "Reset material command should restore the original material");
+    Require(history.Undo(), "Reset material should be undoable");
+    Require(
+        scene.FindEntity(entity.id)->HasMaterialOverride() &&
+            scene.FindEntity(entity.id)->EffectiveMaterial().NearlyEquals(after),
+        "Undo should restore the material override");
+    Require(history.Redo(), "Reset material should be redoable");
+    Require(!scene.FindEntity(entity.id)->HasMaterialOverride(),
+            "Redo should clear the material override again");
 }
 
 void TestParameterizedSolidUndoAndSavedState() {

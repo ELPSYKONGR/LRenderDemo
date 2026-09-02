@@ -15,6 +15,7 @@
 namespace lrender {
 
 class Camera;
+class Mesh;
 struct Entity;
 
 class EffectFrameContext final {
@@ -35,28 +36,31 @@ public:
     [[nodiscard]] float AspectRatio() const noexcept { return m_aspectRatio; }
 
 private:
-    ID3D11DeviceContext* m_deviceContext{};
+    ID3D11DeviceContext* m_deviceContext = nullptr;
     DirectX::SimpleMath::Matrix m_view;
     DirectX::SimpleMath::Matrix m_projection;
     DirectX::SimpleMath::Vector3 m_cameraPosition;
-    float m_aspectRatio{};
+    float m_aspectRatio = 0.0F;
 };
 
 class EffectDrawContext final {
 public:
     EffectDrawContext(
-        const Entity& entity, Material material, std::uint32_t selectedEntityId);
+        const Entity& entity, Material material, std::uint32_t selectedEntityId,
+        const Mesh* mesh = nullptr);
 
     [[nodiscard]] const DirectX::SimpleMath::Matrix& World() const noexcept { return m_world; }
     [[nodiscard]] const Material& ResolvedMaterial() const noexcept { return m_material; }
     [[nodiscard]] const DirectX::SimpleMath::Color& Tint() const noexcept { return m_tint; }
     [[nodiscard]] bool IsSelected() const noexcept { return m_isSelected; }
+    [[nodiscard]] const Mesh* MeshGeometry() const noexcept { return m_mesh; }
 
 private:
     DirectX::SimpleMath::Matrix m_world;
     Material m_material;
     DirectX::SimpleMath::Color m_tint;
-    bool m_isSelected{};
+    bool m_isSelected = false;
+    const Mesh* m_mesh = nullptr;
 };
 
 } // namespace lrender

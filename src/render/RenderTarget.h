@@ -16,17 +16,22 @@ class RenderTarget final {
 public:
     void Resize(ID3D11Device* device, std::uint32_t width, std::uint32_t height);
     void Reset() noexcept;
-    void BindAndClear(ID3D11DeviceContext* context, const float clearColor[4]) const;
+    void BindAndClear(
+        ID3D11DeviceContext* context, const float clearColor[4],
+        const RenderTarget* additionalTarget = nullptr) const;
 
-    [[nodiscard]] ID3D11ShaderResourceView* ShaderResourceView() const noexcept {
+    [[nodiscard]] ID3D11ShaderResourceView* GetShaderResourceView() const noexcept {
         return m_shaderResourceView.Get();
     }
-    [[nodiscard]] std::uint32_t Width() const noexcept { return m_width; }
-    [[nodiscard]] std::uint32_t Height() const noexcept { return m_height; }
+	[[nodiscard]] ID3D11RenderTargetView* GetRenderTargetView() const noexcept {
+		return m_renderTargetView.Get();
+	}
+    [[nodiscard]] std::uint32_t GetWidth() const noexcept { return m_width; }
+    [[nodiscard]] std::uint32_t GetHeight() const noexcept { return m_height; }
 
 private:
-    std::uint32_t m_width{};
-    std::uint32_t m_height{};
+    std::uint32_t m_width = 0;
+    std::uint32_t m_height = 0;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> m_colorTexture;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_renderTargetView;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shaderResourceView;

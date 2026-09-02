@@ -1,5 +1,55 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-02 统一成员默认初始化格式
+
+- 遍历 `src/` 和 `tests/` 头文件，将类与结构体成员的默认初始化统一为 `= ...` 形式。
+- 空值初始化使用 `= {}`，指针初始化使用 `= nullptr`，不改变运行时行为。
+- 保留局部变量、聚合构造和着色器资源布局中的必要花括号。
+
+## 2026-09-01 物体法线 RenderTarget 输出
+
+- 场景物体绘制启用颜色和法线双 RenderTarget，法线与场景颜色共用深度缓冲。
+- `BasicMeshPS.hlsl` 新增 `SV_TARGET1`，输出编码到 `[0,1]` 的世界空间法线。
+- `Dx11Renderer::NormalTarget()` 提供法线纹理的只读访问，便于后续调试视图和后处理使用。
+- `RenderTarget::BindAndClear` 支持可选附加颜色目标，并检查尺寸兼容性。
+
+## 2026-09-01 Entity 材质基础值与覆盖值分离
+
+- `Entity` 新增 `m_entityMaterial`、`m_overrideEntityMaterial` 和覆盖状态，提供
+  `EntityMaterialData()`、`EditableMaterial()`、`EffectiveMaterial()` 等访问接口。
+- Solid 创建时使用默认基础材质，Mesh 创建时默认使用导入源材质；Renderer 保留底层
+  `ResolveMaterial(source, settings)`，并按 MeshPart 或默认资源选择 GPU 材质源。
+- 材质编辑与撤销命令写入覆盖材质；覆盖值恢复到基础值时自动清除覆盖状态。
+- 统一新增材质默认初始化为 `=` 形式，Effect Context 构造调用使用圆括号。
+- Inspector 材质面板新增 `Reset` 控件，可通过撤销命令恢复 Entity 的原始材质。
+
+## 2026-08-31 统一直接启动 exe 的资源布局
+
+- 保留源码中的 `assets/...` 相对资源引用，不再在程序入口切换当前目录。
+- CMake 构建后将 `assets` 拷贝到 exe 同级目录，修复双击 Debug 目录下 exe 时 Suzanne 等导入模型无法加载的问题。
+
+## 2026-08-31 统一 VS 调试与直接启动的 ImGui 布局
+
+- ImGui 配置文件改为固定写入 `LRenderDemo.exe` 所在目录，不再依赖当前工作目录。
+- 修复 VS2022 调试使用工程根目录 `imgui.ini`、直接启动使用 Debug 输出目录 `imgui.ini` 导致布局不一致的问题。
+
+## 2026-08-31 修复用户改名后的 RenderTarget API，并将 ViewManager 改为单例实例
+
+- 统一 `RenderTarget` 的 `GetWidth`、`GetHeight`、`GetShaderResourceView` 调用点。
+- `ViewManager` 新增静态 `Initialize`、`Shutdown`、`Instance`，由唯一实例保存 DX11 设备、Context 和 View 状态。
+
+## 2026-08-31 修复平面覆盖立方体和球
+
+- `BasicMeshEffect::Bind` 每次绘制明确绑定 `DepthDefault`。
+- 修复全屏后处理使用 `DepthNone` 后，深度状态泄漏到下一帧场景绘制，导致最后绘制的平面覆盖其他物体的问题。
+
+## 2026-08-31 Effect 资源管理与 View 状态保护
+
+- 新增 `EffectResource`，由 `IRenderEffect` 管理命名 Texture2D、RenderTarget 和 ShaderResourceView。
+- 新增 `IRenderEffect::Draw` 高层入口；BasicMeshEffect 在 Draw 内完成绑定和 Mesh 绘制，ColorProcessorEffect 将 Apply 改名为 Draw。
+- 新增 `ViewManager` 与 `ViewStateGuard`，支持逻辑多 View、深度写入模式、模板状态以及 DX11 各 Shader 阶段和管线状态的 RAII 恢复。
+- 当前 Renderer 保持单交换链，后续可以逐步接入 ActiveView 和多窗口交换链。
+
 ## 2026-08-31 公共 Shader 契约与 Effect 基类
 
 - 将 `BasicMeshConstants.hlsli` 迁移为 `common.hlsli`，拆分 `FrameInfo`、`ObjectInfo`、`MaterialInfo`、`LightInfo` 四类 CBuffer。

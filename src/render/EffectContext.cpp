@@ -27,10 +27,12 @@ EffectFrameContext::EffectFrameContext(
 }
 
 EffectDrawContext::EffectDrawContext(
-    const Entity& entity, Material material, std::uint32_t selectedEntityId)
+    const Entity& entity, Material material, std::uint32_t selectedEntityId,
+    const Mesh* mesh)
     : m_world(entity.transform.ToMatrix()),
       m_material(std::move(material)),
-      m_tint(entity.material.baseColor),
-      m_isSelected(entity.id == selectedEntityId) {}
+      m_tint(entity.EffectiveMaterial().baseColor),
+      m_isSelected(entity.id == selectedEntityId),
+      m_mesh(mesh) {}
 
 } // namespace lrender

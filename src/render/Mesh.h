@@ -33,7 +33,7 @@ public:
 private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
-    std::uint32_t m_indexCount{};
+    std::uint32_t m_indexCount = 0;
 };
 
 } // namespace lrender

@@ -11,7 +11,8 @@
 2. 在 `src/shaders/` 添加 VS/PS，并参考 `src/CMakeLists.txt` 登记 `FXCompile` 类型、入口点、
    Shader Model 和按配置隔离的 CSO 输出路径。
 3. 实现 `IRenderEffect::Bind(frame, draw)`；每帧数据从 `EffectFrameContext` 读取，每次绘制数据从
-   `EffectDrawContext` 读取，不要再次查询 Camera 或 Entity。
+   `EffectDrawContext` 读取，不要再次查询 Camera 或 Entity。需要 Effect 自己发出绘制时，覆盖
+   `IRenderEffect::Draw(frame, draw)`，在其中调用 `Bind` 并执行 Mesh 或多个 Pass。
 4. 定义该 Effect 专用的 C++ 常量结构和共享 `.hlsli` 布局；在类内部持有
    `Dx11ConstantBuffer<T>`，由 Effect 决定参数语义、寄存器槽位和使用它的 Shader 阶段。
 5. 在类内部持有着色器、输入布局和固定状态；从构建目录加载 CSO，不直接加载源码目录。
@@ -36,7 +37,8 @@ DDS、深度状态和 `Dx11Renderer` 接入方式。
 
 SSAO、SSR、Bloom 和色调映射操作的是帧资源，而非单个网格。实现第一项此类技术时，应新增独立的
 `IRenderPass` 边界。Pass 应接收显式上下文，其中包含输入 SRV、输出 RTV、深度、相机矩阵和
-视口尺寸。不要将屏幕空间工作强行放入 `IRenderEffect::Bind`。
+视口尺寸。屏幕空间工作应放在 `Draw` 的 Pass 流程中，不要强行放入 `IRenderEffect::Bind`；该类
+Effect 的中间纹理和 RenderTarget 使用基类提供的 `EffectResource` 管理。
 
 ## 建议学习顺序
 

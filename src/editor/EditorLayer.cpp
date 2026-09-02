@@ -173,7 +173,7 @@ void EditorLayer::DrawViewport(
 
     const ImVec2 viewportPosition = ImGui::GetCursorScreenPos();
     ImGui::Image(
-        reinterpret_cast<ImTextureID>(renderer.ViewportTarget().ShaderResourceView()), available);
+        reinterpret_cast<ImTextureID>(renderer.ViewportTarget().GetShaderResourceView()), available);
     const bool isHovered = ImGui::IsItemHovered();
     const ImGuiIO& input = ImGui::GetIO();
     if (isHovered && !ImGuizmo::IsUsing()) {

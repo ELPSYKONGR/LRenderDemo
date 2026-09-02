@@ -38,8 +38,8 @@ public:
 private:
     struct Entry {
         std::unique_ptr<ICommand> command;
-        std::uint64_t beforeRevision{};
-        std::uint64_t afterRevision{};
+        std::uint64_t beforeRevision = 0;
+        std::uint64_t afterRevision = 0;
     };
 
     void Store(std::unique_ptr<ICommand> command);
@@ -47,9 +47,9 @@ private:
     std::size_t m_capacity;
     std::vector<Entry> m_undoStack;
     std::vector<Entry> m_redoStack;
-    std::uint64_t m_currentRevision{};
-    std::uint64_t m_savedRevision{};
-    std::uint64_t m_nextRevision{1};
+    std::uint64_t m_currentRevision = 0;
+    std::uint64_t m_savedRevision = 0;
+    std::uint64_t m_nextRevision = 1;
 };
 
 } // namespace lrender

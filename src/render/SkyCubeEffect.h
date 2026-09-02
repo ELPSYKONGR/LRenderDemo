@@ -12,7 +12,9 @@ namespace lrender {
 
 class SkyCubeEffect final : public IRenderEffect {
 public:
-    SkyCubeEffect(ID3D11Device* device, std::filesystem::path shaderDirectory);
+    SkyCubeEffect(
+        ID3D11Device* device, ID3D11DeviceContext* context,
+        std::filesystem::path shaderDirectory);
 
     void Bind(
         const EffectFrameContext& frame, const EffectDrawContext& draw) override;

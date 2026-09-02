@@ -1,5 +1,19 @@
 # FILE_INDEX - LRenderDemo
 
+> `src/platform/RuntimePaths.*` 只负责 exe 同级的 ImGui 配置路径；CMake 构建后将 `assets` 拷贝到 exe 同级目录，资源仍使用相对路径。
+
+> ImGui 布局固定保存在可执行文件目录的 `imgui.ini`，VS 调试和直接启动使用同一份配置。
+
+> `ViewManager` 使用单例实例：由 `ViewManager::Initialize` 初始化，通过静态 `ViewManager::Instance()` 访问，退出时调用 `ViewManager::Shutdown()`。
+
+## 本次新增
+
+| 路径 | 用途 | 关键 API |
+|---|---|---|
+| `src/render/IRenderEffect.h/.cpp` | Effect 私有纹理、RenderTarget 和 SRV 管理；提供高层绘制入口 | `EffectResource`、`IRenderEffect::Draw` |
+| `src/render/ViewManager.h/.cpp` | 逻辑多 View、深度/模板状态设置和 DX11 状态 RAII 恢复 | `ViewManager`、`ViewStateGuard` |
+| `docs/effect-resource-view-manager.md` | Effect 资源、Draw/Pass 和 View 状态设计说明 | 中文学习文档 |
+
 本次框架补充：`src/render/CommonConstants.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*`、`src/shaders/QuadViewVS.hlsl` 和 `src/shaders/ColorProcessorPS.hlsl` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 保留天空盒 Effect 边界。详细设计见 `docs/render-framework-common-shader.md`。
 
 > 最后更新：2026-08-31 | 维护者：Codex
@@ -14,7 +28,7 @@
 | `src/core/Transform.h` | 可编辑的变换值 | `ToMatrix()`、`NearlyEquals()` | SimpleMath |
 | `src/core/EntityMaterial.h` | 与图形 API 无关的实体材质参数 | `EntityMaterial`、`SurfaceDisplayMode` | SimpleMath、filesystem |
 | `src/core/SolidGeometry.*` | Cube/Sphere/Plane 参数、校验和类型查询 | `SolidGeometry`、`SolidParameters` | SimpleMath、variant |
-| `src/core/Scene.*` | `Scene -> Model -> Entity` 层级及 Solid/Mesh 几何描述 | `CreateModel()`、`CreateEntity()`、`CreateMeshEntity()` | Transform、EntityMaterial |
+| `src/core/Scene.*` | `Scene -> Model -> Entity` 层级及 Solid/Mesh 几何描述；Entity 基础/覆盖材质 | `CreateModel()`、`CreateEntity()`、`CreateMeshEntity()`、`EffectiveMaterial()` | Transform、EntityMaterial |
 | `src/core/Camera.*` | 支持环绕、标准视角和自动旋转的编辑器相机 | `SetView()`、`RotateAroundTarget()` | SimpleMath |
 | `src/core/ViewPort.*` | API 无关的视口尺寸、编号和相机状态 | `SetSize()`、`GetCamera()` | Camera |
 | `src/commands/ICommand.h` | 可逆操作接口 | `Execute()`、`Undo()` | 无 |

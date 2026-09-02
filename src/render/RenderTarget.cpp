@@ -69,13 +69,26 @@ void RenderTarget::Resize(ID3D11Device* device, std::uint32_t width, std::uint32
     m_depthStencilView = std::move(depthStencilView);
 }
 
-void RenderTarget::BindAndClear(ID3D11DeviceContext* context, const float clearColor[4]) const {
+void RenderTarget::BindAndClear(
+    ID3D11DeviceContext* context, const float clearColor[4],
+    const RenderTarget* additionalTarget) const {
     if (context == nullptr || m_renderTargetView == nullptr || m_depthStencilView == nullptr) {
         throw std::runtime_error("RenderTarget is not ready");
     }
-    ID3D11RenderTargetView* target = m_renderTargetView.Get();
-    context->OMSetRenderTargets(1, &target, m_depthStencilView.Get());
-    context->ClearRenderTargetView(target, clearColor);
+    UINT targetCount = 1;
+    ID3D11RenderTargetView* targets[2] = {m_renderTargetView.Get(), nullptr};
+    if (additionalTarget != nullptr) {
+        if (additionalTarget->m_renderTargetView == nullptr ||
+            additionalTarget->m_width != m_width || additionalTarget->m_height != m_height) {
+            throw std::invalid_argument("Additional render target is incompatible");
+        }
+        targets[1] = additionalTarget->m_renderTargetView.Get();
+        targetCount = 2;
+    }
+    context->OMSetRenderTargets(targetCount, targets, m_depthStencilView.Get());
+    for (UINT index = 0; index < targetCount; ++index) {
+        context->ClearRenderTargetView(targets[index], clearColor);
+    }
     context->ClearDepthStencilView(
         m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0F, 0);
 

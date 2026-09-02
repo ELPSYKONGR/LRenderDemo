@@ -44,6 +44,7 @@ public:
     [[nodiscard]] ID3D11Device* Device() const noexcept { return m_device.Get(); }
     [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return m_context.Get(); }
     [[nodiscard]] RenderTarget& ViewportTarget() noexcept { return m_viewportTarget; }
+    [[nodiscard]] const RenderTarget& NormalTarget() const noexcept { return m_normalTarget; }
     [[nodiscard]] BasicMeshEffect& Effect() noexcept { return *m_effect; }
     [[nodiscard]] std::size_t CachedMeshAssetCount() const noexcept;
     [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
@@ -54,20 +55,20 @@ private:
     [[nodiscard]] Material ResolveMaterial(
         const Material& source, const EntityMaterial& settings);
 
-    HWND m_windowHandle{};
-    std::uint32_t m_swapChainWidth{};
-    std::uint32_t m_swapChainHeight{};
+    HWND m_windowHandle = nullptr;
+    std::uint32_t m_swapChainWidth = 0;
+    std::uint32_t m_swapChainHeight = 0;
     Microsoft::WRL::ComPtr<ID3D11Device> m_device;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_context;
     Microsoft::WRL::ComPtr<IDXGISwapChain> m_swapChain;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_backBufferView;
     RenderTarget m_sceneTarget;
+    RenderTarget m_normalTarget;
     RenderTarget m_viewportTarget;
     std::unique_ptr<SolidMeshCache> m_solidMeshes;
     std::unique_ptr<BasicMeshEffect> m_effect;
     std::unique_ptr<ColorProcessorEffect> m_colorProcessor;
     std::unique_ptr<ResourceCache> m_resources;
-    Material m_primitiveMaterial;
 };
 
 } // namespace lrender

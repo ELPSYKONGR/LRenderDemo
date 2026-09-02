@@ -27,15 +27,15 @@ private:
     void Initialize();
     void Shutdown() noexcept;
 
-    HINSTANCE m_instance{};
+    HINSTANCE m_instance = nullptr;
     Window m_window;
     Dx11Renderer m_renderer;
     Scene m_scene;
     CommandHistory m_history;
     Camera m_camera;
     EditorLayer m_editor;
-    bool m_isImGuiInitialized{false};
-    bool m_isComInitialized{false};
+    bool m_isImGuiInitialized = false;
+    bool m_isComInitialized = false;
 };
 
 } // namespace lrender
