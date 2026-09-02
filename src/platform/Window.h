@@ -10,10 +10,12 @@
 #include <string_view>
 #include <windows.h>
 
-namespace lrender {
+namespace lrender
+{
 
-class Window final {
-public:
+class Window final
+{
+  public:
     Window() = default;
     ~Window();
     Window(const Window&) = delete;
@@ -22,13 +24,13 @@ public:
     void Create(HINSTANCE instance, std::wstring_view title, std::uint32_t width, std::uint32_t height);
     [[nodiscard]] bool PumpMessages();
     void Close();
-    [[nodiscard]] bool CloseRequested() const noexcept { return m_closeRequested; }
-    void ClearCloseRequest() noexcept { m_closeRequested = false; }
-    [[nodiscard]] HWND Handle() const noexcept { return m_handle; }
-    [[nodiscard]] std::uint32_t ClientWidth() const noexcept { return m_clientWidth; }
-    [[nodiscard]] std::uint32_t ClientHeight() const noexcept { return m_clientHeight; }
+    [[nodiscard]] bool CloseRequested() const noexcept;
+    void ClearCloseRequest() noexcept;
+    [[nodiscard]] HWND Handle() const noexcept;
+    [[nodiscard]] std::uint32_t ClientWidth() const noexcept;
+    [[nodiscard]] std::uint32_t ClientHeight() const noexcept;
 
-private:
+  private:
     static LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
     LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
 

@@ -11,96 +11,131 @@
 #include <type_traits>
 #include <utility>
 
-namespace lrender {
-namespace {
+namespace lrender
+{
+namespace
+{
 
-bool IsPositiveFinite(float value) noexcept {
+bool IsPositiveFinite(float value) noexcept
+{
     return std::isfinite(value) && value >= 0.001F;
 }
 
-bool Near(float left, float right, float epsilon) noexcept {
+bool Near(float left, float right, float epsilon) noexcept
+{
     return std::abs(left - right) <= epsilon;
 }
 
 } // namespace
 
-SolidGeometry::SolidGeometry(SolidParameters parameters) : m_parameters(std::move(parameters)) {
+SolidGeometry::SolidGeometry(SolidParameters parameters) : m_parameters(std::move(parameters))
+{
     Validate(m_parameters);
 }
 
-SolidGeometry SolidGeometry::Cube(CubeParameters parameters) {
+SolidGeometry SolidGeometry::Cube(CubeParameters parameters)
+{
     return SolidGeometry{parameters};
 }
 
-SolidGeometry SolidGeometry::Sphere(SphereParameters parameters) {
+SolidGeometry SolidGeometry::Sphere(SphereParameters parameters)
+{
     return SolidGeometry{parameters};
 }
 
-SolidGeometry SolidGeometry::Plane(PlaneParameters parameters) {
+SolidGeometry SolidGeometry::Plane(PlaneParameters parameters)
+{
     return SolidGeometry{parameters};
 }
 
-PrimitiveType SolidGeometry::Type() const noexcept {
+PrimitiveType SolidGeometry::Type() const noexcept
+{
     return std::visit(
-        [](const auto& parameters) {
+        [](const auto& parameters)
+        {
             using Parameters = std::decay_t<decltype(parameters)>;
-            if constexpr (std::is_same_v<Parameters, CubeParameters>) {
+            if constexpr (std::is_same_v<Parameters, CubeParameters>)
+            {
                 return PrimitiveType::Cube;
-            } else if constexpr (std::is_same_v<Parameters, SphereParameters>) {
+            }
+            else if constexpr (std::is_same_v<Parameters, SphereParameters>)
+            {
                 return PrimitiveType::Sphere;
-            } else {
+            }
+            else
+            {
                 return PrimitiveType::Plane;
             }
         },
         m_parameters);
 }
 
-bool SolidGeometry::NearlyEquals(const SolidGeometry& other, float epsilon) const noexcept {
-    if (m_parameters.index() != other.m_parameters.index()) {
+const SolidParameters& SolidGeometry::Parameters() const noexcept
+{
+    return m_parameters;
+}
+
+bool SolidGeometry::NearlyEquals(const SolidGeometry& other, float epsilon) const noexcept
+{
+    if (m_parameters.index() != other.m_parameters.index())
+    {
         return false;
     }
     return std::visit(
-        [epsilon](const auto& left, const auto& right) {
+        [epsilon](const auto& left, const auto& right)
+        {
             using Left = std::decay_t<decltype(left)>;
             using Right = std::decay_t<decltype(right)>;
-            if constexpr (!std::is_same_v<Left, Right>) {
+            if constexpr (!std::is_same_v<Left, Right>)
+            {
                 return false;
-            } else if constexpr (std::is_same_v<Left, CubeParameters>) {
-                return Near(left.size.x, right.size.x, epsilon) &&
-                       Near(left.size.y, right.size.y, epsilon) &&
+            }
+            else if constexpr (std::is_same_v<Left, CubeParameters>)
+            {
+                return Near(left.size.x, right.size.x, epsilon) && Near(left.size.y, right.size.y, epsilon) &&
                        Near(left.size.z, right.size.z, epsilon);
-            } else if constexpr (std::is_same_v<Left, SphereParameters>) {
-                return Near(left.radius, right.radius, epsilon) &&
-                       left.slices == right.slices && left.stacks == right.stacks;
-            } else {
-                return Near(left.size.x, right.size.x, epsilon) &&
-                       Near(left.size.y, right.size.y, epsilon) &&
-                       left.subdivisionsX == right.subdivisionsX &&
-                       left.subdivisionsZ == right.subdivisionsZ;
+            }
+            else if constexpr (std::is_same_v<Left, SphereParameters>)
+            {
+                return Near(left.radius, right.radius, epsilon) && left.slices == right.slices &&
+                       left.stacks == right.stacks;
+            }
+            else
+            {
+                return Near(left.size.x, right.size.x, epsilon) && Near(left.size.y, right.size.y, epsilon) &&
+                       left.subdivisionsX == right.subdivisionsX && left.subdivisionsZ == right.subdivisionsZ;
             }
         },
         m_parameters, other.m_parameters);
 }
 
-void SolidGeometry::Validate(const SolidParameters& parameters) {
+void SolidGeometry::Validate(const SolidParameters& parameters)
+{
     std::visit(
-        [](const auto& value) {
+        [](const auto& value)
+        {
             using Parameters = std::decay_t<decltype(value)>;
-            if constexpr (std::is_same_v<Parameters, CubeParameters>) {
+            if constexpr (std::is_same_v<Parameters, CubeParameters>)
+            {
                 if (!IsPositiveFinite(value.size.x) || !IsPositiveFinite(value.size.y) ||
-                    !IsPositiveFinite(value.size.z)) {
+                    !IsPositiveFinite(value.size.z))
+                {
                     throw std::invalid_argument("Cube dimensions must be finite and positive");
                 }
-            } else if constexpr (std::is_same_v<Parameters, SphereParameters>) {
-                if (!IsPositiveFinite(value.radius) || value.slices < 3 || value.stacks < 2) {
-                    throw std::invalid_argument(
-                        "Sphere requires a positive radius, 3 slices, and 2 stacks");
+            }
+            else if constexpr (std::is_same_v<Parameters, SphereParameters>)
+            {
+                if (!IsPositiveFinite(value.radius) || value.slices < 3 || value.stacks < 2)
+                {
+                    throw std::invalid_argument("Sphere requires a positive radius, 3 slices, and 2 stacks");
                 }
-            } else {
-                if (!IsPositiveFinite(value.size.x) || !IsPositiveFinite(value.size.y) ||
-                    value.subdivisionsX == 0 || value.subdivisionsZ == 0) {
-                    throw std::invalid_argument(
-                        "Plane requires positive dimensions and subdivisions");
+            }
+            else
+            {
+                if (!IsPositiveFinite(value.size.x) || !IsPositiveFinite(value.size.y) || value.subdivisionsX == 0 ||
+                    value.subdivisionsZ == 0)
+                {
+                    throw std::invalid_argument("Plane requires positive dimensions and subdivisions");
                 }
             }
         },

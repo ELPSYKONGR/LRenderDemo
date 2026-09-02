@@ -9,17 +9,18 @@
 #include "commands/ICommand.h"
 #include "core/Scene.h"
 
-namespace lrender {
+namespace lrender
+{
 
-class MaterialCommand final : public ICommand {
-public:
-    MaterialCommand(
-        Scene& scene, std::uint32_t entityId, EntityMaterial before, EntityMaterial after);
+class MaterialCommand final : public ICommand
+{
+  public:
+    MaterialCommand(Scene& scene, std::uint32_t entityId, EntityMaterial before, EntityMaterial after);
     void Execute() override;
     void Undo() override;
-    [[nodiscard]] std::string_view Name() const noexcept override { return "Edit material"; }
+    [[nodiscard]] std::string_view Name() const noexcept override;
 
-private:
+  private:
     void Apply(const EntityMaterial& value);
 
     Scene& m_scene;

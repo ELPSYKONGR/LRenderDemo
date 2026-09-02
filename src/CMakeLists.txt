@@ -17,8 +17,10 @@ set(LRENDER_CORE_HEADERS
 add_library(LRenderCore STATIC
     ${LRENDER_CORE_HEADERS}
     core/Camera.cpp
+    core/EntityMaterial.cpp
     core/Scene.cpp
     core/SolidGeometry.cpp
+    core/Transform.cpp
     core/ViewPort.cpp
     commands/CommandHistory.cpp
     commands/CreateEntityCommand.cpp
@@ -69,6 +71,7 @@ add_library(LRenderAssets STATIC
     render/MeshImportUtils.cpp
     render/ModelLoader.cpp
     render/ObjLoader.cpp
+    render/Material.cpp
     render/ResourceCache.cpp
     render/SamplerState.cpp
     render/Texture2D.cpp)
@@ -100,6 +103,15 @@ set(LRENDER_DEMO_HEADERS
     render/ViewManager.h)
 list(APPEND LRENDER_DEMO_HEADERS render/SolidMeshCache.h render/SkyCubeEffect.h)
 
+set(LRENDER_EDITOR_SOURCES
+    editor/EditorAssets.cpp
+    editor/EditorCamera.cpp
+    editor/EditorHierarchy.cpp
+    editor/EditorMaterial.cpp
+    editor/EditorScene.cpp
+    editor/EditorSolid.cpp
+    editor/EditorLayer.cpp)
+
 add_executable(LRenderDemo WIN32
     ${LRENDER_DEMO_HEADERS}
     app/Main.cpp
@@ -116,17 +128,12 @@ add_executable(LRenderDemo WIN32
     render/PrimitiveFactory.cpp
     render/RenderTarget.cpp
     render/SolidMeshCache.cpp
-    editor/EditorAssets.cpp
-    editor/EditorCamera.cpp
-    editor/EditorHierarchy.cpp
-    editor/EditorMaterial.cpp
-    editor/EditorScene.cpp
-    editor/EditorSolid.cpp
-    editor/EditorLayer.cpp)
+    ${LRENDER_EDITOR_SOURCES})
 source_group(
     TREE "${CMAKE_CURRENT_SOURCE_DIR}"
     PREFIX "Header Files"
     FILES ${LRENDER_DEMO_HEADERS})
+source_group("Editor" FILES ${LRENDER_EDITOR_SOURCES} editor/EditorLayer.h)
 
 set(LRENDER_SHADER_OUTPUT_ROOT "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(LRENDER_SHADER_BUILD_OUTPUT_DIR "${LRENDER_SHADER_OUTPUT_ROOT}/$(Configuration)")

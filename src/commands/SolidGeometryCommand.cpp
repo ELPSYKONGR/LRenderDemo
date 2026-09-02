@@ -9,24 +9,37 @@
 #include <stdexcept>
 #include <utility>
 
-namespace lrender {
+namespace lrender
+{
 
-SolidGeometryCommand::SolidGeometryCommand(
-    Scene& scene, EntityId entityId,
-    SolidGeometry before, SolidGeometry after)
-    : m_scene(scene), m_entityId(entityId),
-      m_before(std::move(before)), m_after(std::move(after)) {}
+SolidGeometryCommand::SolidGeometryCommand(Scene& scene, EntityId entityId, SolidGeometry before, SolidGeometry after)
+    : m_scene(scene), m_entityId(entityId), m_before(std::move(before)), m_after(std::move(after))
+{
+}
 
-void SolidGeometryCommand::Execute() { Apply(m_after); }
+void SolidGeometryCommand::Execute()
+{
+    Apply(m_after);
+}
 
-void SolidGeometryCommand::Undo() { Apply(m_before); }
+void SolidGeometryCommand::Undo()
+{
+    Apply(m_before);
+}
 
-void SolidGeometryCommand::Apply(const SolidGeometry& geometry) {
+void SolidGeometryCommand::Apply(const SolidGeometry& geometry)
+{
     Entity* entity = m_scene.FindEntity(m_entityId);
-    if (entity == nullptr || entity->Solid() == nullptr) {
+    if (entity == nullptr || entity->Solid() == nullptr)
+    {
         throw std::runtime_error("Solid geometry command target is unavailable");
     }
     entity->geometry = geometry;
+}
+
+std::string_view SolidGeometryCommand::Name() const noexcept
+{
+    return "Edit solid geometry";
 }
 
 } // namespace lrender

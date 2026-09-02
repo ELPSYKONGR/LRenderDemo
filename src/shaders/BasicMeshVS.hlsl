@@ -23,9 +23,9 @@ struct PixelInput
 PixelInput VSMain(VertexInput input)
 {
     PixelInput output;
-    output.position = mul(float4(input.position, 1.0F), WorldViewProjection);
-    output.worldPosition = mul(float4(input.position, 1.0F), World).xyz;
-    output.worldNormal = mul(float4(input.normal, 0.0F), WorldInverseTranspose).xyz;
+    output.position = mul(float4(input.position, 1.0F), C_WorldViewProjection);
+    output.worldPosition = mul(float4(input.position, 1.0F), C_World).xyz;
+    output.worldNormal = mul(float4(input.normal, 0.0F), C_WorldInverseTranspose).xyz;
     output.textureCoordinate = input.textureCoordinate;
     return output;
 }

@@ -9,19 +9,32 @@
 #include <stdexcept>
 #include <utility>
 
-namespace lrender {
+namespace lrender
+{
 
 CreateEntityCommand::CreateEntityCommand(Scene& scene, ModelId modelId, Entity entity)
-    : m_scene(scene), m_modelId(modelId), m_entity(std::move(entity)) {}
+    : m_scene(scene), m_modelId(modelId), m_entity(std::move(entity))
+{
+}
 
-void CreateEntityCommand::Execute() { m_scene.AddEntity(m_modelId, m_entity); }
+void CreateEntityCommand::Execute()
+{
+    m_scene.AddEntity(m_modelId, m_entity);
+}
 
-void CreateEntityCommand::Undo() {
+void CreateEntityCommand::Undo()
+{
     auto removed = m_scene.RemoveEntity(m_entity.id);
-    if (!removed) {
+    if (!removed)
+    {
         throw std::runtime_error("Created entity no longer exists");
     }
     m_entity = std::move(*removed);
+}
+
+std::string_view CreateEntityCommand::Name() const noexcept
+{
+    return "Create entity";
 }
 
 } // namespace lrender

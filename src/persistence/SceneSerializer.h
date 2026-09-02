@@ -10,10 +10,12 @@
 
 #include <filesystem>
 
-namespace lrender {
+namespace lrender
+{
 
-class SceneSerializer final {
-public:
+class SceneSerializer final
+{
+  public:
     static void Save(const Scene& scene, const std::filesystem::path& path);
     [[nodiscard]] static Scene Load(const std::filesystem::path& path);
 };

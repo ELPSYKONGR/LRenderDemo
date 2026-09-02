@@ -9,16 +9,18 @@
 #include "commands/ICommand.h"
 #include "core/Scene.h"
 
-namespace lrender {
+namespace lrender
+{
 
-class CreateEntityCommand final : public ICommand {
-public:
+class CreateEntityCommand final : public ICommand
+{
+  public:
     CreateEntityCommand(Scene& scene, ModelId modelId, Entity entity);
     void Execute() override;
     void Undo() override;
-    [[nodiscard]] std::string_view Name() const noexcept override { return "Create entity"; }
+    [[nodiscard]] std::string_view Name() const noexcept override;
 
-private:
+  private:
     Scene& m_scene;
     ModelId m_modelId;
     Entity m_entity;

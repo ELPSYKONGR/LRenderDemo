@@ -18,22 +18,20 @@
 #include <optional>
 #include <string>
 
-namespace lrender {
+namespace lrender
+{
 
 class Dx11Renderer;
 
-class EditorLayer final {
-public:
+class EditorLayer final
+{
+  public:
     void Draw(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer);
-    void RequestExit() noexcept { m_exitRequested = true; }
-    [[nodiscard]] bool ConsumeExitConfirmed() noexcept {
-        const bool result = m_exitConfirmed;
-        m_exitConfirmed = false;
-        return result;
-    }
-    [[nodiscard]] std::uint32_t SelectedEntityId() const noexcept { return m_selectedEntityId; }
+    void RequestExit() noexcept;
+    [[nodiscard]] bool ConsumeExitConfirmed() noexcept;
+    [[nodiscard]] std::uint32_t SelectedEntityId() const noexcept;
 
-private:
+  private:
     void DrawMainMenu(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void DrawSceneFileMenu(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void DrawSceneFilePopups(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
@@ -45,32 +43,19 @@ private:
     void DrawInspector(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void DrawSolidGeometryEditor(Scene& scene, CommandHistory& history, Entity& entity);
     void DrawSolidCreationPopup(Scene& scene, CommandHistory& history);
-    void DrawMaterialEditor(
-        Scene& scene, CommandHistory& history, Dx11Renderer& renderer, Entity& entity);
+    void DrawMaterialEditor(Scene& scene, CommandHistory& history, Dx11Renderer& renderer, Entity& entity);
     void DrawViewport(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer);
     void BeginSolidCreation(PrimitiveType primitive, const Scene& scene);
-    void CreateSolid(
-        Scene& scene, CommandHistory& history,
-        SolidGeometry geometry, std::string name);
+    void CreateSolid(Scene& scene, CommandHistory& history, SolidGeometry geometry, std::string name);
     void ImportModel(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
-    void TrackPropertyEdit(
-        Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl);
-    void TrackMaterialEdit(
-        Scene& scene, CommandHistory& history, Entity& entity,
-        const EntityMaterial& beforeControl);
-    void TrackSolidEdit(
-        Scene& scene, CommandHistory& history, Entity& entity,
-        const SolidGeometry& beforeControl);
-    bool SaveScene(
-        const Scene& scene, CommandHistory& history, Dx11Renderer& renderer, bool saveAs);
-    void OpenScene(
-        Scene& scene, CommandHistory& history, Dx11Renderer& renderer,
-        const std::filesystem::path& path);
-    void QueueSceneAction(
-        int action, Scene& scene, CommandHistory& history, Dx11Renderer& renderer,
-        std::filesystem::path path = {});
-    void ExecuteSceneAction(
-        Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
+    void TrackPropertyEdit(Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl);
+    void TrackMaterialEdit(Scene& scene, CommandHistory& history, Entity& entity, const EntityMaterial& beforeControl);
+    void TrackSolidEdit(Scene& scene, CommandHistory& history, Entity& entity, const SolidGeometry& beforeControl);
+    bool SaveScene(const Scene& scene, CommandHistory& history, Dx11Renderer& renderer, bool saveAs);
+    void OpenScene(Scene& scene, CommandHistory& history, Dx11Renderer& renderer, const std::filesystem::path& path);
+    void QueueSceneAction(int action, Scene& scene, CommandHistory& history, Dx11Renderer& renderer,
+                          std::filesystem::path path = {});
+    void ExecuteSceneAction(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void ValidateSelection(const Scene& scene);
 
     std::uint32_t m_selectedEntityId = 0;

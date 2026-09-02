@@ -24,10 +24,12 @@
 
 struct ImDrawData;
 
-namespace lrender {
+namespace lrender
+{
 
-class Dx11Renderer final {
-public:
+class Dx11Renderer final
+{
+  public:
     void Initialize(HWND windowHandle, std::uint32_t width, std::uint32_t height);
     void Shutdown() noexcept;
     void ResizeSwapChain(std::uint32_t width, std::uint32_t height);
@@ -35,25 +37,25 @@ public:
     void RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId);
     void RenderEditor(ImDrawData* drawData);
     void Present();
-    [[nodiscard]] std::shared_ptr<const MeshAsset> PreloadModel(
-        const std::filesystem::path& path);
+    [[nodiscard]] std::shared_ptr<const MeshAsset> PreloadModel(const std::filesystem::path& path);
     void PreloadTexture(const std::filesystem::path& path);
     void ClearRuntimeCaches() noexcept;
+    void ClearTarget() noexcept;
+
     [[nodiscard]] ID3D11ShaderResourceView* MaterialPreview(const Entity& entity);
 
-    [[nodiscard]] ID3D11Device* Device() const noexcept { return m_device.Get(); }
-    [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return m_context.Get(); }
-    [[nodiscard]] RenderTarget& ViewportTarget() noexcept { return m_viewportTarget; }
-    [[nodiscard]] const RenderTarget& NormalTarget() const noexcept { return m_normalTarget; }
-    [[nodiscard]] BasicMeshEffect& Effect() noexcept { return *m_effect; }
+    [[nodiscard]] ID3D11Device* Device() const noexcept;
+    [[nodiscard]] ID3D11DeviceContext* Context() const noexcept;
+    [[nodiscard]] RenderTarget& ViewportTarget() noexcept;
+    [[nodiscard]] const RenderTarget& NormalTarget() const noexcept;
+    [[nodiscard]] BasicMeshEffect& Effect() noexcept;
     [[nodiscard]] std::size_t CachedMeshAssetCount() const noexcept;
     [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
-    [[nodiscard]] HWND WindowHandle() const noexcept { return m_windowHandle; }
+    [[nodiscard]] HWND WindowHandle() const noexcept;
 
-private:
+  private:
     void CreateBackBuffer();
-    [[nodiscard]] Material ResolveMaterial(
-        const Material& source, const EntityMaterial& settings);
+    [[nodiscard]] Material ResolveMaterial(const Material& source, const EntityMaterial& settings);
 
     HWND m_windowHandle = nullptr;
     std::uint32_t m_swapChainWidth = 0;

@@ -14,29 +14,34 @@
 #include <stdexcept>
 #include <wrl/client.h>
 
-namespace {
+namespace
+{
 
-struct alignas(16) TestConstants {
+struct alignas(16) TestConstants
+{
     float values[4];
 };
 
-void Require(bool condition, const char* message) {
-    if (!condition) {
+void Require(bool condition, const char* message)
+{
+    if (!condition)
+    {
         throw std::runtime_error(message);
     }
 }
 
-void RequireNear(float actual, float expected, const char* message) {
+void RequireNear(float actual, float expected, const char* message)
+{
     Require(std::abs(actual - expected) < 0.001F, message);
 }
 
-void TestConstantBufferBinding() {
+void TestConstantBufferBinding()
+{
     Microsoft::WRL::ComPtr<ID3D11Device> device;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
     D3D_FEATURE_LEVEL featureLevel{};
-    const HRESULT result = D3D11CreateDevice(
-        nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr, 0,
-        D3D11_SDK_VERSION, device.GetAddressOf(), &featureLevel, context.GetAddressOf());
+    const HRESULT result = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION,
+                                             device.GetAddressOf(), &featureLevel, context.GetAddressOf());
     Require(SUCCEEDED(result), "WARP D3D11 device creation failed");
 
     lrender::Dx11ConstantBuffer<TestConstants> buffer(device.Get());
@@ -54,26 +59,21 @@ void TestConstantBufferBinding() {
 
     D3D11_BUFFER_DESC description{};
     vertexBuffer->GetDesc(&description);
-    Require(
-        description.ByteWidth == static_cast<UINT>(sizeof(TestConstants)),
-        "Constant buffer size is incorrect");
-    Require(
-        (description.BindFlags & D3D11_BIND_CONSTANT_BUFFER) != 0,
-        "Constant buffer bind flag is missing");
+    Require(description.ByteWidth == static_cast<UINT>(sizeof(TestConstants)), "Constant buffer size is incorrect");
+    Require((description.BindFlags & D3D11_BIND_CONSTANT_BUFFER) != 0, "Constant buffer bind flag is missing");
 }
 
-void TestObjImport() {
+void TestObjImport()
+{
     Microsoft::WRL::ComPtr<ID3D11Device> device;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
     D3D_FEATURE_LEVEL featureLevel{};
-    const HRESULT result = D3D11CreateDevice(
-        nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr, 0,
-        D3D11_SDK_VERSION, device.GetAddressOf(), &featureLevel, context.GetAddressOf());
+    const HRESULT result = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr, 0, D3D11_SDK_VERSION,
+                                             device.GetAddressOf(), &featureLevel, context.GetAddressOf());
     Require(SUCCEEDED(result), "WARP D3D11 device creation failed");
 
     lrender::ResourceCache resources(device.Get(), context.Get());
-    const std::filesystem::path path =
-        std::filesystem::path(LRENDER_TEST_ASSET_DIR) / "obj" / "mixed.obj";
+    const std::filesystem::path path = std::filesystem::path(LRENDER_TEST_ASSET_DIR) / "obj" / "mixed.obj";
     const auto asset = resources.LoadMeshAsset(path);
     Require(asset->entities.size() == 2, "OBJ shapes should become separate asset entities");
     Require(asset->entities[0].name == "RedTriangle", "First OBJ shape name is incorrect");
@@ -81,12 +81,9 @@ void TestObjImport() {
     Require(asset->entities[0].parts.size() == 1, "First OBJ shape should have one part");
     Require(asset->entities[1].parts.size() == 1, "Second OBJ shape should have one part");
     Require(asset->entities[0].parts[0].mesh->IndexCount() == 3, "OBJ triangle index count is wrong");
-    RequireNear(
-        asset->entities[0].parts[0].material.baseColorFactor.x, 0.8F,
-        "OBJ MTL diffuse color was not imported");
-    RequireNear(
-        asset->entities[1].parts[0].material.shininess, 16.0F,
-        "OBJ MTL shininess was not imported");
+    RequireNear(asset->entities[0].parts[0].material.GetBaseColorFactor().x, 0.8F,
+                "OBJ MTL diffuse color was not imported");
+    RequireNear(asset->entities[1].parts[0].material.GetShininess(), 16.0F, "OBJ MTL shininess was not imported");
 
     const auto cached = resources.LoadMeshAsset(path);
     Require(asset == cached, "Repeated OBJ loads should return the cached mesh asset");
@@ -95,13 +92,17 @@ void TestObjImport() {
 
 } // namespace
 
-int main() {
-    try {
+int main()
+{
+    try
+    {
         TestConstantBufferBinding();
         TestObjImport();
         std::cout << "LRenderImportTests: all tests passed\n";
         return 0;
-    } catch (const std::exception& error) {
+    }
+    catch (const std::exception& error)
+    {
         std::cerr << "LRenderImportTests failed: " << error.what() << '\n';
         return 1;
     }

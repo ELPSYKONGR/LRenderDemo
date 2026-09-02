@@ -9,21 +9,19 @@
 #include "commands/ICommand.h"
 #include "core/Scene.h"
 
-namespace lrender {
+namespace lrender
+{
 
-class SolidGeometryCommand final : public ICommand {
-public:
-    SolidGeometryCommand(
-        Scene& scene, EntityId entityId,
-        SolidGeometry before, SolidGeometry after);
+class SolidGeometryCommand final : public ICommand
+{
+  public:
+    SolidGeometryCommand(Scene& scene, EntityId entityId, SolidGeometry before, SolidGeometry after);
 
     void Execute() override;
     void Undo() override;
-    [[nodiscard]] std::string_view Name() const noexcept override {
-        return "Edit solid geometry";
-    }
+    [[nodiscard]] std::string_view Name() const noexcept override;
 
-private:
+  private:
     void Apply(const SolidGeometry& geometry);
 
     Scene& m_scene;

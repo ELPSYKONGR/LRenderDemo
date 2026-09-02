@@ -9,16 +9,18 @@
 #include "commands/ICommand.h"
 #include "core/Scene.h"
 
-namespace lrender {
+namespace lrender
+{
 
-class TransformCommand final : public ICommand {
-public:
+class TransformCommand final : public ICommand
+{
+  public:
     TransformCommand(Scene& scene, std::uint32_t entityId, Transform before, Transform after);
     void Execute() override;
     void Undo() override;
-    [[nodiscard]] std::string_view Name() const noexcept override { return "Transform entity"; }
+    [[nodiscard]] std::string_view Name() const noexcept override;
 
-private:
+  private:
     void Apply(const Transform& value);
 
     Scene& m_scene;

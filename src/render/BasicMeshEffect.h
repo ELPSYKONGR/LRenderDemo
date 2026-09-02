@@ -13,26 +13,24 @@
 #include <memory>
 #include <wrl/client.h>
 
-namespace lrender {
+namespace lrender
+{
 
-class BasicMeshEffect final : public IRenderEffect {
-public:
-    BasicMeshEffect(
-        ID3D11Device* device, ID3D11DeviceContext* context,
-        const std::filesystem::path& shaderDirectory);
+class BasicMeshEffect final : public IRenderEffect
+{
+  public:
+    BasicMeshEffect(ID3D11Device* device, ID3D11DeviceContext* context, const std::filesystem::path& shaderDirectory);
 
-    void Bind(
-        const EffectFrameContext& frame, const EffectDrawContext& draw) override;
-    void Draw(
-        const EffectFrameContext& frame, const EffectDrawContext& draw) override;
+    void Bind(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
+    void Draw(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
 
-    [[nodiscard]] std::string_view Name() const noexcept override { return "Basic Lit"; }
-    void SetWireframe(bool isWireframe) noexcept { m_isWireframe = isWireframe; }
-    [[nodiscard]] bool IsWireframe() const noexcept { return m_isWireframe; }
-    [[nodiscard]] LightingSettings& Lights() noexcept { return m_lights; }
-    [[nodiscard]] const LightingSettings& Lights() const noexcept { return m_lights; }
+    [[nodiscard]] std::string_view Name() const noexcept override;
+    void SetWireframe(bool isWireframe) noexcept;
+    [[nodiscard]] bool IsWireframe() const noexcept;
+    [[nodiscard]] LightingSettings& Lights() noexcept;
+    [[nodiscard]] const LightingSettings& Lights() const noexcept;
 
-private:
+  private:
     std::unique_ptr<DirectX::CommonStates> m_states;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;

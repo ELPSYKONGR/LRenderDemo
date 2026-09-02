@@ -11,15 +11,16 @@
 #include <memory>
 #include <vector>
 
-namespace lrender {
+namespace lrender
+{
 
-class ModelLoader final {
-public:
+class ModelLoader final
+{
+  public:
     ModelLoader();
-    [[nodiscard]] std::shared_ptr<MeshAsset> Load(
-        const std::filesystem::path& path, ResourceCache& resources) const;
+    [[nodiscard]] std::shared_ptr<MeshAsset> Load(const std::filesystem::path& path, ResourceCache& resources) const;
 
-private:
+  private:
     std::vector<std::unique_ptr<IModelImporter>> m_importers;
 };
 

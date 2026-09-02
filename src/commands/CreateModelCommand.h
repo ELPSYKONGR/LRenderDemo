@@ -9,16 +9,18 @@
 #include "commands/ICommand.h"
 #include "core/Scene.h"
 
-namespace lrender {
+namespace lrender
+{
 
-class CreateModelCommand final : public ICommand {
-public:
+class CreateModelCommand final : public ICommand
+{
+  public:
     CreateModelCommand(Scene& scene, Model model);
     void Execute() override;
     void Undo() override;
-    [[nodiscard]] std::string_view Name() const noexcept override { return "Create model"; }
+    [[nodiscard]] std::string_view Name() const noexcept override;
 
-private:
+  private:
     Scene& m_scene;
     Model m_model;
 };

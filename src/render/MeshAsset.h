@@ -13,20 +13,24 @@
 #include <string>
 #include <vector>
 
-namespace lrender {
+namespace lrender
+{
 
-struct MeshPart {
+struct MeshPart
+{
     std::unique_ptr<Mesh> mesh;
     Material material;
 };
 
-struct MeshAssetEntity {
+struct MeshAssetEntity
+{
     std::string name;
     std::vector<MeshPart> parts;
 };
 
-class MeshAsset final {
-public:
+class MeshAsset final
+{
+  public:
     std::string name;
     std::vector<MeshAssetEntity> entities;
     std::vector<std::string> warnings;

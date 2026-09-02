@@ -5,10 +5,12 @@
 
 #include <filesystem>
 
-namespace lrender {
+namespace lrender
+{
 
-class RuntimePaths final {
-public:
+class RuntimePaths final
+{
+  public:
     [[nodiscard]] static std::filesystem::path ExecutablePath();
     [[nodiscard]] static std::filesystem::path ExecutableDirectory();
 };

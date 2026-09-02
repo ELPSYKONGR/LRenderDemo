@@ -9,17 +9,18 @@
 #include <limits>
 #include <stdexcept>
 
-namespace lrender {
+namespace lrender
+{
 
-Mesh::Mesh(
-    ID3D11Device* device,
-    std::span<const MeshVertex> vertices,
-    std::span<const std::uint32_t> indices) {
-    if (device == nullptr || vertices.empty() || indices.empty()) {
+Mesh::Mesh(ID3D11Device* device, std::span<const MeshVertex> vertices, std::span<const std::uint32_t> indices)
+{
+    if (device == nullptr || vertices.empty() || indices.empty())
+    {
         throw std::invalid_argument("Mesh requires a device and non-empty geometry");
     }
     if (vertices.size_bytes() > std::numeric_limits<UINT>::max() ||
-        indices.size_bytes() > std::numeric_limits<UINT>::max()) {
+        indices.size_bytes() > std::numeric_limits<UINT>::max())
+    {
         throw std::overflow_error("Mesh data exceeds D3D11 buffer limits");
     }
 
@@ -28,8 +29,8 @@ Mesh::Mesh(
     vertexDescription.Usage = D3D11_USAGE_IMMUTABLE;
     vertexDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     D3D11_SUBRESOURCE_DATA vertexData{vertices.data(), 0, 0};
-    if (FAILED(device->CreateBuffer(
-            &vertexDescription, &vertexData, m_vertexBuffer.ReleaseAndGetAddressOf()))) {
+    if (FAILED(device->CreateBuffer(&vertexDescription, &vertexData, m_vertexBuffer.ReleaseAndGetAddressOf())))
+    {
         throw std::runtime_error("Failed to create mesh vertex buffer");
     }
 
@@ -38,15 +39,17 @@ Mesh::Mesh(
     indexDescription.Usage = D3D11_USAGE_IMMUTABLE;
     indexDescription.BindFlags = D3D11_BIND_INDEX_BUFFER;
     D3D11_SUBRESOURCE_DATA indexData{indices.data(), 0, 0};
-    if (FAILED(device->CreateBuffer(
-            &indexDescription, &indexData, m_indexBuffer.ReleaseAndGetAddressOf()))) {
+    if (FAILED(device->CreateBuffer(&indexDescription, &indexData, m_indexBuffer.ReleaseAndGetAddressOf())))
+    {
         throw std::runtime_error("Failed to create mesh index buffer");
     }
     m_indexCount = static_cast<std::uint32_t>(indices.size());
 }
 
-void Mesh::Draw(ID3D11DeviceContext* context) const {
-    if (context == nullptr) {
+void Mesh::Draw(ID3D11DeviceContext* context) const
+{
+    if (context == nullptr)
+    {
         throw std::invalid_argument("Mesh draw requires a D3D11 context");
     }
     constexpr UINT stride = sizeof(MeshVertex);
@@ -56,6 +59,11 @@ void Mesh::Draw(ID3D11DeviceContext* context) const {
     context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     context->DrawIndexed(m_indexCount, 0, 0);
+}
+
+std::uint32_t Mesh::IndexCount() const noexcept
+{
+    return m_indexCount;
 }
 
 } // namespace lrender

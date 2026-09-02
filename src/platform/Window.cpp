@@ -12,23 +12,27 @@
 #include <stdexcept>
 #include <string>
 
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
-    HWND window, UINT message, WPARAM wParam, LPARAM lParam);
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 
-namespace lrender {
+namespace lrender
+{
 
-Window::~Window() {
-    if (m_handle != nullptr) {
+Window::~Window()
+{
+    if (m_handle != nullptr)
+    {
         DestroyWindow(m_handle);
     }
-    if (m_instance != nullptr) {
+    if (m_instance != nullptr)
+    {
         UnregisterClassW(m_windowClassName, m_instance);
     }
 }
 
-void Window::Create(
-    HINSTANCE instance, std::wstring_view title, std::uint32_t width, std::uint32_t height) {
-    if (instance == nullptr || title.empty() || width == 0 || height == 0) {
+void Window::Create(HINSTANCE instance, std::wstring_view title, std::uint32_t width, std::uint32_t height)
+{
+    if (instance == nullptr || title.empty() || width == 0 || height == 0)
+    {
         throw std::invalid_argument("Window creation arguments are invalid");
     }
     m_instance = instance;
@@ -41,29 +45,22 @@ void Window::Create(
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
     windowClass.lpszClassName = m_windowClassName;
-    if (RegisterClassExW(&windowClass) == 0) {
+    if (RegisterClassExW(&windowClass) == 0)
+    {
         throw std::runtime_error("RegisterClassExW failed");
     }
 
     RECT rectangle{0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
-    if (!AdjustWindowRect(&rectangle, WS_OVERLAPPEDWINDOW, FALSE)) {
+    if (!AdjustWindowRect(&rectangle, WS_OVERLAPPEDWINDOW, FALSE))
+    {
         throw std::runtime_error("AdjustWindowRect failed");
     }
     const std::wstring ownedTitle(title);
-    m_handle = CreateWindowExW(
-        0,
-        m_windowClassName,
-        ownedTitle.c_str(),
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        rectangle.right - rectangle.left,
-        rectangle.bottom - rectangle.top,
-        nullptr,
-        nullptr,
-        m_instance,
-        this);
-    if (m_handle == nullptr) {
+    m_handle = CreateWindowExW(0, m_windowClassName, ownedTitle.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                               CW_USEDEFAULT, rectangle.right - rectangle.left, rectangle.bottom - rectangle.top,
+                               nullptr, nullptr, m_instance, this);
+    if (m_handle == nullptr)
+    {
         throw std::runtime_error("CreateWindowExW failed");
     }
     m_clientWidth = width;
@@ -73,10 +70,13 @@ void Window::Create(
     UpdateWindow(m_handle);
 }
 
-bool Window::PumpMessages() {
+bool Window::PumpMessages()
+{
     MSG message{};
-    while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) {
-        if (message.message == WM_QUIT) {
+    while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE))
+    {
+        if (message.message == WM_QUIT)
+        {
             return false;
         }
         TranslateMessage(&message);
@@ -85,15 +85,44 @@ bool Window::PumpMessages() {
     return true;
 }
 
-void Window::Close() {
-    if (m_handle != nullptr) {
+void Window::Close()
+{
+    if (m_handle != nullptr)
+    {
         DestroyWindow(m_handle);
     }
 }
 
-LRESULT CALLBACK Window::WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+bool Window::CloseRequested() const noexcept
+{
+    return m_closeRequested;
+}
+
+void Window::ClearCloseRequest() noexcept
+{
+    m_closeRequested = false;
+}
+
+HWND Window::Handle() const noexcept
+{
+    return m_handle;
+}
+
+std::uint32_t Window::ClientWidth() const noexcept
+{
+    return m_clientWidth;
+}
+
+std::uint32_t Window::ClientHeight() const noexcept
+{
+    return m_clientHeight;
+}
+
+LRESULT CALLBACK Window::WindowProcedure(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
+{
     Window* self = reinterpret_cast<Window*>(GetWindowLongPtrW(window, GWLP_USERDATA));
-    if (message == WM_NCCREATE) {
+    if (message == WM_NCCREATE)
+    {
         const auto* create = reinterpret_cast<CREATESTRUCTW*>(lParam);
         self = static_cast<Window*>(create->lpCreateParams);
         SetWindowLongPtrW(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
@@ -103,24 +132,29 @@ LRESULT CALLBACK Window::WindowProcedure(HWND window, UINT message, WPARAM wPara
                            : DefWindowProcW(window, message, wParam, lParam);
 }
 
-LRESULT Window::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) {
-    if (message == WM_CLOSE) {
+LRESULT Window::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (message == WM_CLOSE)
+    {
         m_closeRequested = true;
         return 0;
     }
-    if (message == WM_DESTROY) {
+    if (message == WM_DESTROY)
+    {
         m_handle = nullptr;
         PostQuitMessage(0);
         return 0;
     }
-    if (ImGui::GetCurrentContext() != nullptr &&
-        ImGui_ImplWin32_WndProcHandler(m_handle, message, wParam, lParam)) {
+    if (ImGui::GetCurrentContext() != nullptr && ImGui_ImplWin32_WndProcHandler(m_handle, message, wParam, lParam))
+    {
         return 1;
     }
 
-    switch (message) {
+    switch (message)
+    {
     case WM_SIZE:
-        if (wParam != SIZE_MINIMIZED) {
+        if (wParam != SIZE_MINIMIZED)
+        {
             m_clientWidth = std::max<std::uint32_t>(LOWORD(lParam), 1U);
             m_clientHeight = std::max<std::uint32_t>(HIWORD(lParam), 1U);
         }

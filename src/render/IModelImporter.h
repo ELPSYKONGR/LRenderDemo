@@ -12,16 +12,18 @@
 #include <memory>
 #include <string_view>
 
-namespace lrender {
+namespace lrender
+{
 
 class ResourceCache;
 
-class IModelImporter {
-public:
+class IModelImporter
+{
+  public:
     virtual ~IModelImporter() = default;
     [[nodiscard]] virtual bool SupportsExtension(std::wstring_view extension) const noexcept = 0;
-    [[nodiscard]] virtual std::shared_ptr<MeshAsset> Import(
-        const std::filesystem::path& path, ResourceCache& resources) const = 0;
+    [[nodiscard]] virtual std::shared_ptr<MeshAsset> Import(const std::filesystem::path& path,
+                                                            ResourceCache& resources) const = 0;
 };
 
 } // namespace lrender

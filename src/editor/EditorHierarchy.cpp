@@ -16,27 +16,33 @@
 #include <string>
 #include <utility>
 
-namespace lrender {
+namespace lrender
+{
 
-void EditorLayer::DrawHierarchy(Scene& scene) {
+void EditorLayer::DrawHierarchy(Scene& scene)
+{
     ImGui::Begin("Hierarchy");
-    for (const Model& model : scene.Models()) {
+    for (const Model& model : scene.Models())
+    {
         ImGui::PushID(static_cast<int>(model.id));
-        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen |
-                                   ImGuiTreeNodeFlags_OpenOnArrow |
-                                   ImGuiTreeNodeFlags_SpanAvailWidth;
-        if (model.id == m_selectedModelId && m_selectedEntityId == 0) {
+        ImGuiTreeNodeFlags flags =
+            ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+        if (model.id == m_selectedModelId && m_selectedEntityId == 0)
+        {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
         const bool isOpen = ImGui::TreeNodeEx("##Model", flags, "%s", model.name.c_str());
-        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+        {
             m_selectedModelId = model.id;
             m_selectedEntityId = 0;
         }
-        if (isOpen) {
-            for (const Entity& entity : model.entities) {
-                if (ImGui::Selectable(
-                        entity.name.c_str(), entity.id == m_selectedEntityId)) {
+        if (isOpen)
+        {
+            for (const Entity& entity : model.entities)
+            {
+                if (ImGui::Selectable(entity.name.c_str(), entity.id == m_selectedEntityId))
+                {
                     m_selectedModelId = model.id;
                     m_selectedEntityId = entity.id;
                 }
@@ -48,25 +54,29 @@ void EditorLayer::DrawHierarchy(Scene& scene) {
     ImGui::End();
 }
 
-void EditorLayer::CreateSolid(
-    Scene& scene, CommandHistory& history,
-    SolidGeometry geometry, std::string name) {
+void EditorLayer::CreateSolid(Scene& scene, CommandHistory& history, SolidGeometry geometry, std::string name)
+{
     Model* model = scene.FindModel(m_selectedModelId);
     const bool createdModel = model == nullptr;
-    if (createdModel) {
+    if (createdModel)
+    {
         model = &scene.CreateModel("Model " + std::to_string(scene.Models().size() + 1));
     }
     const PrimitiveType primitive = geometry.Type();
     Entity& entity = scene.CreateSolidEntity(model->id, std::move(geometry), std::move(name));
-    if (primitive == PrimitiveType::Plane) {
+    if (primitive == PrimitiveType::Plane)
+    {
         entity.transform.position.y = -0.5F;
         entity.EntityMaterialData().baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
     }
     m_selectedModelId = model->id;
     m_selectedEntityId = entity.id;
-    if (createdModel) {
+    if (createdModel)
+    {
         history.PushApplied(std::make_unique<CreateModelCommand>(scene, *model));
-    } else {
+    }
+    else
+    {
         history.PushApplied(std::make_unique<CreateEntityCommand>(scene, model->id, entity));
     }
 }

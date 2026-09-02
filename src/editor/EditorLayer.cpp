@@ -14,19 +14,40 @@
 #include <memory>
 #include <string>
 
-namespace lrender {
-namespace {
+namespace lrender
+{
+namespace
+{
 
-void ItemTooltip(const char* text) {
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+void ItemTooltip(const char* text)
+{
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+    {
         ImGui::SetTooltip("%s", text);
     }
 }
 
 } // namespace
 
-void EditorLayer::Draw(
-    Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer) {
+void EditorLayer::RequestExit() noexcept
+{
+    m_exitRequested = true;
+}
+
+bool EditorLayer::ConsumeExitConfirmed() noexcept
+{
+    const bool result = m_exitConfirmed;
+    m_exitConfirmed = false;
+    return result;
+}
+
+std::uint32_t EditorLayer::SelectedEntityId() const noexcept
+{
+    return m_selectedEntityId;
+}
+
+void EditorLayer::Draw(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer)
+{
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
     DrawMainMenu(scene, history, renderer);
     DrawToolbar(history, renderer);
@@ -39,34 +60,43 @@ void EditorLayer::Draw(
     DrawViewport(scene, history, camera, renderer);
 }
 
-void EditorLayer::DrawMainMenu(
-    Scene& scene, CommandHistory& history, Dx11Renderer& renderer) {
-    if (!ImGui::BeginMainMenuBar()) {
+void EditorLayer::DrawMainMenu(Scene& scene, CommandHistory& history, Dx11Renderer& renderer)
+{
+    if (!ImGui::BeginMainMenuBar())
+    {
         return;
     }
     DrawSceneFileMenu(scene, history, renderer);
-    if (ImGui::BeginMenu("Edit")) {
-        if (ImGui::MenuItem("Undo", "Ctrl+Z", false, history.CanUndo())) {
+    if (ImGui::BeginMenu("Edit"))
+    {
+        if (ImGui::MenuItem("Undo", "Ctrl+Z", false, history.CanUndo()))
+        {
             history.Undo();
             ValidateSelection(scene);
         }
-        if (ImGui::MenuItem("Redo", "Ctrl+Y", false, history.CanRedo())) {
+        if (ImGui::MenuItem("Redo", "Ctrl+Y", false, history.CanRedo()))
+        {
             history.Redo();
         }
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Create")) {
-        if (ImGui::MenuItem("Cube")) {
+    if (ImGui::BeginMenu("Create"))
+    {
+        if (ImGui::MenuItem("Cube"))
+        {
             BeginSolidCreation(PrimitiveType::Cube, scene);
         }
-        if (ImGui::MenuItem("Sphere")) {
+        if (ImGui::MenuItem("Sphere"))
+        {
             BeginSolidCreation(PrimitiveType::Sphere, scene);
         }
-        if (ImGui::MenuItem("Plane")) {
+        if (ImGui::MenuItem("Plane"))
+        {
             BeginSolidCreation(PrimitiveType::Plane, scene);
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Import Mesh...")) {
+        if (ImGui::MenuItem("Import Mesh..."))
+        {
             ImportModel(scene, history, renderer);
         }
         ImGui::EndMenu();
@@ -76,70 +106,83 @@ void EditorLayer::DrawMainMenu(
     DrawSceneFilePopups(scene, history, renderer);
 
     const ImGuiIO& input = ImGui::GetIO();
-    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false) && history.CanUndo()) {
+    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false) && history.CanUndo())
+    {
         history.Undo();
         ValidateSelection(scene);
     }
-    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false) && history.CanRedo()) {
+    if (input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false) && history.CanRedo())
+    {
         history.Redo();
     }
 
-    if (m_openImportErrorPopup) {
+    if (m_openImportErrorPopup)
+    {
         ImGui::OpenPopup("Model import failed");
         m_openImportErrorPopup = false;
     }
-    if (ImGui::BeginPopupModal("Model import failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal("Model import failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
         ImGui::TextWrapped("%s", m_importError.c_str());
-        if (ImGui::Button("Close")) {
+        if (ImGui::Button("Close"))
+        {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
 }
 
-void EditorLayer::DrawToolbar(CommandHistory& history, Dx11Renderer& renderer) {
+void EditorLayer::DrawToolbar(CommandHistory& history, Dx11Renderer& renderer)
+{
     ImGui::Begin("Tools", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::BeginDisabled(!history.CanUndo());
-    if (ImGui::Button("<-")) {
+    if (ImGui::Button("<-"))
+    {
         history.Undo();
     }
     ImGui::EndDisabled();
     ItemTooltip("Undo");
     ImGui::SameLine();
     ImGui::BeginDisabled(!history.CanRedo());
-    if (ImGui::Button("->")) {
+    if (ImGui::Button("->"))
+    {
         history.Redo();
     }
     ImGui::EndDisabled();
     ItemTooltip("Redo");
     ImGui::SameLine();
-    if (ImGui::Button("T")) {
+    if (ImGui::Button("T"))
+    {
         m_gizmoOperation = ImGuizmo::TRANSLATE;
     }
     ItemTooltip("Translate");
     ImGui::SameLine();
-    if (ImGui::Button("R")) {
+    if (ImGui::Button("R"))
+    {
         m_gizmoOperation = ImGuizmo::ROTATE;
     }
     ItemTooltip("Rotate");
     ImGui::SameLine();
-    if (ImGui::Button("S")) {
+    if (ImGui::Button("S"))
+    {
         m_gizmoOperation = ImGuizmo::SCALE;
     }
     ItemTooltip("Scale");
     ImGui::SameLine();
     bool isWireframe = renderer.Effect().IsWireframe();
-    if (ImGui::Checkbox("Wireframe", &isWireframe)) {
+    if (ImGui::Checkbox("Wireframe", &isWireframe))
+    {
         renderer.Effect().SetWireframe(isWireframe);
     }
     ImGui::End();
 }
 
-void EditorLayer::DrawInspector(
-    Scene& scene, CommandHistory& history, Dx11Renderer& renderer) {
+void EditorLayer::DrawInspector(Scene& scene, CommandHistory& history, Dx11Renderer& renderer)
+{
     ImGui::Begin("Inspector");
     Entity* entity = scene.FindEntity(m_selectedEntityId);
-    if (entity == nullptr) {
+    if (entity == nullptr)
+    {
         ImGui::TextDisabled("No entity selected");
         ImGui::End();
         return;
@@ -162,8 +205,8 @@ void EditorLayer::DrawInspector(
     ImGui::End();
 }
 
-void EditorLayer::DrawViewport(
-    Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer) {
+void EditorLayer::DrawViewport(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer)
+{
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0F, 0.0F));
     ImGui::Begin("Viewport");
     const ImVec2 available = ImGui::GetContentRegionAvail();
@@ -172,34 +215,41 @@ void EditorLayer::DrawViewport(
     renderer.ResizeViewport(width, height);
 
     const ImVec2 viewportPosition = ImGui::GetCursorScreenPos();
-    ImGui::Image(
-        reinterpret_cast<ImTextureID>(renderer.ViewportTarget().GetShaderResourceView()), available);
+    ImGui::Image(reinterpret_cast<ImTextureID>(renderer.ViewportTarget().GetShaderResourceView()), available);
     const bool isHovered = ImGui::IsItemHovered();
     const ImGuiIO& input = ImGui::GetIO();
-    if (isHovered && !ImGuizmo::IsUsing()) {
-        if (ImGui::IsMouseDragging(ImGuiMouseButton_Right)) {
+    if (isHovered && !ImGuizmo::IsUsing())
+    {
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+        {
             m_autoRotate = false;
             camera.Orbit(input.MouseDelta.x, input.MouseDelta.y);
         }
-        if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
+        {
             camera.Pan(input.MouseDelta.x, input.MouseDelta.y);
         }
-        if (input.MouseWheel != 0.0F) {
+        if (input.MouseWheel != 0.0F)
+        {
             camera.Zoom(input.MouseWheel);
         }
-        if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_W, false)) {
+        if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_W, false))
+        {
             m_gizmoOperation = ImGuizmo::TRANSLATE;
         }
-        if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_E, false)) {
+        if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_E, false))
+        {
             m_gizmoOperation = ImGuizmo::ROTATE;
         }
-        if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_R, false)) {
+        if (!input.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_R, false))
+        {
             m_gizmoOperation = ImGuizmo::SCALE;
         }
     }
 
     Entity* entity = scene.FindEntity(m_selectedEntityId);
-    if (entity != nullptr) {
+    if (entity != nullptr)
+    {
         auto world = entity->transform.ToMatrix();
         auto view = camera.ViewMatrix();
         auto projection = camera.ProjectionMatrix(static_cast<float>(width) / height);
@@ -208,29 +258,31 @@ void EditorLayer::DrawViewport(
         ImGuizmo::SetOrthographic(false);
         ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
         ImGuizmo::SetRect(viewportPosition.x, viewportPosition.y, available.x, available.y);
-        ImGuizmo::Manipulate(
-            &view._11, &projection._11, m_gizmoOperation, ImGuizmo::LOCAL, &world._11);
+        ImGuizmo::Manipulate(&view._11, &projection._11, m_gizmoOperation, ImGuizmo::LOCAL, &world._11);
 
         const bool isUsing = ImGuizmo::IsUsing();
-        if (isUsing) {
+        if (isUsing)
+        {
             float translation[3]{};
             float rotation[3]{};
             float scale[3]{};
             ImGuizmo::DecomposeMatrixToComponents(&world._11, translation, rotation, scale);
             entity->transform.position = {translation[0], translation[1], translation[2]};
             entity->transform.rotationDegrees = {rotation[0], rotation[1], rotation[2]};
-            entity->transform.scale = {
-                std::max(scale[0], 0.01F), std::max(scale[1], 0.01F), std::max(scale[2], 0.01F)};
+            entity->transform.scale = {std::max(scale[0], 0.01F), std::max(scale[1], 0.01F), std::max(scale[2], 0.01F)};
         }
-        if (isUsing && !m_wasUsingGizmo) {
+        if (isUsing && !m_wasUsingGizmo)
+        {
             m_gizmoStart = beforeManipulate;
         }
-        if (!isUsing && m_wasUsingGizmo && !m_gizmoStart.NearlyEquals(entity->transform)) {
-            history.PushApplied(std::make_unique<TransformCommand>(
-                scene, entity->id, m_gizmoStart, entity->transform));
+        if (!isUsing && m_wasUsingGizmo && !m_gizmoStart.NearlyEquals(entity->transform))
+        {
+            history.PushApplied(std::make_unique<TransformCommand>(scene, entity->id, m_gizmoStart, entity->transform));
         }
         m_wasUsingGizmo = isUsing;
-    } else {
+    }
+    else
+    {
         m_wasUsingGizmo = false;
     }
 
@@ -238,32 +290,40 @@ void EditorLayer::DrawViewport(
     ImGui::PopStyleVar();
 }
 
-void EditorLayer::TrackPropertyEdit(
-    Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl) {
-    if (ImGui::IsItemActivated()) {
+void EditorLayer::TrackPropertyEdit(Scene& scene, CommandHistory& history, Entity& entity,
+                                    const Transform& beforeControl)
+{
+    if (ImGui::IsItemActivated())
+    {
         m_propertyEditStart = beforeControl;
         m_propertyEditEntityId = entity.id;
     }
-    if (ImGui::IsItemDeactivatedAfterEdit() && m_propertyEditStart &&
-        m_propertyEditEntityId == entity.id) {
-        if (!m_propertyEditStart->NearlyEquals(entity.transform)) {
-            history.PushApplied(std::make_unique<TransformCommand>(
-                scene, entity.id, *m_propertyEditStart, entity.transform));
+    if (ImGui::IsItemDeactivatedAfterEdit() && m_propertyEditStart && m_propertyEditEntityId == entity.id)
+    {
+        if (!m_propertyEditStart->NearlyEquals(entity.transform))
+        {
+            history.PushApplied(
+                std::make_unique<TransformCommand>(scene, entity.id, *m_propertyEditStart, entity.transform));
         }
         m_propertyEditStart.reset();
         m_propertyEditEntityId = 0;
     }
 }
 
-void EditorLayer::ValidateSelection(const Scene& scene) {
-    if (m_selectedEntityId != 0 && scene.FindEntity(m_selectedEntityId) == nullptr) {
+void EditorLayer::ValidateSelection(const Scene& scene)
+{
+    if (m_selectedEntityId != 0 && scene.FindEntity(m_selectedEntityId) == nullptr)
+    {
         m_selectedEntityId = 0;
     }
-    if (m_selectedModelId != 0 && scene.FindModel(m_selectedModelId) == nullptr) {
+    if (m_selectedModelId != 0 && scene.FindModel(m_selectedModelId) == nullptr)
+    {
         m_selectedModelId = 0;
     }
-    if (m_selectedEntityId != 0) {
-        if (const Model* model = scene.FindEntityModel(m_selectedEntityId)) {
+    if (m_selectedEntityId != 0)
+    {
+        if (const Model* model = scene.FindEntityModel(m_selectedEntityId))
+        {
             m_selectedModelId = model->id;
         }
     }

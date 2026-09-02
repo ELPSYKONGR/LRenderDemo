@@ -15,15 +15,17 @@
 
 #include <windows.h>
 
-namespace lrender {
+namespace lrender
+{
 
-class Application final {
-public:
-    explicit Application(HINSTANCE instance) : m_instance(instance) {}
-    ~Application() { Shutdown(); }
+class Application final
+{
+  public:
+    explicit Application(HINSTANCE instance);
+    ~Application();
     int Run();
 
-private:
+  private:
     void Initialize();
     void Shutdown() noexcept;
 

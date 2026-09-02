@@ -12,50 +12,53 @@
 #include <cstdint>
 #include <d3d11.h>
 
-namespace lrender {
+namespace lrender
+{
 
 class Camera;
 class Mesh;
 struct Entity;
+enum class RenderMode
+{
+    DirectRendering,
+    DelayedRendering,
+};
 
-class EffectFrameContext final {
-public:
-    EffectFrameContext(
-        ID3D11DeviceContext* deviceContext, const Camera& camera, float aspectRatio);
+class EffectFrameContext final
+{
+  public:
+    EffectFrameContext(ID3D11DeviceContext* deviceContext, const Camera& camera, float aspectRatio);
 
-    [[nodiscard]] ID3D11DeviceContext* DeviceContext() const noexcept {
-        return m_deviceContext;
-    }
-    [[nodiscard]] const DirectX::SimpleMath::Matrix& View() const noexcept { return m_view; }
-    [[nodiscard]] const DirectX::SimpleMath::Matrix& Projection() const noexcept {
-        return m_projection;
-    }
-    [[nodiscard]] const DirectX::SimpleMath::Vector3& CameraPosition() const noexcept {
-        return m_cameraPosition;
-    }
-    [[nodiscard]] float AspectRatio() const noexcept { return m_aspectRatio; }
+    [[nodiscard]] ID3D11DeviceContext* DeviceContext() const noexcept;
+    [[nodiscard]] const DirectX::SimpleMath::Matrix& View() const noexcept;
+    [[nodiscard]] const DirectX::SimpleMath::Matrix& Projection() const noexcept;
+    [[nodiscard]] const DirectX::SimpleMath::Vector3& CameraPosition() const noexcept;
+    [[nodiscard]] float AspectRatio() const noexcept;
+    [[nodiscard]] RenderMode GetRenderMode() const noexcept;
+    void SetRenderMode(RenderMode mode) noexcept;
 
-private:
+  private:
     ID3D11DeviceContext* m_deviceContext = nullptr;
     DirectX::SimpleMath::Matrix m_view;
     DirectX::SimpleMath::Matrix m_projection;
     DirectX::SimpleMath::Vector3 m_cameraPosition;
+    RenderMode m_renderMode = RenderMode::DirectRendering;
     float m_aspectRatio = 0.0F;
 };
 
-class EffectDrawContext final {
-public:
-    EffectDrawContext(
-        const Entity& entity, Material material, std::uint32_t selectedEntityId,
-        const Mesh* mesh = nullptr);
+class EffectDrawContext final
+{
+  public:
+    EffectDrawContext(const Entity& entity, Material material, std::uint32_t selectedEntityId,
+                      const Mesh* mesh = nullptr);
 
-    [[nodiscard]] const DirectX::SimpleMath::Matrix& World() const noexcept { return m_world; }
-    [[nodiscard]] const Material& ResolvedMaterial() const noexcept { return m_material; }
-    [[nodiscard]] const DirectX::SimpleMath::Color& Tint() const noexcept { return m_tint; }
-    [[nodiscard]] bool IsSelected() const noexcept { return m_isSelected; }
-    [[nodiscard]] const Mesh* MeshGeometry() const noexcept { return m_mesh; }
+    [[nodiscard]] const DirectX::SimpleMath::Matrix& World() const noexcept;
+    [[nodiscard]] const Material& ResolvedMaterial() const noexcept;
+    [[nodiscard]] const DirectX::SimpleMath::Color& Tint() const noexcept;
+    [[nodiscard]] bool IsSelected() const noexcept;
+    [[nodiscard]] const Mesh* MeshGeometry() const noexcept;
 
-private:
+  private:
     DirectX::SimpleMath::Matrix m_world;
     Material m_material;
     DirectX::SimpleMath::Color m_tint;

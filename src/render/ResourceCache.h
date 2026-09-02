@@ -16,33 +16,30 @@
 #include <string>
 #include <unordered_map>
 
-namespace lrender {
+namespace lrender
+{
 
 class ModelLoader;
 
-class ResourceCache final {
-public:
+class ResourceCache final
+{
+  public:
     ResourceCache(ID3D11Device* device, ID3D11DeviceContext* context);
     ~ResourceCache();
 
     [[nodiscard]] std::shared_ptr<MeshAsset> LoadMeshAsset(const std::filesystem::path& path);
     [[nodiscard]] std::shared_ptr<Texture2D> LoadTexture(const std::filesystem::path& path);
-    [[nodiscard]] std::shared_ptr<Texture2D> LoadEmbeddedTexture(
-        std::string key, std::span<const std::byte> bytes);
-    [[nodiscard]] std::shared_ptr<SamplerState> GetSampler(
-        const SamplerDescription& description = {});
+    [[nodiscard]] std::shared_ptr<Texture2D> LoadEmbeddedTexture(std::string key, std::span<const std::byte> bytes);
+    [[nodiscard]] std::shared_ptr<SamplerState> GetSampler(const SamplerDescription& description = {});
     [[nodiscard]] Material DefaultMaterial() const;
     [[nodiscard]] Material CheckerMaterial() const;
 
-    [[nodiscard]] std::size_t MeshAssetCount() const noexcept { return m_meshAssets.size(); }
-    [[nodiscard]] std::size_t TextureCount() const noexcept {
-        return m_textures.size() + m_embeddedTextures.size();
-    }
+    [[nodiscard]] std::size_t MeshAssetCount() const noexcept;
+    [[nodiscard]] std::size_t TextureCount() const noexcept;
+    [[nodiscard]] ID3D11Device* Device() const noexcept;
+    [[nodiscard]] ID3D11DeviceContext* Context() const noexcept;
 
-    [[nodiscard]] ID3D11Device* Device() const noexcept { return m_device; }
-    [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return m_context; }
-
-private:
+  private:
     static std::wstring NormalizePath(const std::filesystem::path& path);
     static std::uint64_t SamplerKey(const SamplerDescription& description) noexcept;
 

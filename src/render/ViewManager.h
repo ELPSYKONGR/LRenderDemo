@@ -15,17 +15,19 @@
 #include <wrl/client.h>
 #include <windows.h>
 
-namespace lrender {
+namespace lrender
+{
 
-class ViewStateGuard final {
-public:
+class ViewStateGuard final
+{
+  public:
     explicit ViewStateGuard(ID3D11DeviceContext* context);
     ~ViewStateGuard();
 
     ViewStateGuard(const ViewStateGuard&) = delete;
     ViewStateGuard& operator=(const ViewStateGuard&) = delete;
 
-private:
+  private:
     ID3D11DeviceContext* m_context = nullptr;
     std::array<Microsoft::WRL::ComPtr<ID3D11RenderTargetView>, 8> m_renderTargets;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilView;
@@ -43,18 +45,19 @@ private:
     UINT m_sampleMask = 0xffffffffU;
     UINT m_stencilReference = 0;
     D3D11_PRIMITIVE_TOPOLOGY m_primitiveTopology = {};
-    std::array<D3D11_VIEWPORT, D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE>
-        m_viewports = {};
+    std::array<D3D11_VIEWPORT, D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE> m_viewports = {};
     UINT m_viewportCount = 0;
 };
 
-enum class DepthMode {
+enum class DepthMode
+{
     Disabled,
     ReadOnly,
     ReadWrite
 };
 
-struct StencilDescription {
+struct StencilDescription
+{
     bool enabled = false;
     D3D11_COMPARISON_FUNC comparison = D3D11_COMPARISON_ALWAYS;
     std::uint8_t reference = 0;
@@ -67,7 +70,8 @@ struct StencilDescription {
 
 using ViewId = std::uint32_t;
 
-struct ViewInfo {
+struct ViewInfo
+{
     ViewId id = 0;
     std::uint32_t width = 1;
     std::uint32_t height = 1;
@@ -76,8 +80,9 @@ struct ViewInfo {
     std::unique_ptr<RenderTarget> target;
 };
 
-class ViewManager final {
-public:
+class ViewManager final
+{
+  public:
     static void Initialize(ID3D11Device* device, ID3D11DeviceContext* context);
     static void Shutdown() noexcept;
     [[nodiscard]] static ViewManager& Instance();
@@ -85,8 +90,7 @@ public:
     ViewManager(const ViewManager&) = delete;
     ViewManager& operator=(const ViewManager&) = delete;
 
-    [[nodiscard]] ViewId CreateView(
-        std::uint32_t width, std::uint32_t height, HWND windowHandle = nullptr);
+    [[nodiscard]] ViewId CreateView(std::uint32_t width, std::uint32_t height, HWND windowHandle = nullptr);
     bool RemoveView(ViewId id) noexcept;
     [[nodiscard]] ViewInfo* FindView(ViewId id) noexcept;
     [[nodiscard]] const ViewInfo* FindView(ViewId id) const noexcept;
@@ -94,15 +98,15 @@ public:
     void AttachWindow(ViewId id, HWND windowHandle);
 
     void SetActiveView(ViewId id);
-    [[nodiscard]] ViewId ActiveViewId() const noexcept { return m_activeViewId; }
-    [[nodiscard]] ViewInfo* ActiveView() noexcept { return FindView(m_activeViewId); }
-    [[nodiscard]] std::size_t ViewCount() const noexcept { return m_views.size(); }
+    [[nodiscard]] ViewId ActiveViewId() const noexcept;
+    [[nodiscard]] ViewInfo* ActiveView() noexcept;
+    [[nodiscard]] std::size_t ViewCount() const noexcept;
 
     [[nodiscard]] std::unique_ptr<ViewStateGuard> CaptureState() const;
     void SetDepthMode(DepthMode mode);
     void SetStencil(const StencilDescription& description);
 
-private:
+  private:
     ViewManager(ID3D11Device* device, ID3D11DeviceContext* context);
 
     static std::unique_ptr<ViewManager> m_instance;

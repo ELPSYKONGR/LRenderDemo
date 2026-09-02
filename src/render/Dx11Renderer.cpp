@@ -13,31 +13,45 @@
 #include <stdexcept>
 #include <unordered_set>
 
-namespace lrender {
-namespace {
+namespace lrender
+{
+namespace
+{
 
-D3D11_FILTER NativeFilter(MaterialFilter filter) {
-    switch (filter) {
-    case MaterialFilter::Point: return D3D11_FILTER_MIN_MAG_MIP_POINT;
-    case MaterialFilter::Linear: return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    case MaterialFilter::Anisotropic: return D3D11_FILTER_ANISOTROPIC;
+D3D11_FILTER NativeFilter(MaterialFilter filter)
+{
+    switch (filter)
+    {
+    case MaterialFilter::Point:
+        return D3D11_FILTER_MIN_MAG_MIP_POINT;
+    case MaterialFilter::Linear:
+        return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    case MaterialFilter::Anisotropic:
+        return D3D11_FILTER_ANISOTROPIC;
     }
     throw std::invalid_argument("Unsupported material texture filter");
 }
 
-D3D11_TEXTURE_ADDRESS_MODE NativeAddressMode(MaterialAddressMode mode) {
-    switch (mode) {
-    case MaterialAddressMode::Wrap: return D3D11_TEXTURE_ADDRESS_WRAP;
-    case MaterialAddressMode::Clamp: return D3D11_TEXTURE_ADDRESS_CLAMP;
-    case MaterialAddressMode::Mirror: return D3D11_TEXTURE_ADDRESS_MIRROR;
+D3D11_TEXTURE_ADDRESS_MODE NativeAddressMode(MaterialAddressMode mode)
+{
+    switch (mode)
+    {
+    case MaterialAddressMode::Wrap:
+        return D3D11_TEXTURE_ADDRESS_WRAP;
+    case MaterialAddressMode::Clamp:
+        return D3D11_TEXTURE_ADDRESS_CLAMP;
+    case MaterialAddressMode::Mirror:
+        return D3D11_TEXTURE_ADDRESS_MIRROR;
     }
     throw std::invalid_argument("Unsupported material texture address mode");
 }
 
 } // namespace
 
-void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint32_t height) {
-    if (windowHandle == nullptr) {
+void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint32_t height)
+{
+    if (windowHandle == nullptr)
+    {
         throw std::invalid_argument("Renderer requires a valid Win32 window");
     }
     m_windowHandle = windowHandle;
@@ -61,31 +75,24 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
 #endif
     constexpr std::array featureLevels{D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
     D3D_FEATURE_LEVEL createdFeatureLevel{};
-    HRESULT result = D3D11CreateDeviceAndSwapChain(
-        nullptr,
-        D3D_DRIVER_TYPE_HARDWARE,
-        nullptr,
-        flags,
-        featureLevels.data(),
-        static_cast<UINT>(featureLevels.size()),
-        D3D11_SDK_VERSION,
-        &swapChainDescription,
-        m_swapChain.ReleaseAndGetAddressOf(),
-        m_device.ReleaseAndGetAddressOf(),
-        &createdFeatureLevel,
-        m_context.ReleaseAndGetAddressOf());
+    HRESULT result =
+        D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, featureLevels.data(),
+                                      static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION, &swapChainDescription,
+                                      m_swapChain.ReleaseAndGetAddressOf(), m_device.ReleaseAndGetAddressOf(),
+                                      &createdFeatureLevel, m_context.ReleaseAndGetAddressOf());
 #if defined(_DEBUG)
-    if (FAILED(result)) {
+    if (FAILED(result))
+    {
         flags &= ~D3D11_CREATE_DEVICE_DEBUG;
-        result = D3D11CreateDeviceAndSwapChain(
-            nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, featureLevels.data(),
-            static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION,
-            &swapChainDescription, m_swapChain.ReleaseAndGetAddressOf(),
-            m_device.ReleaseAndGetAddressOf(), &createdFeatureLevel,
-            m_context.ReleaseAndGetAddressOf());
+        result = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, featureLevels.data(),
+                                               static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION,
+                                               &swapChainDescription, m_swapChain.ReleaseAndGetAddressOf(),
+                                               m_device.ReleaseAndGetAddressOf(), &createdFeatureLevel,
+                                               m_context.ReleaseAndGetAddressOf());
     }
 #endif
-    if (FAILED(result)) {
+    if (FAILED(result))
+    {
         throw std::runtime_error("D3D11CreateDeviceAndSwapChain failed");
     }
 
@@ -95,16 +102,17 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     m_normalTarget.Resize(m_device.Get(), 960, 640);
     m_viewportTarget.Resize(m_device.Get(), 960, 640);
     m_solidMeshes = std::make_unique<SolidMeshCache>(m_device.Get());
-    m_effect = std::make_unique<BasicMeshEffect>(
-        m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
-    m_colorProcessor = std::make_unique<ColorProcessorEffect>(
-        m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_effect = std::make_unique<BasicMeshEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_colorProcessor =
+        std::make_unique<ColorProcessorEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_resources = std::make_unique<ResourceCache>(m_device.Get(), m_context.Get());
 }
 
-void Dx11Renderer::Shutdown() noexcept {
+void Dx11Renderer::Shutdown() noexcept
+{
     ViewManager::Shutdown();
-    if (m_context) {
+    if (m_context)
+    {
         m_context->ClearState();
         m_context->Flush();
     }
@@ -121,23 +129,27 @@ void Dx11Renderer::Shutdown() noexcept {
     m_device.Reset();
 }
 
-void Dx11Renderer::CreateBackBuffer() {
+void Dx11Renderer::CreateBackBuffer()
+{
     Microsoft::WRL::ComPtr<ID3D11Texture2D> backBuffer;
     if (FAILED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf()))) ||
-        FAILED(m_device->CreateRenderTargetView(
-            backBuffer.Get(), nullptr, m_backBufferView.ReleaseAndGetAddressOf()))) {
+        FAILED(m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, m_backBufferView.ReleaseAndGetAddressOf())))
+    {
         throw std::runtime_error("Failed to create swap-chain back buffer");
     }
 }
 
-void Dx11Renderer::ResizeSwapChain(std::uint32_t width, std::uint32_t height) {
+void Dx11Renderer::ResizeSwapChain(std::uint32_t width, std::uint32_t height)
+{
     width = std::max(width, 1U);
     height = std::max(height, 1U);
-    if (width == m_swapChainWidth && height == m_swapChainHeight) {
+    if (width == m_swapChainWidth && height == m_swapChainHeight)
+    {
         return;
     }
     m_backBufferView.Reset();
-    if (FAILED(m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))) {
+    if (FAILED(m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0)))
+    {
         throw std::runtime_error("Failed to resize swap chain");
     }
     m_swapChainWidth = width;
@@ -145,7 +157,8 @@ void Dx11Renderer::ResizeSwapChain(std::uint32_t width, std::uint32_t height) {
     CreateBackBuffer();
 }
 
-void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height) {
+void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height)
+{
     ID3D11ShaderResourceView* nullResource = nullptr;
     m_context->PSSetShaderResources(0, 1, &nullResource);
     m_sceneTarget.Resize(m_device.Get(), width, height);
@@ -153,47 +166,49 @@ void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height) {
     m_viewportTarget.Resize(m_device.Get(), width, height);
 }
 
-void Dx11Renderer::RenderScene(
-    const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId) {
+void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId)
+{
     // ImGui sampled this texture in the previous frame; unbind it before using the same resource as an RTV.
     ID3D11ShaderResourceView* nullResource = nullptr;
     m_context->PSSetShaderResources(0, 1, &nullResource);
     constexpr float clearColor[4] = {0.055F, 0.065F, 0.075F, 1.0F};
     m_sceneTarget.BindAndClear(m_context.Get(), clearColor, &m_normalTarget);
     constexpr float normalClearColor[4] = {0.5F, 0.5F, 0.5F, 1.0F};
-    m_context->ClearRenderTargetView(
-        m_normalTarget.GetRenderTargetView(), normalClearColor);
-    const float aspect = static_cast<float>(m_sceneTarget.GetWidth()) /
-                         static_cast<float>(m_sceneTarget.GetHeight());
-    const EffectFrameContext frameContext(m_context.Get(), camera, aspect);
+    m_context->ClearRenderTargetView(m_normalTarget.GetRenderTargetView(), normalClearColor);
+    const float aspect = static_cast<float>(m_sceneTarget.GetWidth()) / static_cast<float>(m_sceneTarget.GetHeight());
+    EffectFrameContext frameContext(m_context.Get(), camera, aspect);
     std::unordered_set<EntityId> activeSolids;
-
-    for (const Model& sceneModel : scene.Models()) {
-        for (const Entity& entity : sceneModel.entities) {
-            if (const MeshGeometry* meshGeometry = entity.Mesh()) {
+    frameContext.SetRenderMode(RenderMode::DirectRendering);
+    for (const Model& sceneModel : scene.Models())
+    {
+        for (const Entity& entity : sceneModel.entities)
+        {
+            if (const MeshGeometry* meshGeometry = entity.Mesh())
+            {
                 const auto asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
-                if (meshGeometry->assetEntityIndex >= asset->entities.size()) {
+                if (meshGeometry->assetEntityIndex >= asset->entities.size())
+                {
                     throw std::runtime_error("Mesh entity index is outside the cached asset");
                 }
-                for (const MeshPart& part :
-                     asset->entities[meshGeometry->assetEntityIndex].parts) {
-                    const EffectDrawContext drawContext(
-                        entity, ResolveMaterial(part.material, entity.EffectiveMaterial()),
-                        selectedEntityId, part.mesh.get());
+                for (const MeshPart& part : asset->entities[meshGeometry->assetEntityIndex].parts)
+                {
+                    EffectDrawContext drawContext(entity, ResolveMaterial(part.material, entity.EffectiveMaterial()),
+                                                  selectedEntityId, part.mesh.get());
                     m_effect->Draw(frameContext, drawContext);
                 }
                 continue;
             }
 
             const SolidGeometry* solid = entity.Solid();
-            if (solid == nullptr || m_solidMeshes == nullptr) {
+            if (solid == nullptr || m_solidMeshes == nullptr)
+            {
                 throw std::runtime_error("Solid geometry cache is not initialized");
             }
             activeSolids.insert(entity.id);
             const Mesh& mesh = m_solidMeshes->Resolve(entity.id, *solid);
             const EffectDrawContext drawContext(
-                entity, ResolveMaterial(m_resources->DefaultMaterial(), entity.EffectiveMaterial()),
-                selectedEntityId, &mesh);
+                entity, ResolveMaterial(m_resources->DefaultMaterial(), entity.EffectiveMaterial()), selectedEntityId,
+                &mesh);
             m_effect->Draw(frameContext, drawContext);
         }
     }
@@ -208,83 +223,103 @@ void Dx11Renderer::RenderScene(
     m_colorProcessor->Draw(m_context.Get(), m_sceneTarget.GetShaderResourceView());
 }
 
-std::shared_ptr<const MeshAsset> Dx11Renderer::PreloadModel(
-    const std::filesystem::path& path) {
-    if (!m_resources) {
+std::shared_ptr<const MeshAsset> Dx11Renderer::PreloadModel(const std::filesystem::path& path)
+{
+    if (!m_resources)
+    {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
     return m_resources->LoadMeshAsset(path);
 }
 
-void Dx11Renderer::PreloadTexture(const std::filesystem::path& path) {
-    if (!m_resources) {
+void Dx11Renderer::PreloadTexture(const std::filesystem::path& path)
+{
+    if (!m_resources)
+    {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
     static_cast<void>(m_resources->LoadTexture(path));
 }
 
-void Dx11Renderer::ClearRuntimeCaches() noexcept {
-    if (m_solidMeshes) {
+void Dx11Renderer::ClearRuntimeCaches() noexcept
+{
+    if (m_solidMeshes)
+    {
         m_solidMeshes->Clear();
     }
 }
 
-ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity) {
-    if (!m_resources) {
+ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity)
+{
+    if (!m_resources)
+    {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
     const Material* source = nullptr;
     std::shared_ptr<MeshAsset> asset;
-    if (const MeshGeometry* meshGeometry = entity.Mesh()) {
+    if (const MeshGeometry* meshGeometry = entity.Mesh())
+    {
         asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
         if (meshGeometry->assetEntityIndex >= asset->entities.size() ||
-            asset->entities[meshGeometry->assetEntityIndex].parts.empty()) {
+            asset->entities[meshGeometry->assetEntityIndex].parts.empty())
+        {
             return nullptr;
         }
         source = &asset->entities[meshGeometry->assetEntityIndex].parts.front().material;
     }
     Material defaultMaterial;
-    if (source == nullptr) {
+    if (source == nullptr)
+    {
         defaultMaterial = m_resources->DefaultMaterial();
         source = &defaultMaterial;
     }
     const Material resolved = ResolveMaterial(*source, entity.EffectiveMaterial());
-    return resolved.baseColorTexture ? resolved.baseColorTexture->ShaderResourceView() : nullptr;
+    return resolved.GetBaseColorTexture() ? resolved.GetBaseColorTexture()->ShaderResourceView() : nullptr;
 }
 
-Material Dx11Renderer::ResolveMaterial(
-    const Material& source, const EntityMaterial& settings) {
+Material Dx11Renderer::ResolveMaterial(const Material& source, const EntityMaterial& settings)
+{
     Material resolved = source;
-    resolved.diffuseStrength = settings.diffuseStrength;
-    resolved.specularColor = settings.specularColor;
-    resolved.specularStrength = settings.specularStrength;
-    resolved.shininess = settings.shininess;
-    resolved.doubleSided = settings.doubleSided;
-    resolved.displayMode = settings.displayMode;
+    const bool useTexture =
+        settings.displayMode != SurfaceDisplayMode::LitUntextured &&
+        (settings.useSourceTexture ? source.UsesBaseColorTexture() : !settings.baseColorTexturePath.empty());
+    resolved.SetUsesBaseColorTexture(useTexture);
+    resolved.SetDiffuseStrength(settings.diffuseStrength);
+    resolved.SetSpecularColor(settings.specularColor);
+    resolved.SetSpecularStrength(settings.specularStrength);
+    resolved.SetShininess(settings.shininess);
+    resolved.SetDoubleSided(settings.doubleSided);
+    resolved.SetDisplayMode(settings.displayMode);
 
     SamplerDescription samplerDescription;
     samplerDescription.filter = NativeFilter(settings.filter);
     samplerDescription.addressU = NativeAddressMode(settings.addressMode);
     samplerDescription.addressV = samplerDescription.addressU;
-    resolved.sampler = m_resources->GetSampler(samplerDescription);
+    resolved.SetSampler(m_resources->GetSampler(samplerDescription));
 
-    if (settings.displayMode == SurfaceDisplayMode::LitUntextured) {
-        resolved.baseColorTexture = m_resources->DefaultMaterial().baseColorTexture;
-    } else if (!settings.useSourceTexture && !settings.baseColorTexturePath.empty()) {
-        resolved.baseColorTexture = m_resources->LoadTexture(settings.baseColorTexturePath);
+    if (!useTexture)
+    {
+        resolved.SetBaseColorTexture(m_resources->DefaultMaterial().GetBaseColorTexture());
+    }
+    else if (!settings.useSourceTexture && !settings.baseColorTexturePath.empty())
+    {
+        resolved.SetBaseColorTexture(m_resources->LoadTexture(settings.baseColorTexturePath));
     }
     return resolved;
 }
 
-std::size_t Dx11Renderer::CachedMeshAssetCount() const noexcept {
+std::size_t Dx11Renderer::CachedMeshAssetCount() const noexcept
+{
     return m_resources ? m_resources->MeshAssetCount() : 0;
 }
 
-std::size_t Dx11Renderer::CachedTextureCount() const noexcept {
+std::size_t Dx11Renderer::CachedTextureCount() const noexcept
+{
     return m_resources ? m_resources->TextureCount() : 0;
 }
 
-void Dx11Renderer::RenderEditor(ImDrawData* drawData) {
+void Dx11Renderer::RenderEditor(ImDrawData* drawData)
+{
     constexpr float background[4]{0.10F, 0.105F, 0.115F, 1.0F};
     ID3D11RenderTargetView* target = m_backBufferView.Get();
     m_context->OMSetRenderTargets(1, &target, nullptr);
@@ -292,11 +327,43 @@ void Dx11Renderer::RenderEditor(ImDrawData* drawData) {
     ImGui_ImplDX11_RenderDrawData(drawData);
 }
 
-void Dx11Renderer::Present() {
+void Dx11Renderer::Present()
+{
     const HRESULT result = m_swapChain->Present(1, 0);
-    if (FAILED(result)) {
+    if (FAILED(result))
+    {
         throw std::runtime_error("Swap-chain presentation failed");
     }
+}
+
+ID3D11Device* Dx11Renderer::Device() const noexcept
+{
+    return m_device.Get();
+}
+
+ID3D11DeviceContext* Dx11Renderer::Context() const noexcept
+{
+    return m_context.Get();
+}
+
+RenderTarget& Dx11Renderer::ViewportTarget() noexcept
+{
+    return m_viewportTarget;
+}
+
+const RenderTarget& Dx11Renderer::NormalTarget() const noexcept
+{
+    return m_normalTarget;
+}
+
+BasicMeshEffect& Dx11Renderer::Effect() noexcept
+{
+    return *m_effect;
+}
+
+HWND Dx11Renderer::WindowHandle() const noexcept
+{
+    return m_windowHandle;
 }
 
 } // namespace lrender

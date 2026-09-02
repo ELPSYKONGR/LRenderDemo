@@ -8,10 +8,13 @@
 
 #include <stdexcept>
 
-namespace lrender {
+namespace lrender
+{
 
-SamplerState::SamplerState(ID3D11Device* device, const SamplerDescription& description) {
-    if (device == nullptr) {
+SamplerState::SamplerState(ID3D11Device* device, const SamplerDescription& description)
+{
+    if (device == nullptr)
+    {
         throw std::invalid_argument("Sampler creation requires a D3D11 device");
     }
     D3D11_SAMPLER_DESC native{};
@@ -23,9 +26,15 @@ SamplerState::SamplerState(ID3D11Device* device, const SamplerDescription& descr
     native.ComparisonFunc = D3D11_COMPARISON_NEVER;
     native.MinLOD = 0.0F;
     native.MaxLOD = D3D11_FLOAT32_MAX;
-    if (FAILED(device->CreateSamplerState(&native, m_state.GetAddressOf()))) {
+    if (FAILED(device->CreateSamplerState(&native, m_state.GetAddressOf())))
+    {
         throw std::runtime_error("Failed to create D3D11 sampler state");
     }
+}
+
+ID3D11SamplerState* SamplerState::Get() const noexcept
+{
+    return m_state.Get();
 }
 
 } // namespace lrender

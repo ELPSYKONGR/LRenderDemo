@@ -20,94 +20,64 @@
 #include <vector>
 #include <utility>
 
-namespace lrender {
+namespace lrender
+{
 
 using ModelId = std::uint32_t;
 using EntityId = std::uint32_t;
 
-struct MeshGeometry {
+struct MeshGeometry
+{
     std::filesystem::path assetPath;
     std::uint32_t assetEntityIndex = 0;
 };
 
 using EntityGeometry = std::variant<SolidGeometry, MeshGeometry>;
 
-struct Entity {
+struct Entity
+{
     EntityId id = 0;
     std::string name;
     Transform transform;
     EntityGeometry geometry;
 
-    [[nodiscard]] const EntityMaterial& EntityMaterialData() const noexcept {
-        return m_entityMaterial;
-    }
-    [[nodiscard]] EntityMaterial& EntityMaterialData() noexcept {
-        return m_entityMaterial;
-    }
-    [[nodiscard]] const EntityMaterial& EffectiveMaterial() const noexcept {
-        return m_hasOverrideEntityMaterial ? m_overrideEntityMaterial : m_entityMaterial;
-    }
-    [[nodiscard]] EntityMaterial& EditableMaterial() noexcept {
-        if (!m_hasOverrideEntityMaterial) {
-            m_overrideEntityMaterial = m_entityMaterial;
-        }
-        return m_overrideEntityMaterial;
-    }
-    [[nodiscard]] bool HasMaterialOverride() const noexcept {
-        return m_hasOverrideEntityMaterial;
-    }
-    void SetOverrideMaterial(EntityMaterial material) {
-        if (material.NearlyEquals(m_entityMaterial)) {
-            m_hasOverrideEntityMaterial = false;
-            return;
-        }
-        m_overrideEntityMaterial = std::move(material);
-        m_hasOverrideEntityMaterial = true;
-    }
-    void ClearMaterialOverride() noexcept {
-        m_hasOverrideEntityMaterial = false;
-    }
+    [[nodiscard]] const EntityMaterial& EntityMaterialData() const noexcept;
+    [[nodiscard]] EntityMaterial& EntityMaterialData() noexcept;
+    [[nodiscard]] const EntityMaterial& EffectiveMaterial() const noexcept;
+    [[nodiscard]] EntityMaterial& EditableMaterial() noexcept;
+    [[nodiscard]] bool HasMaterialOverride() const noexcept;
+    void SetOverrideMaterial(EntityMaterial material);
+    void ClearMaterialOverride() noexcept;
+    [[nodiscard]] bool IsMesh() const noexcept;
+    [[nodiscard]] bool IsSolid() const noexcept;
+    [[nodiscard]] PrimitiveType GetPrimitiveType() const noexcept;
+    [[nodiscard]] SolidGeometry* Solid() noexcept;
+    [[nodiscard]] const SolidGeometry* Solid() const noexcept;
+    [[nodiscard]] const MeshGeometry* Mesh() const noexcept;
 
-    [[nodiscard]] bool IsMesh() const noexcept {
-        return std::holds_alternative<MeshGeometry>(geometry);
-    }
-    [[nodiscard]] bool IsSolid() const noexcept { return !IsMesh(); }
-    [[nodiscard]] PrimitiveType GetPrimitiveType() const noexcept {
-        return IsMesh() ? PrimitiveType::Mesh : std::get<SolidGeometry>(geometry).Type();
-    }
-    [[nodiscard]] SolidGeometry* Solid() noexcept {
-        return std::get_if<SolidGeometry>(&geometry);
-    }
-    [[nodiscard]] const SolidGeometry* Solid() const noexcept {
-        return std::get_if<SolidGeometry>(&geometry);
-    }
-    [[nodiscard]] const MeshGeometry* Mesh() const noexcept {
-        return std::get_if<MeshGeometry>(&geometry);
-    }
-
-private:
+  private:
     EntityMaterial m_entityMaterial = EntityMaterial();
     EntityMaterial m_overrideEntityMaterial = EntityMaterial();
     bool m_hasOverrideEntityMaterial = false;
 };
 
-struct Model {
+struct Model
+{
     ModelId id = 0;
     std::string name;
     std::vector<Entity> entities;
 };
 
-class Scene final {
-public:
+class Scene final
+{
+  public:
     Model& CreateModel(std::string name);
-    Model& CreateMeshModel(
-        std::filesystem::path assetPath, std::string name,
-        std::span<const std::string> assetEntityNames);
+    Model& CreateMeshModel(std::filesystem::path assetPath, std::string name,
+                           std::span<const std::string> assetEntityNames);
     Entity& CreateEntity(ModelId modelId, PrimitiveType primitive, std::string name);
     Entity& CreateSolidEntity(ModelId modelId, SolidGeometry geometry, std::string name);
-    Entity& CreateMeshEntity(
-        ModelId modelId, std::filesystem::path assetPath,
-        std::uint32_t assetEntityIndex, std::string name);
+    Entity& CreateMeshEntity(ModelId modelId, std::filesystem::path assetPath, std::uint32_t assetEntityIndex,
+                             std::string name);
 
     Model& AddModel(Model model);
     Entity& AddEntity(ModelId modelId, Entity entity);
@@ -120,10 +90,10 @@ public:
     [[nodiscard]] const Entity* FindEntity(EntityId id) const;
     [[nodiscard]] Model* FindEntityModel(EntityId id);
     [[nodiscard]] const Model* FindEntityModel(EntityId id) const;
-    [[nodiscard]] const std::vector<Model>& Models() const noexcept { return m_models; }
+    [[nodiscard]] const std::vector<Model>& Models() const noexcept;
     [[nodiscard]] std::size_t EntityCount() const noexcept;
 
-private:
+  private:
     static void ValidateEntity(const Entity& entity);
 
     std::vector<Model> m_models;

@@ -11,20 +11,18 @@
 
 #include <memory>
 
-namespace lrender {
+namespace lrender
+{
 
-class PrimitiveFactory final {
-public:
-    [[nodiscard]] static std::unique_ptr<Mesh> Create(
-        ID3D11Device* device, const SolidGeometry& geometry);
+class PrimitiveFactory final
+{
+  public:
+    [[nodiscard]] static std::unique_ptr<Mesh> Create(ID3D11Device* device, const SolidGeometry& geometry);
 
-private:
-    [[nodiscard]] static std::unique_ptr<Mesh> CreateCube(
-        ID3D11Device* device, const CubeParameters& parameters);
-    [[nodiscard]] static std::unique_ptr<Mesh> CreateSphere(
-        ID3D11Device* device, const SphereParameters& parameters);
-    [[nodiscard]] static std::unique_ptr<Mesh> CreatePlane(
-        ID3D11Device* device, const PlaneParameters& parameters);
+  private:
+    [[nodiscard]] static std::unique_ptr<Mesh> CreateCube(ID3D11Device* device, const CubeParameters& parameters);
+    [[nodiscard]] static std::unique_ptr<Mesh> CreateSphere(ID3D11Device* device, const SphereParameters& parameters);
+    [[nodiscard]] static std::unique_ptr<Mesh> CreatePlane(ID3D11Device* device, const PlaneParameters& parameters);
 };
 
 } // namespace lrender

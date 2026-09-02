@@ -15,18 +15,21 @@
 #include <unordered_set>
 #include <wrl/client.h>
 
-namespace lrender {
+namespace lrender
+{
 
-class SolidMeshCache final {
-public:
+class SolidMeshCache final
+{
+  public:
     explicit SolidMeshCache(ID3D11Device* device);
 
     [[nodiscard]] const Mesh& Resolve(EntityId entityId, const SolidGeometry& geometry);
     void Prune(const std::unordered_set<EntityId>& activeEntities);
-    void Clear() noexcept { m_entries.clear(); }
+    void Clear() noexcept;
 
-private:
-    struct Entry {
+  private:
+    struct Entry
+    {
         SolidGeometry generatedFrom;
         std::unique_ptr<Mesh> mesh;
     };

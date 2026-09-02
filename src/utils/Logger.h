@@ -9,16 +9,18 @@
 #include <mutex>
 #include <string_view>
 
-namespace lrender {
+namespace lrender
+{
 
-class Logger final {
-public:
+class Logger final
+{
+  public:
     static Logger& Instance();
     void Initialize(const std::filesystem::path& rootDirectory);
     void Info(std::string_view module, std::string_view message);
     void Error(std::string_view module, std::string_view message);
 
-private:
+  private:
     void Write(std::string_view level, std::string_view module, std::string_view message);
 
     std::filesystem::path m_logFile;

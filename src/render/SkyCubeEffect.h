@@ -8,19 +8,18 @@
 #include <filesystem>
 #include <string_view>
 
-namespace lrender {
+namespace lrender
+{
 
-class SkyCubeEffect final : public IRenderEffect {
-public:
-    SkyCubeEffect(
-        ID3D11Device* device, ID3D11DeviceContext* context,
-        std::filesystem::path shaderDirectory);
+class SkyCubeEffect final : public IRenderEffect
+{
+  public:
+    SkyCubeEffect(ID3D11Device* device, ID3D11DeviceContext* context, std::filesystem::path shaderDirectory);
 
-    void Bind(
-        const EffectFrameContext& frame, const EffectDrawContext& draw) override;
-    [[nodiscard]] std::string_view Name() const noexcept override { return "Sky Cube"; }
+    void Bind(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
+    [[nodiscard]] std::string_view Name() const noexcept override;
 
-private:
+  private:
     std::filesystem::path m_shaderDirectory;
 };
 

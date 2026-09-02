@@ -8,13 +8,15 @@
 
 #include "render/IModelImporter.h"
 
-namespace lrender {
+namespace lrender
+{
 
-class ObjLoader final : public IModelImporter {
-public:
+class ObjLoader final : public IModelImporter
+{
+  public:
     [[nodiscard]] bool SupportsExtension(std::wstring_view extension) const noexcept override;
-    [[nodiscard]] std::shared_ptr<MeshAsset> Import(
-        const std::filesystem::path& path, ResourceCache& resources) const override;
+    [[nodiscard]] std::shared_ptr<MeshAsset> Import(const std::filesystem::path& path,
+                                                    ResourceCache& resources) const override;
 };
 
 } // namespace lrender

@@ -7,10 +7,12 @@
 
 #include <string_view>
 
-namespace lrender {
+namespace lrender
+{
 
-class ICommand {
-public:
+class ICommand
+{
+  public:
     virtual ~ICommand() = default;
     virtual void Execute() = 0;
     virtual void Undo() = 0;

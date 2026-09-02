@@ -11,15 +11,19 @@
 #include <fstream>
 #include <stdexcept>
 
-namespace lrender {
+namespace lrender
+{
 
-Logger& Logger::Instance() {
+Logger& Logger::Instance()
+{
     static Logger logger;
     return logger;
 }
 
-void Logger::Initialize(const std::filesystem::path& rootDirectory) {
-    if (rootDirectory.empty()) {
+void Logger::Initialize(const std::filesystem::path& rootDirectory)
+{
+    if (rootDirectory.empty())
+    {
         throw std::invalid_argument("Log root directory must not be empty");
     }
     const auto logDirectory = rootDirectory / "logs";
@@ -28,21 +32,26 @@ void Logger::Initialize(const std::filesystem::path& rootDirectory) {
     m_logFile = logDirectory / std::format("{:%F}.log", now);
 }
 
-void Logger::Info(std::string_view module, std::string_view message) {
+void Logger::Info(std::string_view module, std::string_view message)
+{
     Write("INFO", module, message);
 }
 
-void Logger::Error(std::string_view module, std::string_view message) {
+void Logger::Error(std::string_view module, std::string_view message)
+{
     Write("ERROR", module, message);
 }
 
-void Logger::Write(std::string_view level, std::string_view module, std::string_view message) {
+void Logger::Write(std::string_view level, std::string_view module, std::string_view message)
+{
     std::scoped_lock lock(m_mutex);
-    if (m_logFile.empty()) {
+    if (m_logFile.empty())
+    {
         return;
     }
     std::ofstream stream(m_logFile, std::ios::app);
-    if (!stream) {
+    if (!stream)
+    {
         throw std::runtime_error("Unable to open application log file");
     }
     const auto now = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());

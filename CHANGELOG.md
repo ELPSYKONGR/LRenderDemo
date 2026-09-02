@@ -1,5 +1,47 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-02 新增 Editor Visual Studio 筛选器
+
+- 在 CMake 中集中定义 `LRENDER_EDITOR_SOURCES`，将所有 `editor/*.cpp` 归入 Visual Studio 的 `Editor` 筛选器。
+- `EditorLayer.h` 同时归入 `Editor` 筛选器，便于查看编辑器模块的完整代码。
+- 筛选器由 `source_group` 生成，重新配置 CMake 后仍会保持一致。
+
+## 2026-09-02 函数声明与实现分离
+
+- 普通类的函数声明统一放在 `.h`，函数实现统一放在对应 `.cpp`。
+- 新增 `core/EntityMaterial.cpp`、`core/Transform.cpp` 和 `render/Material.cpp`，并纳入 CMake 构建。
+- 保留 `Dx11ConstantBuffer` 模板、GPU 常量布局、接口和纯数据定义为头文件实现，以满足模板实例化和布局契约要求。
+- 保持 Allman 大括号风格、`m_` 成员命名和现有 API 行为不变。
+
+## 2026-09-02 添加 C++ 格式化配置
+
+- 新增项目级 `.clang-format`，固定 Allman 大括号、4 空格缩进、左指针/引用和 120 列宽规则。
+- 后续可直接使用 VS2022 的 clang-format 按同一配置格式化源码。
+
+## 2026-09-02 统一大括号换行风格
+
+- 统一 `src/` 和 `tests/` 中函数、`if`、`for`、`while`、`switch`、`catch`、`else` 和 `try` 的左大括号位置。
+- 仅调整代码排版，不改变控制条件、执行顺序或运行时行为。
+
+## 2026-09-02 BaseColor 互斥来源
+
+- BaseColor 现在在贴图颜色和实体 `EntityMaterial.baseColor` 之间二选一，不再执行两者相乘。
+- 运行时 `Material` 增加贴图使用标志，由 OBJ/glTF 导入和 `ResolveMaterial` 明确设置，避免白色占位纹理误被当作真实贴图。
+- `BasicMeshPS.hlsl` 根据该标志选择采样颜色或实体颜色，同时保留 Lit/TextureOnly/Untextured 的光照模式。
+
+## 2026-09-02 Material 类封装与公共光照函数修复
+
+- 将 GPU 运行时 `Material` 从公开字段结构体改为值语义类，增加名称、颜色、光照参数、显示模式、纹理和采样器的 `Get/Set` 接口。
+- 更新 OBJ、glTF、资源缓存、渲染器和导入测试的材质访问，保留 `EntityMaterial` 作为编辑器和场景序列化使用的 API 无关设置。
+- 将 Blinn-Phong 光照函数完整移入 `common.hlsli`，通过显式参数接收世界坐标和透明度，修复 Pass 局部变量泄漏及无效 HLSL 分支。
+- 统一本次修改涉及的默认初始化、函数调用换行和大括号风格。
+
+## 2026-09-02 统一 Shader CBuffer 成员命名
+
+- `src/shaders/common.hlsli` 中所有 CBuffer 成员统一增加 `C_` 前缀，例如 `C_View`、`C_World` 和 `C_BaseColor`。
+- 同步更新基础网格顶点/像素着色器引用，不改变 CBuffer 寄存器、成员顺序和内存布局。
+- 更新公共 Shader 学习文档中的成员名称示例。
+
 ## 2026-09-02 统一成员默认初始化格式
 
 - 遍历 `src/` 和 `tests/` 头文件，将类与结构体成员的默认初始化统一为 `= ...` 形式。

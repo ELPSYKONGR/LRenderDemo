@@ -8,9 +8,11 @@
 #include <array>
 #include <cstddef>
 
-namespace lrender {
+namespace lrender
+{
 
-struct alignas(16) FrameConstants {
+struct alignas(16) FrameConstants
+{
     DirectX::SimpleMath::Matrix view;
     DirectX::SimpleMath::Matrix projection;
     DirectX::SimpleMath::Vector4 mode;
@@ -18,19 +20,22 @@ struct alignas(16) FrameConstants {
     DirectX::SimpleMath::Vector4 viewport;
 };
 
-struct alignas(16) ObjectConstants {
+struct alignas(16) ObjectConstants
+{
     DirectX::SimpleMath::Matrix worldViewProjection;
     DirectX::SimpleMath::Matrix world;
     DirectX::SimpleMath::Matrix worldInverseTranspose;
 };
 
-struct alignas(16) MaterialConstants {
+struct alignas(16) MaterialConstants
+{
     DirectX::SimpleMath::Vector4 baseColor;
     DirectX::SimpleMath::Vector4 specularColor;
     DirectX::SimpleMath::Vector4 materialParameters;
 };
 
-struct alignas(16) LightConstants {
+struct alignas(16) LightConstants
+{
     DirectX::SimpleMath::Vector4 ambientColor;
     DirectX::SimpleMath::Vector4 directionalDirectionAndIntensity;
     DirectX::SimpleMath::Vector4 directionalColorAndEnabled;

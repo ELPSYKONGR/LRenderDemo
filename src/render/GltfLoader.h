@@ -11,15 +11,17 @@
 #include <filesystem>
 #include <memory>
 
-namespace lrender {
+namespace lrender
+{
 
 class ResourceCache;
 
-class GltfLoader final : public IModelImporter {
-public:
+class GltfLoader final : public IModelImporter
+{
+  public:
     [[nodiscard]] bool SupportsExtension(std::wstring_view extension) const noexcept override;
-    [[nodiscard]] std::shared_ptr<MeshAsset> Import(
-        const std::filesystem::path& path, ResourceCache& resources) const override;
+    [[nodiscard]] std::shared_ptr<MeshAsset> Import(const std::filesystem::path& path,
+                                                    ResourceCache& resources) const override;
 };
 
 } // namespace lrender

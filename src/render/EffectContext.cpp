@@ -12,27 +12,84 @@
 #include <stdexcept>
 #include <utility>
 
-namespace lrender {
+namespace lrender
+{
 
-EffectFrameContext::EffectFrameContext(
-    ID3D11DeviceContext* deviceContext, const Camera& camera, float aspectRatio)
-    : m_deviceContext(deviceContext),
-      m_view(camera.ViewMatrix()),
-      m_projection(camera.ProjectionMatrix(aspectRatio)),
-      m_cameraPosition(camera.Position()),
-      m_aspectRatio(aspectRatio) {
-    if (m_deviceContext == nullptr) {
+EffectFrameContext::EffectFrameContext(ID3D11DeviceContext* deviceContext, const Camera& camera, float aspectRatio)
+    : m_deviceContext(deviceContext), m_view(camera.ViewMatrix()), m_projection(camera.ProjectionMatrix(aspectRatio)),
+      m_cameraPosition(camera.Position()), m_aspectRatio(aspectRatio)
+{
+    if (m_deviceContext == nullptr)
+    {
         throw std::invalid_argument("EffectFrameContext requires a D3D11 context");
     }
 }
 
-EffectDrawContext::EffectDrawContext(
-    const Entity& entity, Material material, std::uint32_t selectedEntityId,
-    const Mesh* mesh)
-    : m_world(entity.transform.ToMatrix()),
-      m_material(std::move(material)),
-      m_tint(entity.EffectiveMaterial().baseColor),
-      m_isSelected(entity.id == selectedEntityId),
-      m_mesh(mesh) {}
+EffectDrawContext::EffectDrawContext(const Entity& entity, Material material, std::uint32_t selectedEntityId,
+                                     const Mesh* mesh)
+    : m_world(entity.transform.ToMatrix()), m_material(std::move(material)),
+      m_tint(entity.EffectiveMaterial().baseColor), m_isSelected(entity.id == selectedEntityId), m_mesh(mesh)
+{
+}
+
+ID3D11DeviceContext* EffectFrameContext::DeviceContext() const noexcept
+{
+    return m_deviceContext;
+}
+
+const DirectX::SimpleMath::Matrix& EffectFrameContext::View() const noexcept
+{
+    return m_view;
+}
+
+const DirectX::SimpleMath::Matrix& EffectFrameContext::Projection() const noexcept
+{
+    return m_projection;
+}
+
+const DirectX::SimpleMath::Vector3& EffectFrameContext::CameraPosition() const noexcept
+{
+    return m_cameraPosition;
+}
+
+float EffectFrameContext::AspectRatio() const noexcept
+{
+    return m_aspectRatio;
+}
+
+RenderMode EffectFrameContext::GetRenderMode() const noexcept
+{
+    return m_renderMode;
+}
+
+void EffectFrameContext::SetRenderMode(RenderMode mode) noexcept
+{
+    m_renderMode = mode;
+}
+
+const DirectX::SimpleMath::Matrix& EffectDrawContext::World() const noexcept
+{
+    return m_world;
+}
+
+const Material& EffectDrawContext::ResolvedMaterial() const noexcept
+{
+    return m_material;
+}
+
+const DirectX::SimpleMath::Color& EffectDrawContext::Tint() const noexcept
+{
+    return m_tint;
+}
+
+bool EffectDrawContext::IsSelected() const noexcept
+{
+    return m_isSelected;
+}
+
+const Mesh* EffectDrawContext::MeshGeometry() const noexcept
+{
+    return m_mesh;
+}
 
 } // namespace lrender

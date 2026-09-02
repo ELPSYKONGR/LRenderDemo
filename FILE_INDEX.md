@@ -1,5 +1,9 @@
 # FILE_INDEX - LRenderDemo
 
+## 代码组织约定
+
+普通类的函数声明位于 `.h`，实现位于对应 `.cpp`。仅模板、GPU 常量布局、接口和纯数据定义保留为头文件实现。新增实现文件包括 `src/core/EntityMaterial.cpp`、`src/core/Transform.cpp` 和 `src/render/Material.cpp`。
+
 > `src/platform/RuntimePaths.*` 只负责 exe 同级的 ImGui 配置路径；CMake 构建后将 `assets` 拷贝到 exe 同级目录，资源仍使用相对路径。
 
 > ImGui 布局固定保存在可执行文件目录的 `imgui.ini`，VS 调试和直接启动使用同一份配置。
@@ -71,6 +75,7 @@
 | 路径 | 用途 |
 |---|---|
 | `CMakeLists.txt`、`src/CMakeLists.txt` | CMake 目标、VS 头文件分组、启动项目和 HLSL 构建规则 |
+| `.clang-format` | C++ Allman 大括号、缩进、指针/引用和行宽格式配置 |
 | `CMakePresets.json` | 可移植的 VS2022 x64 配置/构建/测试预设 |
 | `cmake/Dependencies.cmake` | 固定版本的子模块目标定义 |
 | `cmake/CompilerWarnings.cmake` | 第一方代码警告基线 |

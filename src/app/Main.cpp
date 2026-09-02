@@ -12,16 +12,23 @@
 #include <string>
 #include <windows.h>
 
-int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
-    try {
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
+{
+    try
+    {
         lrender::Logger::Instance().Initialize(std::filesystem::current_path());
         lrender::Logger::Instance().Info("main", "LRenderDemo starting");
         lrender::Application application(instance);
         return application.Run();
-    } catch (const std::exception& error) {
-        try {
+    }
+    catch (const std::exception& error)
+    {
+        try
+        {
             lrender::Logger::Instance().Error("main", error.what());
-        } catch (...) {
+        }
+        catch (...)
+        {
             // The fatal dialog remains available even when the log destination is unavailable.
         }
         const std::string message = std::string("LRenderDemo failed:\n") + error.what();

@@ -8,9 +8,11 @@
 
 #include <SimpleMath.h>
 
-namespace lrender {
+namespace lrender
+{
 
-enum class CameraViewPreset {
+enum class CameraViewPreset
+{
     Front,
     Back,
     Left,
@@ -21,8 +23,9 @@ enum class CameraViewPreset {
     LeftIsometric
 };
 
-class Camera final {
-public:
+class Camera final
+{
+  public:
     void Orbit(float deltaX, float deltaY);
     void Pan(float deltaX, float deltaY);
     void Zoom(float wheelDelta);
@@ -33,7 +36,7 @@ public:
     [[nodiscard]] DirectX::SimpleMath::Matrix ProjectionMatrix(float aspectRatio) const;
     [[nodiscard]] DirectX::SimpleMath::Vector3 Position() const;
 
-private:
+  private:
     [[nodiscard]] DirectX::SimpleMath::Vector3 UpDirection() const noexcept;
 
     DirectX::SimpleMath::Vector3 m_target = {0.0F, 0.0F, 0.0F};

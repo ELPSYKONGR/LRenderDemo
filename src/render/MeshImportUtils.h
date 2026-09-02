@@ -13,10 +13,10 @@
 #include <string>
 #include <vector>
 
-namespace lrender::mesh_import {
+namespace lrender::mesh_import
+{
 
 [[nodiscard]] std::string PathUtf8(const std::filesystem::path& path);
-void ComputeNormals(
-    std::vector<MeshVertex>& vertices, std::span<const std::uint32_t> indices);
+void ComputeNormals(std::vector<MeshVertex>& vertices, std::span<const std::uint32_t> indices);
 
 } // namespace lrender::mesh_import

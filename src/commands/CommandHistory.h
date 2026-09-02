@@ -13,10 +13,12 @@
 #include <memory>
 #include <vector>
 
-namespace lrender {
+namespace lrender
+{
 
-class CommandHistory final {
-public:
+class CommandHistory final
+{
+  public:
     explicit CommandHistory(std::size_t capacity = 128);
 
     /** Executes a new command and clears the redo branch. */
@@ -28,15 +30,14 @@ public:
     bool Undo();
     bool Redo();
     void Clear() noexcept;
-    void MarkSaved() noexcept { m_savedRevision = m_currentRevision; }
-    [[nodiscard]] bool CanUndo() const noexcept { return !m_undoStack.empty(); }
-    [[nodiscard]] bool CanRedo() const noexcept { return !m_redoStack.empty(); }
-    [[nodiscard]] bool IsModified() const noexcept {
-        return m_currentRevision != m_savedRevision;
-    }
+    void MarkSaved() noexcept;
+    [[nodiscard]] bool CanUndo() const noexcept;
+    [[nodiscard]] bool CanRedo() const noexcept;
+    [[nodiscard]] bool IsModified() const noexcept;
 
-private:
-    struct Entry {
+  private:
+    struct Entry
+    {
         std::unique_ptr<ICommand> command;
         std::uint64_t beforeRevision = 0;
         std::uint64_t afterRevision = 0;

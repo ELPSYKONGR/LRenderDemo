@@ -12,25 +12,25 @@
 #include <span>
 #include <wrl/client.h>
 
-namespace lrender {
+namespace lrender
+{
 
-struct MeshVertex {
+struct MeshVertex
+{
     DirectX::XMFLOAT3 position;
     DirectX::XMFLOAT3 normal;
     DirectX::XMFLOAT2 textureCoordinate;
 };
 
-class Mesh final {
-public:
-    Mesh(
-        ID3D11Device* device,
-        std::span<const MeshVertex> vertices,
-        std::span<const std::uint32_t> indices);
+class Mesh final
+{
+  public:
+    Mesh(ID3D11Device* device, std::span<const MeshVertex> vertices, std::span<const std::uint32_t> indices);
 
     void Draw(ID3D11DeviceContext* context) const;
-    [[nodiscard]] std::uint32_t IndexCount() const noexcept { return m_indexCount; }
+    [[nodiscard]] std::uint32_t IndexCount() const noexcept;
 
-private:
+  private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
     std::uint32_t m_indexCount = 0;
