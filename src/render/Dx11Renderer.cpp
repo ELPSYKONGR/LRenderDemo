@@ -96,15 +96,16 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
         throw std::runtime_error("D3D11CreateDeviceAndSwapChain failed");
     }
 
+    m_commonConstantBuffers = std::make_unique<CommonConstantBuffers>(m_device.Get(), m_context.Get());
     CreateBackBuffer();
     ViewManager::Initialize(m_device.Get(), m_context.Get());
-    m_sceneTarget.Resize(m_device.Get(), 960, 640);
-    m_normalTarget.Resize(m_device.Get(), 960, 640);
-    m_viewportTarget.Resize(m_device.Get(), 960, 640);
+    m_sceneResource.Resize(m_device.Get(), 960, 640);
+    m_normalResource.Resize(m_device.Get(), 960, 640);
+    m_viewportResource.Resize(m_device.Get(), 960, 640);
     m_solidMeshes = std::make_unique<SolidMeshCache>(m_device.Get());
     m_effect = std::make_unique<BasicMeshEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
-    m_colorProcessor =
-        std::make_unique<ColorProcessorEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_skyCubeEffect = std::make_unique<SkyCubeEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_colorProcessor = std::make_unique<ColorProcessorEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_resources = std::make_unique<ResourceCache>(m_device.Get(), m_context.Get());
 }
 
@@ -116,13 +117,15 @@ void Dx11Renderer::Shutdown() noexcept
         m_context->ClearState();
         m_context->Flush();
     }
+    m_commonConstantBuffers.reset();
     m_effect.reset();
+    m_skyCubeEffect.reset();
     m_colorProcessor.reset();
     m_resources.reset();
     m_solidMeshes.reset();
-    m_viewportTarget.Reset();
-    m_normalTarget.Reset();
-    m_sceneTarget.Reset();
+    m_viewportResource.Reset();
+    m_normalResource.Reset();
+    m_sceneResource.Reset();
     m_backBufferView.Reset();
     m_swapChain.Reset();
     m_context.Reset();
@@ -161,9 +164,9 @@ void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height)
 {
     ID3D11ShaderResourceView* nullResource = nullptr;
     m_context->PSSetShaderResources(0, 1, &nullResource);
-    m_sceneTarget.Resize(m_device.Get(), width, height);
-    m_normalTarget.Resize(m_device.Get(), width, height);
-    m_viewportTarget.Resize(m_device.Get(), width, height);
+    m_sceneResource.Resize(m_device.Get(), width, height);
+    m_normalResource.Resize(m_device.Get(), width, height);
+    m_viewportResource.Resize(m_device.Get(), width, height);
 }
 
 void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId)
@@ -172,13 +175,17 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     ID3D11ShaderResourceView* nullResource = nullptr;
     m_context->PSSetShaderResources(0, 1, &nullResource);
     constexpr float clearColor[4] = {0.055F, 0.065F, 0.075F, 1.0F};
-    m_sceneTarget.BindAndClear(m_context.Get(), clearColor, &m_normalTarget);
+    m_sceneResource.BindAndClear(m_context.Get(), clearColor, &m_normalResource);
     constexpr float normalClearColor[4] = {0.5F, 0.5F, 0.5F, 1.0F};
-    m_context->ClearRenderTargetView(m_normalTarget.GetRenderTargetView(), normalClearColor);
-    const float aspect = static_cast<float>(m_sceneTarget.GetWidth()) / static_cast<float>(m_sceneTarget.GetHeight());
-    EffectFrameContext frameContext(m_context.Get(), camera, aspect);
+    m_context->ClearRenderTargetView(m_normalResource.GetRenderTargetView(), normalClearColor);
+    const float aspect =
+        static_cast<float>(m_sceneResource.GetWidth()) / static_cast<float>(m_sceneResource.GetHeight());
+    EffectFrameContext frameContext(m_context.Get(), *m_commonConstantBuffers, camera, aspect);
     std::unordered_set<EntityId> activeSolids;
     frameContext.SetRenderMode(RenderMode::DirectRendering);
+    frameContext.BeginFrame();
+    m_effect->PrepareFrame(frameContext);
+    //opq pass
     for (const Model& sceneModel : scene.Models())
     {
         for (const Entity& entity : sceneModel.entities)
@@ -213,14 +220,18 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
         }
     }
     m_solidMeshes->Prune(activeSolids);
+    //sky pass
+    m_skyCubeEffect->Draw(frameContext);
+
+
     nullResource = nullptr;
     ID3D11SamplerState* nullSampler = nullptr;
     m_context->PSSetShaderResources(0, 1, &nullResource);
     m_context->PSSetSamplers(0, 1, &nullSampler);
     m_context->RSSetState(nullptr);
 
-    m_viewportTarget.BindAndClear(m_context.Get(), clearColor);
-    m_colorProcessor->Draw(m_context.Get(), m_sceneTarget.GetShaderResourceView());
+    m_viewportResource.BindAndClear(m_context.Get(), clearColor);
+    m_colorProcessor->Draw(m_context.Get(), m_sceneResource.GetShaderResourceView());
 }
 
 std::shared_ptr<const MeshAsset> Dx11Renderer::PreloadModel(const std::filesystem::path& path)
@@ -283,13 +294,15 @@ Material Dx11Renderer::ResolveMaterial(const Material& source, const EntityMater
     const bool useTexture =
         settings.displayMode != SurfaceDisplayMode::LitUntextured &&
         (settings.useSourceTexture ? source.UsesBaseColorTexture() : !settings.baseColorTexturePath.empty());
-    resolved.SetUsesBaseColorTexture(useTexture);
     resolved.SetDiffuseStrength(settings.diffuseStrength);
     resolved.SetSpecularColor(settings.specularColor);
     resolved.SetSpecularStrength(settings.specularStrength);
     resolved.SetShininess(settings.shininess);
     resolved.SetDoubleSided(settings.doubleSided);
-    resolved.SetDisplayMode(settings.displayMode);
+    // The display mode is the single source of truth for texture usage. If no
+    // texture was selected, normalize the mode so a fallback white texture is
+    // never treated as an actual base-color texture.
+    resolved.SetDisplayMode(useTexture ? settings.displayMode : SurfaceDisplayMode::LitUntextured);
 
     SamplerDescription samplerDescription;
     samplerDescription.filter = NativeFilter(settings.filter);
@@ -346,14 +359,14 @@ ID3D11DeviceContext* Dx11Renderer::Context() const noexcept
     return m_context.Get();
 }
 
-RenderTarget& Dx11Renderer::ViewportTarget() noexcept
+EffectResource& Dx11Renderer::ViewportResource() noexcept
 {
-    return m_viewportTarget;
+    return m_viewportResource;
 }
 
-const RenderTarget& Dx11Renderer::NormalTarget() const noexcept
+const EffectResource& Dx11Renderer::NormalResource() const noexcept
 {
-    return m_normalTarget;
+    return m_normalResource;
 }
 
 BasicMeshEffect& Dx11Renderer::Effect() noexcept

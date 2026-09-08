@@ -101,21 +101,23 @@ graph TD
 ```
 
 `Dx11ConstantBuffer<T>` 只封装类型大小检查、`ComPtr` 所有权、数据更新和 VS/PS 槽位绑定。
-`BasicMeshEffect` 仍负责把矩阵、相机、灯光和材质分别组装为公共 CBuffer 布局，并决定使用 `b0` 和
-哪些 Shader 阶段。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli` 消除重复声明。
+`CommonConstantBuffers` 由 `Dx11Renderer` 持有，每种公共 CBuffer 只创建一份；`EffectFrameContext` 只
+借用它。Renderer 在每帧开始上传 Frame 和 Light，BasicMeshEffect 在每个网格绘制前更新 Object 和
+Material。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli` 消除重复声明。
 
 `Dx11Renderer` 每帧从 Camera 构造一次 `EffectFrameContext`，每个 MeshPart 从 Entity、解析后的
 Material 和选择 ID 构造一个 `EffectDrawContext`，然后调用 `Draw(frame, draw)`。两个 Context 是
 并列的不可变快照，不继承共同父类，也不会被 Effect 跨调用保存。`Bind(frame, draw)` 仍作为低层
 管线绑定接口保留；高层 `Draw` 可以在 Effect 内部按顺序执行多个 Pass，并调用 Mesh 的绘制入口。
 
-每个 `IRenderEffect` 都持有一个 `EffectResource`，用于命名管理该 Effect 创建的 Texture2D 和
-RenderTarget。屏幕空间 Effect 可以在同一个 `Draw` 中完成 SRV/RTV 切换，避免 Renderer 维护临时
-资源表。
+`IRenderEffect` 不再持有通用资源注册表。具体 Effect 通过显式成员管理资源：二维颜色/深度目标使用
+`EffectResource`，Cubemap 使用 `EffectCubeMapResource`，普通共享纹理继续由 `ResourceCache` 管理。
+多 Pass Effect 可以直接持有多个具名成员，例如 `m_blurResource` 和 `m_bloomResource`，在同一个
+`Draw` 中完成 RTV/SRV 切换。这种所有权可以直接在调试器中观察，也避免依赖字符串查找。
 
-当前没有按 Frame/Object/Material 拆分多个缓冲，因为还没有第二个正式 Effect 或多个 Pass 共享同一
-份每帧数据。等真实复用关系出现后，再根据更新频率调整槽位和 `IRenderEffect` 调用协议；不让通用
-缓冲封装演变成提前设计的 RHI 参数系统。
+四类公共缓冲按 Frame/Object/Material/Light 拆分，并由 Renderer 统一拥有。Buffer 对象只创建一次，
+但 Object 和 Material 会在每个绘制项之间复用并更新。后续出现 DeferredContext 或多设备时，应按
+Context/Device 各自创建一组，不要改成进程级静态对象。
 
 ## RHI 迁移边界
 

@@ -152,6 +152,7 @@ Material LoadMaterial(const cgltf_data& data, const cgltf_material* source, cons
     if (source == nullptr || !source->has_pbr_metallic_roughness)
     {
         material.SetBaseColorTexture(resources.DefaultMaterial().GetBaseColorTexture());
+        material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
         return material;
     }
 
@@ -166,7 +167,6 @@ Material LoadMaterial(const cgltf_data& data, const cgltf_material* source, cons
     if (texture != nullptr && texture->image != nullptr)
     {
         material.SetBaseColorTexture(LoadImage(data, *texture->image, modelPath, resources));
-        material.SetUsesBaseColorTexture(true);
         SamplerDescription samplerDescription;
         samplerDescription.filter = FilterMode(texture->sampler);
         if (texture->sampler != nullptr)
@@ -179,6 +179,7 @@ Material LoadMaterial(const cgltf_data& data, const cgltf_material* source, cons
     else
     {
         material.SetBaseColorTexture(resources.DefaultMaterial().GetBaseColorTexture());
+        material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
     }
     return material;
 }

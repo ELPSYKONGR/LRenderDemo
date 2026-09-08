@@ -15,7 +15,7 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 - 按渲染能力看，已经跨过第 19 章静态网格入口，但并非线性完成前 19 章。
 - 第 9 章纹理映射与第 19 章模型/材质导入的基础断点已经补齐；下一批关键断点是拾取、渲染状态、
   法线贴图和场景级 Pass。
-- `RenderTarget` 虽涉及第 24 章所需技术，但目前只服务编辑器视口，不能视为完整的 Render To Texture 效果。
+- `EffectResource` 已覆盖第 24 章所需的基础 RTV/SRV/DSV 技术，但当前主要服务编辑器视口和颜色直通后处理，仍不是完整效果示例。
 
 因此下一步仍不应直接跳到 SSAO、延迟渲染或 RHI。应先让现有纹理、材质和模型边界经受法线贴图、
 拾取与天空盒 Pass 的验证，再提取更通用的 Pass 或后端接口。
@@ -32,8 +32,8 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 | 模型与缓存 | 已完成静态 glTF/GLB、子网格、节点变换、外部/内嵌图片和资源复用 | `render/GltfLoader.*`、`ResourceCache.*` |
 | 基础光照 | 已完成方向光、四盏点光、Lambert、Blinn-Phong 和编辑器参数控制 | `render/BasicMeshEffect.*`、`editor/EditorAssets.cpp` |
 | Shader 工作流 | 已完成 VS 工程显示、FXC 增量构建和 CSO 加载 | `src/shaders/`、`src/CMakeLists.txt` |
-| 深度缓冲 | 已有视口 DSV 和默认深度测试 | `render/RenderTarget.*` |
-| 离屏渲染 | 场景渲染到纹理，再由 ImGui 采样显示 | `RenderTarget`、`RenderEditor()` |
+| 深度缓冲 | 已有视口 DSV、默认深度测试和天空背景只读深度 | `render/EffectResource.*`、`SkyCubeEffect.*` |
+| 离屏渲染 | 场景渲染到纹理，经颜色 Pass 后由 ImGui 采样显示 | `EffectResource`、`ColorProcessorEffect` |
 | 编辑操作 | 已有 Gizmo、创建实体、撤销和重做 | `editor/`、`commands/` |
 
 ## 3. 教程逐项对照
@@ -61,8 +61,8 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 | 19 Meshes | 完成 | 支持静态 glTF/GLB、OBJ/MTL、子网格、32 位索引、节点变换、基础材质和网格资产/纹理/Sampler 缓存。 |
 | 20 Instancing and Frustum Culling | 未实现 | 没有实例缓冲、包围体、视锥测试和 `DrawIndexedInstanced`。 |
 | 21 Picking | 未实现 | 只能在层级面板选实体；没有视口射线、包围体/三角形求交。 |
-| 22 Static Cube Mapping | 未实现 | 已有详细设计文档和 cubemap 素材，但没有 `SkyboxPass/SkyboxEffect` 产品代码。 |
-| 23 Dynamic Cube Mapping | 未实现 | 没有 cubemap 六面 RTV、逐面相机和反射探针更新。 |
+| 22 Static Cube Mapping | 完成 | `SkyCubeEffect` 加载 DDS TextureCube，以只读深度全屏 Pass 绘制天空背景。 |
+| 23 Dynamic Cube Mapping | 部分 | `EffectCubeMapResource` 可创建整体和六个单面 RTV；逐面相机、更新调度和反射材质尚未实现。 |
 | 24 Render To Texture | 部分 | 已有离屏视口 RTV/SRV；缺少显式 Pass 输入输出和将结果用于场景材质的示例。 |
 | 25 Normal Mapping | 未实现 | 顶点无 tangent，材质无 normal texture，Shader 无 TBN。 |
 | 26 Compute Shader Beginning | 未实现 | 没有 CS、UAV、Dispatch 和资源屏障式解绑约定。 |

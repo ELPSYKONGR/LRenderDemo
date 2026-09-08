@@ -29,8 +29,9 @@ PixelOutput PSMain(PixelInput input)
     output.normal = float4(normal * 0.5F + 0.5F, 1.0F);
     const float3 viewDirection = normalize(C_CameraPosition.xyz - input.worldPosition);
     const float4 sampledColor = BaseColorTexture.Sample(BaseColorSampler, input.textureCoordinate);
-    const float3 surfaceColor = UseBaseColorTexture() ? sampledColor.rgb : C_BaseColor.rgb;
-    const float alpha = UseBaseColorTexture() ? sampledColor.a : C_BaseColor.a;
+    const bool useBaseColorTexture = C_MaterialParameters.w > 0.5F && C_MaterialParameters.w < 1.5F;
+    const float3 surfaceColor = useBaseColorTexture ? sampledColor.rgb : C_BaseColor.rgb;
+    const float alpha = useBaseColorTexture ? sampledColor.a : C_BaseColor.a;
     if (IfDelayedRenderMode())
     {
         output.color = float4(surfaceColor, alpha);

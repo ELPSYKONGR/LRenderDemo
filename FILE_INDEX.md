@@ -10,17 +10,22 @@
 
 > `ViewManager` 使用单例实例：由 `ViewManager::Initialize` 初始化，通过静态 `ViewManager::Instance()` 访问，退出时调用 `ViewManager::Shutdown()`。
 
+> `src/stdfx.h` 是所有第一方 C++ 目标共用的 CMake 预编译头；公共头文件仍保持自包含，避免脱离 PCH 后无法编译。
+
 ## 本次新增
 
 | 路径 | 用途 | 关键 API |
 |---|---|---|
-| `src/render/IRenderEffect.h/.cpp` | Effect 私有纹理、RenderTarget 和 SRV 管理；提供高层绘制入口 | `EffectResource`、`IRenderEffect::Draw` |
+| `src/render/EffectResource.h/.cpp` | 单个二维颜色/深度渲染资源，封装 RTV/SRV/DSV | `EffectResource` |
+| `src/render/EffectCubeMapResource.h/.cpp` | Effect 私有 TextureCube、SRV 和可选六面 RTV | `EffectCubeMapResource` |
+| `src/render/CommonConstantBuffers.h/.cpp` | Renderer 统一拥有和更新四类公共 CBuffer | `CommonConstantBuffers` |
+| `src/render/IRenderEffect.h/.cpp` | Effect 的 Bind/Draw/ResizeResources 边界和设备访问 | `IRenderEffect::Draw` |
 | `src/render/ViewManager.h/.cpp` | 逻辑多 View、深度/模板状态设置和 DX11 状态 RAII 恢复 | `ViewManager`、`ViewStateGuard` |
 | `docs/effect-resource-view-manager.md` | Effect 资源、Draw/Pass 和 View 状态设计说明 | 中文学习文档 |
 
-本次框架补充：`src/render/CommonConstants.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*`、`src/shaders/QuadViewVS.hlsl` 和 `src/shaders/ColorProcessorPS.hlsl` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 保留天空盒 Effect 边界。详细设计见 `docs/render-framework-common-shader.md`。
+本次框架补充：`src/render/CommonConstants.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 与 `SkyVS/SkyPS` 实现 TextureCube 天空背景。详细设计见 `docs/render-framework-common-shader.md`。
 
-> 最后更新：2026-08-31 | 维护者：Codex
+> 最后更新：2026-09-07 | 维护者：Codex
 
 ## 源文件
 
@@ -44,11 +49,13 @@
 | `src/commands/SolidGeometryCommand.*` | 可逆 Solid 参数编辑 | `Execute()`、`Undo()` | Scene、SolidGeometry |
 | `src/render/EffectContext.*` | 从 Camera/Entity/Material 构造不可变的帧与绘制快照 | `EffectFrameContext`、`EffectDrawContext` | Camera、Scene、Material、D3D11 |
 | `src/render/IRenderEffect.h` | 逐网格 Effect 的两 Context 绑定边界 | `Bind(frame, draw)` | EffectContext |
-| `src/render/ColorProcessorEffect.*` | 全屏三角形颜色后处理 | `Apply()` | IRenderEffect、RenderTarget |
-| `src/render/SkyCubeEffect.*` | 天空盒 Effect 边界（资源管线待接入） | `Bind()` | IRenderEffect |
+| `src/render/ColorProcessorEffect.*` | 全屏三角形颜色后处理 | `Draw()` | IRenderEffect、EffectResource |
+| `src/render/SkyCubeEffect.*` | 全屏 TextureCube 天空背景 | `Bind()`、`Draw()` | IRenderEffect、EffectCubeMapResource |
+| `src/render/EffectResource.*` | 单个离屏颜色/深度资源的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
+| `src/render/EffectCubeMapResource.*` | DDS/动态 Cubemap 及可选整体/单面 RTV | `LoadDDS()`、`Create()` | D3D11、DirectXTK |
 | `src/render/Dx11ConstantBuffer.h` | 16 字节对齐的类型化 DX11 常量缓冲 RAII 封装 | `Update()`、`BindVS()`、`BindPS()` | D3D11、ComPtr |
-| `src/render/CommonConstants.h` | BasicMesh C++ 常量布局 | `CommonConstants` | SimpleMath |
-| `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `Bind()`、`Lights()` | CommonConstants、Dx11ConstantBuffer、D3DCompiler |
+| `src/render/CommonConstants.h` | BasicMesh 和公共 Effect C++ 常量布局 | `FrameConstants`、`ObjectConstants`、`MaterialConstants`、`LightConstants` | SimpleMath |
+| `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `PrepareFrame()`、`Bind()`、`Lights()` | CommonConstants、CommonConstantBuffers、D3DCompiler |
 | `src/shaders/common.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `CommonConstants` cbuffer | 无 |
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | common.hlsli |
 | `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | common.hlsli |
@@ -61,7 +68,6 @@
 | `src/render/IModelImporter.h`、`ModelLoader.*` | 按扩展名分发模型格式导入器 | `IModelImporter::Import()`、`ModelLoader::Load()` | GltfLoader、ObjLoader |
 | `src/render/GltfLoader.*`、`ObjLoader.*`、`MeshImportUtils.*` | glTF/GLB 与 OBJ/MTL 静态网格导入 | `Import()` | cgltf、tinyobjloader、ResourceCache |
 | `src/render/ResourceCache.*` | 按规范化路径缓存网格资产/纹理/Sampler | `LoadMeshAsset()`、`LoadTexture()` | ModelLoader、Texture2D |
-| `src/render/RenderTarget.*` | 离屏视口的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
 | `src/render/Dx11Renderer.*` | 设备、交换链、材质解析和场景遍历 | `RenderScene()`、`MaterialPreview()` | Effect、Mesh、ResourceCache |
 | `src/editor/EditorLayer.*`、`EditorHierarchy.cpp`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | Model/Entity 层级、资源、视角、材质和光照控制 | `Draw()`、`DrawHierarchy()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
 | `src/editor/EditorSolid.cpp`、`EditorScene.cpp` | 参数化创建/编辑与场景文件工作流 | `DrawSolidGeometryEditor()`、`SaveScene()` | SolidGeometry、SceneSerializer、原生对话框 |
@@ -74,7 +80,8 @@
 
 | 路径 | 用途 |
 |---|---|
-| `CMakeLists.txt`、`src/CMakeLists.txt` | CMake 目标、VS 头文件分组、启动项目和 HLSL 构建规则 |
+| `CMakeLists.txt`、`src/CMakeLists.txt` | CMake 目标、`stdfx.h` 预编译头、VS 分组、启动项目和 HLSL 构建规则 |
+| `src/stdfx.h` | 第一方 C++ 目标统一使用的常用标准库、Win32 和 DX11 预编译头 |
 | `.clang-format` | C++ Allman 大括号、缩进、指针/引用和行宽格式配置 |
 | `CMakePresets.json` | 可移植的 VS2022 x64 配置/构建/测试预设 |
 | `cmake/Dependencies.cmake` | 固定版本的子模块目标定义 |

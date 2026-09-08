@@ -1,5 +1,46 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-08 ViewManager 增加 Blend 状态接口
+
+- 新增 `BlendMode`，提供不透明、Alpha、加法和预乘 Alpha 四种常用混合模式。
+- 新增 `SetBlendMode()` 和 `SetBlendState()`，支持 Blend Factor、Sample Mask 和自定义 `D3D11_BLEND_DESC`。
+- 保持现有 Renderer、Effect 和状态所有权不变；Blend 状态继续由 `ViewStateGuard` 保存和恢复。
+
+## 2026-09-08 Renderer 统一管理公共 CBuffer
+
+- 新增 `CommonConstantBuffers`，由 `Dx11Renderer` 持有每种一份的 Frame/Object/Material/Light Buffer。
+- `EffectFrameContext` 改为借用 Renderer 的公共 Buffer 集合，并在每帧统一上传和绑定 Frame 数据。
+- `BasicMeshEffect` 删除自己的四个 CBuffer，灯光每帧准备一次，物体和材质按绘制更新共享 Buffer。
+- `SkyCubeEffect` 复用统一的 Frame CBuffer，不再创建独立常量缓冲。
+- 重新统一 `CommonConstants.h` 与 `common.hlsli` 的 Frame 布局，材质显示模式只保留在 Material CBuffer。
+
+## 2026-09-07 Effect 资源重构与统一预编译头
+
+- 删除未被具体 Effect 使用的字符串资源注册表；`IRenderEffect` 只保留设备、上下文和 Bind/Draw/ResizeResources 生命周期边界。
+- 将原 `RenderTarget` 重命名为具体的 `EffectResource`，继续封装二维颜色/深度纹理、RTV、SRV、DSV、清屏和尺寸调整。
+- 新增 `EffectCubeMapResource`，使用 DirectXTK 加载 DDS TextureCube，也可创建 GPU Cubemap 及可选整体/单面 RTV。
+- `SkyCubeEffect` 直接持有 Cubemap 资源，使用全屏三角形、只读深度和独立 Sky CBuffer 绘制天空背景。
+- 新增 `src/stdfx.h`，通过 CMake 为所有第一方 C++ 目标和测试启用预编译头，同时保持公共头文件自包含。
+- VS2022 Debug 构建、4 组 CTest 和程序启动冒烟测试通过。
+
+## 2026-09-03 由 SurfaceDisplayMode 统一控制基础色贴图
+
+- `Material::UsesBaseColorTexture()` 改为完全由 `SurfaceDisplayMode` 推导，不再检查纹理指针或维护独立状态。
+- `Dx11Renderer::ResolveMaterial` 在没有实际贴图时自动规范化为 `LitUntextured`，避免默认白色纹理改变实体颜色显示。
+- 保持 `EntityMaterial::useSourceTexture` 作为资源来源选择，不将其混入 GPU 显示模式状态。
+
+## 2026-09-03 由显示模式推导基础色贴图状态
+
+- 删除运行时 `Material` 的冗余 `m_usesBaseColorTexture` 成员和 setter。
+- `Material::UsesBaseColorTexture()` 现在根据基础色贴图是否存在以及 `SurfaceDisplayMode` 是否为 `LitUntextured` 直接推导。
+- 移除 OBJ/glTF 导入器、资源缓存和渲染器中的重复状态赋值；保留 `EntityMaterial::useSourceTexture` 作为编辑器资源来源选择。
+
+## 2026-09-02 补充 CBuffer 打包字段说明与可变点光源数量
+
+- 为 `common.hlsli` 和 `CommonConstants.h` 中复用多个语义的 `float4` 增加中文字段说明。
+- `LightInfo` 新增 `C_PointLightCount` 和对齐填充，点光源循环不再直接依赖字面量 `4`。
+- `BasicMeshEffect` 按当前点光源槽数量填充该字段，并增加 C++/HLSL 布局偏移校验。
+
 ## 2026-09-02 新增 Editor Visual Studio 筛选器
 
 - 在 CMake 中集中定义 `LRENDER_EDITOR_SOURCES`，将所有 `editor/*.cpp` 归入 Visual Studio 的 `Editor` 筛选器。

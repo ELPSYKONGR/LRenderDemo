@@ -36,6 +36,7 @@ source_group(
 target_include_directories(LRenderCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(LRenderCore PUBLIC DirectXTK)
 lrender_set_warnings(LRenderCore)
+lrender_enable_stdfx(LRenderCore)
 
 set(LRENDER_PERSISTENCE_HEADERS
     persistence/SceneSerializer.h)
@@ -50,6 +51,7 @@ source_group(
 target_include_directories(LRenderPersistence PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(LRenderPersistence PUBLIC LRenderCore PRIVATE nlohmann_json)
 lrender_set_warnings(LRenderPersistence)
+lrender_enable_stdfx(LRenderPersistence)
 
 set(LRENDER_ASSET_HEADERS
     render/GltfLoader.h
@@ -84,6 +86,7 @@ target_link_libraries(LRenderAssets
     PUBLIC LRenderCore DirectXTK d3d11
     PRIVATE cgltf tinyobjloader)
 lrender_set_warnings(LRenderAssets)
+lrender_enable_stdfx(LRenderAssets)
 
 set(LRENDER_DEMO_HEADERS
     app/Application.h
@@ -92,14 +95,16 @@ set(LRENDER_DEMO_HEADERS
     platform/RuntimePaths.h
     render/BasicMeshEffect.h
     render/ColorProcessorEffect.h
+    render/CommonConstantBuffers.h
     render/CommonConstants.h
     render/Dx11ConstantBuffer.h
     render/Dx11Renderer.h
+    render/EffectCubeMapResource.h
     render/EffectContext.h
+    render/EffectResource.h
     render/IRenderEffect.h
     render/Lighting.h
     render/PrimitiveFactory.h
-    render/RenderTarget.h
     render/ViewManager.h)
 list(APPEND LRENDER_DEMO_HEADERS render/SolidMeshCache.h render/SkyCubeEffect.h)
 
@@ -120,13 +125,15 @@ add_executable(LRenderDemo WIN32
     platform/RuntimePaths.cpp
     render/BasicMeshEffect.cpp
     render/ColorProcessorEffect.cpp
+    render/CommonConstantBuffers.cpp
+    render/EffectCubeMapResource.cpp
+    render/EffectResource.cpp
     render/ViewManager.cpp
     render/IRenderEffect.cpp
     render/SkyCubeEffect.cpp
     render/Dx11Renderer.cpp
     render/EffectContext.cpp
     render/PrimitiveFactory.cpp
-    render/RenderTarget.cpp
     render/SolidMeshCache.cpp
     ${LRENDER_EDITOR_SOURCES})
 source_group(
@@ -142,7 +149,9 @@ set(LRENDER_SHADER_SOURCES
     shaders/BasicMeshVS.hlsl
     shaders/BasicMeshPS.hlsl
     shaders/QuadViewVS.hlsl
-    shaders/ColorProcessorPS.hlsl)
+    shaders/ColorProcessorPS.hlsl
+    shaders/SkyVS.hlsl
+    shaders/SkyPS.hlsl)
 set(LRENDER_SHADER_HEADERS
     shaders/common.hlsli)
 set_source_files_properties(${LRENDER_SHADER_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
@@ -175,6 +184,20 @@ set_source_files_properties(shaders/ColorProcessorPS.hlsl PROPERTIES
     VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/ColorProcessorPS.cso"
     VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
     VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
+set_source_files_properties(shaders/SkyVS.hlsl PROPERTIES
+    VS_SHADER_TYPE Vertex
+    VS_SHADER_MODEL 5.0
+    VS_SHADER_ENTRYPOINT VSMain
+    VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/SkyVS.cso"
+    VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
+    VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
+set_source_files_properties(shaders/SkyPS.hlsl PROPERTIES
+    VS_SHADER_TYPE Pixel
+    VS_SHADER_MODEL 5.0
+    VS_SHADER_ENTRYPOINT PSMain
+    VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/SkyPS.cso"
+    VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
+    VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
 
 target_sources(LRenderDemo PRIVATE ${LRENDER_SHADER_SOURCES} ${LRENDER_SHADER_HEADERS})
 source_group("Shaders" FILES ${LRENDER_SHADER_SOURCES} ${LRENDER_SHADER_HEADERS})
@@ -199,6 +222,7 @@ target_link_libraries(LRenderDemo PRIVATE
     dxgi
     dxguid)
 lrender_set_warnings(LRenderDemo)
+lrender_enable_stdfx(LRenderDemo)
 
 set_target_properties(LRenderDemo PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"

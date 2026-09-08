@@ -215,7 +215,7 @@ void EditorLayer::DrawViewport(Scene& scene, CommandHistory& history, Camera& ca
     renderer.ResizeViewport(width, height);
 
     const ImVec2 viewportPosition = ImGui::GetCursorScreenPos();
-    ImGui::Image(reinterpret_cast<ImTextureID>(renderer.ViewportTarget().GetShaderResourceView()), available);
+    ImGui::Image(reinterpret_cast<ImTextureID>(renderer.ViewportResource().GetShaderResourceView()), available);
     const bool isHovered = ImGui::IsItemHovered();
     const ImGuiIO& input = ImGui::GetIO();
     if (isHovered && !ImGuizmo::IsUsing())

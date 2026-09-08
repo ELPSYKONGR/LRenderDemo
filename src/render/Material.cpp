@@ -106,12 +106,7 @@ void Material::SetBaseColorTexture(std::shared_ptr<Texture2D> value) noexcept
 
 bool Material::UsesBaseColorTexture() const noexcept
 {
-    return m_usesBaseColorTexture;
-}
-
-void Material::SetUsesBaseColorTexture(bool value) noexcept
-{
-    m_usesBaseColorTexture = value;
+    return m_displayMode != SurfaceDisplayMode::LitUntextured;
 }
 
 const std::shared_ptr<SamplerState>& Material::GetSampler() const noexcept

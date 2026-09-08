@@ -90,7 +90,6 @@ Material ResourceCache::CheckerMaterial() const
     Material material = DefaultMaterial();
     material.SetName("Generated checker");
     material.SetBaseColorTexture(m_checkerTexture);
-    material.SetUsesBaseColorTexture(true);
     return material;
 }
 

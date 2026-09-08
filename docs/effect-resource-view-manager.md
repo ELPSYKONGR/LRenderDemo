@@ -1,80 +1,153 @@
 # Effect 资源与 View 管理
 
-本文记录当前 DX11 框架中多 Pass Effect 的资源边界、绘制入口和视图状态保护方式。
+本文记录当前 DX11 框架中 Effect 私有资源、绘制入口和视图状态保护方式。
 
 ## 1. 设计目标
 
-- 保留现有 `Texture2D` 和 `RenderTarget` 的职责与生命周期。
-- 让每个 Effect 自己持有本 Effect 创建的纹理和离屏目标，避免 Renderer 保存大量临时资源。
-- 将“绑定管线”和“发出绘制”区分开，为以后增加多个 Pass 留出位置。
-- 在一个原生 D3D11 Context 上安全切换视图，Effect 结束后恢复调用者状态。
+- 一个资源类只管理一种明确的 GPU 资源组合。
+- 每个 Effect 通过显式成员持有自己的资源，不使用字符串资源注册表。
+- 共享的模型纹理和 Sampler 仍由 `ResourceCache` 缓存。
+- 将“绑定管线”和“发出绘制”区分开，为多个 Pass 留出位置。
+- 在同一个 D3D11 Context 上切换视图后，可以通过 RAII 恢复调用者状态。
 
 ## 2. EffectResource
 
-`EffectResource` 位于 `src/render/IRenderEffect.h/.cpp`，由 `IRenderEffect` 持有。它不复制 DX11 设备或 Context，只保存非拥有指针；设备和 Context 的生命周期由 Renderer 保证长于 Effect。
+`EffectResource` 位于 `src/render/EffectResource.h/.cpp`，由原 `RenderTarget` 重命名而来。它表示一组
+具体的二维离屏资源，而不是资源管理器：
 
-资源按字符串命名：
-
-以下代码放在具体 Effect 的成员函数中（`Resources()` 是基类保护接口）：
-
-```cpp
-auto& resources = Resources();
-auto& target = resources.CreateRenderTarget("blur.result", width, height);
-auto texture = resources.CreateTexture("lut", "assets/lut.png");
-auto* input = resources.GetShaderResource("blur.result");
+```text
+EffectResource
+├── 颜色 Texture2D
+├── RenderTargetView
+├── ShaderResourceView
+├── 深度 Texture2D
+└── DepthStencilView
 ```
-
-`CreateTexture` 和 `CreateRenderTarget` 遇到重复名称会抛出异常，调用方应在应用边界记录错误。`Resize` 只调整 Effect 管理的 RenderTarget，不会修改外部共享纹理；`Clear` 释放 Effect 的全部资源。
-
-## 3. Draw 与 Pass
-
-`IRenderEffect::Bind(frame, draw)` 是低层管线绑定接口，便于学习和调试。新增的 `IRenderEffect::Draw(frame, draw)` 是高层入口，默认调用 `Bind`，派生 Effect 可以覆盖它并在内部完成多个 Pass。
-
-当前 `BasicMeshEffect::Draw` 的流程是：
-
-1. 调用 `Bind` 更新 CBuffer、Shader、材质、Sampler 和光栅化状态。
-2. 从 `EffectDrawContext::MeshGeometry()` 取得 Mesh。
-3. 调用 Mesh 的 `Draw` 发出索引绘制。
-
-`ColorProcessorEffect` 使用同名的重载：
-
-```cpp
-colorProcessor.Draw(context, sceneTarget.ShaderResourceView());
-```
-
-它绑定全屏管线、设置输入 SRV，然后绘制三角形。后续增加 Bloom、ToneMapping 等效果时，可以在一个 Effect 的 `Draw` 内依次执行：绑定 Pass A 的 RenderTarget、绘制；解绑 SRV/RTV；绑定 Pass B；最后输出到目标。Pass 间资源的命名和所有权由 `EffectResource` 管理。
-
-## 4. ViewManager 与状态恢复
-
-`ViewManager` 保存逻辑 View 的尺寸、Camera、原生窗口句柄和离屏 RenderTarget。它采用进程内单例实例，先由 Renderer 调用 `ViewManager::Initialize(device, context)`，之后通过 `ViewManager::Instance()` 获取实例；Renderer 关闭时调用 `ViewManager::Shutdown()`。窗口句柄不归 ViewManager 所有，窗口销毁仍由 `platform::Window` 负责。一个 View 可以附加一个 HWND；多个 View 可以同时存在，Renderer 可以按 View ID 选择当前目标。
-
-`CaptureState()` 返回 RAII 的 `ViewStateGuard`：构造时快照 D3D11 Context，析构时恢复。当前快照包括：
-
-- VS、HS、DS、GS、PS、CS Shader；
-- InputLayout、PrimitiveTopology；
-- Rasterizer、Depth/Stencil、Blend 状态及参数；
-- RenderTarget/DepthStencilView；
-- Viewport 数组。
 
 典型用法：
 
 ```cpp
+class BlurEffect final : public IRenderEffect
 {
-    auto guard = views.CaptureState();
-    views.SetDepthMode(DepthMode::ReadOnly);
-    views.SetStencil(stencilDescription);
-    effect.Draw(frame, draw);
-} // guard 析构，Context 恢复到进入前状态
+  private:
+    EffectResource m_horizontalResource;
+    EffectResource m_verticalResource;
+};
+
+void BlurEffect::ResizeResources(std::uint32_t width, std::uint32_t height)
+{
+    m_horizontalResource.Resize(Device(), width, height);
+    m_verticalResource.Resize(Device(), width, height);
+}
 ```
 
-`SetDepthMode` 支持 Disabled、ReadOnly、ReadWrite；`SetStencil` 创建并绑定对应的模板状态。状态对象由 ComPtr 临时持有，绑定到 Context 后由 DX11 引用计数保证有效。
+资源名称直接体现在成员变量中，VS 调试器可以明确显示所有权和当前视图。`Resize` 在尺寸未变化时
+不会重建资源；创建失败时保留旧资源，避免 Effect 进入部分更新状态。
 
-## 5. 当前边界与下一步
+## 3. EffectCubeMapResource
 
-本次 ViewManager 已独立接入并可编译，但 `Dx11Renderer` 仍使用现有单窗口交换链和 `m_sceneTarget`/`m_viewportTarget`。这是刻意保留的渐进迁移边界：先学习资源与状态封装，再把每个 View 的交换链、ImGui 显示和多窗口消息路由接入 Renderer。
+`EffectCubeMapResource` 管理一个 TextureCube：
 
-建议后续按以下顺序扩展：
+```text
+EffectCubeMapResource
+├── Texture2D Array（6 个面）
+├── TextureCube ShaderResourceView
+├── 可选的整体 RenderTargetView
+└── 可选的 6 个单面 RenderTargetView
+```
 
-1. 为 Effect 增加显式 `Pass` 描述（输入、输出、状态和绘制回调）。
-2. 将 `ViewManager::ActiveView()` 接入 Renderer 的相机和 RenderTarget 选择。
-3. 每个原生窗口拥有独立交换链时，再增加 SwapChainView 派生实现，不改变 EffectResource API。
+静态天空盒只需要采样：
+
+```cpp
+m_cubeMapResource.LoadDDS(Device(), cubeMapPath);
+```
+
+动态环境捕获需要写入 Cubemap：
+
+```cpp
+m_cubeMapResource.Create(
+    Device(),
+    512,
+    DXGI_FORMAT_R16G16B16A16_FLOAT,
+    true,
+    true);
+```
+
+整体 RTV 用于通过 `SV_RenderTargetArrayIndex` 一次选择多个数组层；单面 RTV 用于依次渲染六个方向。
+当前只提供资源创建，逐面相机和反射探针调度属于后续动态 Cubemap Pass。
+
+## 4. IRenderEffect 与资源所有权
+
+`IRenderEffect` 只保存非拥有的 Device/Context 指针并提供 Shader 二进制加载入口，不再持有通用资源
+注册表。设备和 Context 的生命周期由 Renderer 保证长于 Effect。
+
+```mermaid
+graph TD
+    Renderer[Dx11Renderer] --> SceneResource[EffectResource 场景颜色/深度]
+    Renderer --> NormalResource[EffectResource 法线输出]
+    Renderer --> ViewResource[EffectResource 编辑器视口]
+    Renderer --> Sky[SkyCubeEffect]
+    Sky --> Cube[EffectCubeMapResource]
+    ViewManager --> ViewTarget[每个 View 的 EffectResource]
+    Cache[ResourceCache] --> Shared[共享 Mesh/Texture/Sampler]
+```
+
+多 Pass Effect 需要几个中间目标，就显式声明几个 `EffectResource` 成员。只有资源数量确实需要在运行时
+变化时，才改用 `std::vector<EffectResource>`；不要提前恢复字符串注册表。
+
+## 5. Draw 与 Pass
+
+`IRenderEffect::Bind(frame, draw)` 是低层管线绑定接口，`Draw(frame, draw)` 默认调用 `Bind`。派生类
+可以覆盖 `Draw`，在内部发出 Mesh 绘制或组织多个 Pass。
+
+`BasicMeshEffect` 按 Entity 绘制；`ColorProcessorEffect` 绘制全屏三角形；`SkyCubeEffect` 提供只接收
+`EffectFrameContext` 的重载，每帧绘制一次，不需要伪造 Entity。天空背景位于不透明物体之后，使用最远
+深度和只读深度状态，只填充尚未被场景占用的像素。
+
+## 6. ViewManager 与状态恢复
+
+`ViewManager` 保存逻辑 View 的尺寸、Camera、原生窗口句柄和 `EffectResource`。它由
+`ViewManager::Initialize(device, context)` 初始化，通过 `ViewManager::Instance()` 访问，并在 Renderer
+关闭时调用 `Shutdown()`。
+
+`CaptureState()` 返回 `ViewStateGuard`，构造时保存、析构时恢复：
+
+- VS、HS、DS、GS、PS、CS Shader；
+- InputLayout 和 PrimitiveTopology；
+- Rasterizer、Depth/Stencil、Blend 状态；
+- RTV、DSV 和 Viewport。
+
+```cpp
+{
+    auto guard = ViewManager::Instance().CaptureState();
+    ViewManager::Instance().SetDepthMode(DepthMode::ReadOnly);
+    effect.Draw(frame, draw);
+}
+```
+
+`ViewManager` 还提供常用 Blend 状态和自定义 Blend 描述：
+
+```cpp
+ViewManager::Instance().SetBlendMode(BlendMode::Opaque);
+ViewManager::Instance().SetBlendMode(BlendMode::AlphaBlend);
+ViewManager::Instance().SetBlendMode(BlendMode::Additive);
+ViewManager::Instance().SetBlendMode(BlendMode::Premultiplied);
+```
+
+需要多 RenderTarget 或特殊混合因子时，直接传入 `D3D11_BLEND_DESC`，并可设置 Blend Factor
+和 Sample Mask：
+
+```cpp
+std::array<float, 4> blendFactor = {};
+ViewManager::Instance().SetBlendState(description, blendFactor, 0xffffffffU);
+```
+
+Blend 状态和深度/模板状态一样，会被 `ViewStateGuard` 自动保存和恢复。
+
+## 7. stdfx.h
+
+`src/stdfx.h` 集中列出第一方 C++ 目标经常使用的标准库、Win32、DXGI、D3D11 和 WRL 头文件。CMake
+通过 `target_precompile_headers` 为 Core、Assets、Persistence、主程序和测试分别生成预编译产物。
+
+公共 `.h` 文件仍需显式包含自身声明所依赖的头文件。这样即使关闭 PCH、单独编译测试文件或未来拆出
+RHI 模块，也不会依赖偶然的包含顺序；常用头文件的预编译集合则只需要在 `stdfx.h` 中统一维护。

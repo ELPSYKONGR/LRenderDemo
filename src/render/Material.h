@@ -51,7 +51,6 @@ class Material final
     void SetBaseColorTexture(std::shared_ptr<Texture2D> value) noexcept;
 
     [[nodiscard]] bool UsesBaseColorTexture() const noexcept;
-    void SetUsesBaseColorTexture(bool value) noexcept;
 
     [[nodiscard]] const std::shared_ptr<SamplerState>& GetSampler() const noexcept;
     void SetSampler(std::shared_ptr<SamplerState> value) noexcept;
@@ -66,7 +65,6 @@ class Material final
     bool m_doubleSided = false;
     SurfaceDisplayMode m_displayMode = SurfaceDisplayMode::LitTextured;
     std::shared_ptr<Texture2D> m_baseColorTexture;
-    bool m_usesBaseColorTexture = false;
     std::shared_ptr<SamplerState> m_sampler;
 };
 

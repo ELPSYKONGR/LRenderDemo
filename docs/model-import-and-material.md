@@ -103,9 +103,11 @@ MeshPart`。这样不需要修改 `Scene`、`CreateModelCommand`、编辑器文�
 ### 多光源常量缓冲
 
 C++ 的 `CommonConstants` 与 HLSL `common.hlsli` 中的同名 `cbuffer` 保持字段顺序和
-16 字节对齐。GPU 缓冲由 `Dx11ConstantBuffer<FrameConstants>、Dx11ConstantBuffer<ObjectConstants>、Dx11ConstantBuffer<MaterialConstants>、Dx11ConstantBuffer<LightConstants>` 管理。每盏点光占
-两个 `float4`：位置/范围和颜色/强度。禁用点光时把强度写为零；像素 Shader 用距离与范围计算
-平滑衰减。方向为零时 CPU 使用向下方向回退，避免 Shader 中出现无效归一化。
+16 字节对齐。四类 GPU 常量缓冲由 `Dx11Renderer` 持有的 `CommonConstantBuffers` 统一创建，
+每种类型只保留一份：Frame 在每帧更新，Light 在每帧准备阶段更新，Object 和 Material 在每个
+绘制项更新同一份缓冲。底层 `Dx11ConstantBuffer<T>` 只负责类型大小检查、数据上传和槽位绑定。
+每盏点光占两个 `float4`：位置/范围和颜色/强度。禁用点光时把强度写为零；像素 Shader 用距离
+与范围计算平滑衰减。方向为零时 CPU 使用向下方向回退，避免 Shader 中出现无效归一化。
 
 ## 5. 推荐的下一步
 

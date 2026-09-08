@@ -10,6 +10,14 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 include(cmake/Dependencies.cmake)
 include(cmake/CompilerWarnings.cmake)
 
+function(lrender_enable_stdfx target_name)
+    set(stdfx_header "${CMAKE_SOURCE_DIR}/src/stdfx.h")
+    target_sources(${target_name} PRIVATE "${stdfx_header}")
+    target_precompile_headers(${target_name} PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:${stdfx_header}>")
+    source_group("Header Files" FILES "${stdfx_header}")
+endfunction()
+
 add_subdirectory(src)
 
 include(CTest)

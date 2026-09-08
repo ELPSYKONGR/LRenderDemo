@@ -38,7 +38,8 @@ DDS、深度状态和 `Dx11Renderer` 接入方式。
 SSAO、SSR、Bloom 和色调映射操作的是帧资源，而非单个网格。实现第一项此类技术时，应新增独立的
 `IRenderPass` 边界。Pass 应接收显式上下文，其中包含输入 SRV、输出 RTV、深度、相机矩阵和
 视口尺寸。屏幕空间工作应放在 `Draw` 的 Pass 流程中，不要强行放入 `IRenderEffect::Bind`；该类
-Effect 的中间纹理和 RenderTarget 使用基类提供的 `EffectResource` 管理。
+Effect 的二维中间目标使用显式 `EffectResource` 成员，Cubemap 使用 `EffectCubeMapResource` 成员。
+资源由具体 Effect 创建和释放，基类不提供字符串资源注册表。
 
 ## 建议学习顺序
 

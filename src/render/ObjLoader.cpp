@@ -120,6 +120,7 @@ Material LoadMaterial(int materialId, const std::vector<tinyobj::material_t>& so
     if (materialId < 0)
     {
         material.SetName("OBJ default material");
+        material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
         return material;
     }
     if (static_cast<std::size_t>(materialId) >= sources.size())
@@ -137,7 +138,10 @@ Material LoadMaterial(int materialId, const std::vector<tinyobj::material_t>& so
     {
         material.SetBaseColorTexture(
             resources.LoadTexture(modelPath.parent_path() / Utf8RelativePath(source.diffuse_texname)));
-        material.SetUsesBaseColorTexture(true);
+    }
+    else
+    {
+        material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
     }
     return material;
 }

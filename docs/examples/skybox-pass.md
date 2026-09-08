@@ -1,8 +1,8 @@
 # 示例：为 LRenderDemo 添加天空盒 Pass
 
-> 文档状态：设计与学习示例，尚未实现对应 C++/HLSL 功能。
+> 文档状态：长期 Pass 架构设计。当前工程已先以 `SkyCubeEffect + EffectCubeMapResource` 完成静态天空背景；本文后续内容描述将场景级效果继续拆成 `IRenderPass` 的演进方案。
 >
-> 适用基线：`dev` 分支，提交 `e96cd85` 之后的 DX11 渲染实验平台。
+> 当前基线：`main` 分支。实际代码位于 `src/render/SkyCubeEffect.*`、`src/render/EffectCubeMapResource.*` 和 `src/shaders/SkyVS/SkyPS.hlsl`。
 
 ## 1. 学习目标
 

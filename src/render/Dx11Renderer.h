@@ -2,7 +2,7 @@
  * @file D3D11 device, swap chain, viewport, mesh, and Effect coordinator.
  * @author Codex
  * @created 2026-08-20
- * @depends render/RenderTarget.h, render/BasicMeshEffect.h, core/Scene.h
+ * @depends render/EffectResource.h, render/BasicMeshEffect.h, core/Scene.h
  */
 #pragma once
 
@@ -10,9 +10,11 @@
 #include "core/Scene.h"
 #include "render/BasicMeshEffect.h"
 #include "render/ColorProcessorEffect.h"
+#include "render/CommonConstantBuffers.h"
+#include "render/EffectResource.h"
 #include "render/Mesh.h"
 #include "render/ResourceCache.h"
-#include "render/RenderTarget.h"
+#include "render/SkyCubeEffect.h"
 #include "render/SolidMeshCache.h"
 
 #include <cstdint>
@@ -46,8 +48,8 @@ class Dx11Renderer final
 
     [[nodiscard]] ID3D11Device* Device() const noexcept;
     [[nodiscard]] ID3D11DeviceContext* Context() const noexcept;
-    [[nodiscard]] RenderTarget& ViewportTarget() noexcept;
-    [[nodiscard]] const RenderTarget& NormalTarget() const noexcept;
+    [[nodiscard]] EffectResource& ViewportResource() noexcept;
+    [[nodiscard]] const EffectResource& NormalResource() const noexcept;
     [[nodiscard]] BasicMeshEffect& Effect() noexcept;
     [[nodiscard]] std::size_t CachedMeshAssetCount() const noexcept;
     [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
@@ -64,13 +66,15 @@ class Dx11Renderer final
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_context;
     Microsoft::WRL::ComPtr<IDXGISwapChain> m_swapChain;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_backBufferView;
-    RenderTarget m_sceneTarget;
-    RenderTarget m_normalTarget;
-    RenderTarget m_viewportTarget;
+    EffectResource m_sceneResource;
+    EffectResource m_normalResource;
+    EffectResource m_viewportResource;
     std::unique_ptr<SolidMeshCache> m_solidMeshes;
     std::unique_ptr<BasicMeshEffect> m_effect;
+    std::unique_ptr<SkyCubeEffect> m_skyCubeEffect;
     std::unique_ptr<ColorProcessorEffect> m_colorProcessor;
     std::unique_ptr<ResourceCache> m_resources;
+    std::unique_ptr<CommonConstantBuffers> m_commonConstantBuffers;
 };
 
 } // namespace lrender

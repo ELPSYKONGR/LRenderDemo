@@ -2,6 +2,7 @@
  * @file Editable HLSL basic mesh effect implementation.
  */
 #include "render/BasicMeshEffect.h"
+#include "render/CommonConstantBuffers.h"
 #include "render/Mesh.h"
 
 #include <iterator>
@@ -29,8 +30,7 @@ DirectX::SimpleMath::Vector4 ToVector4(const DirectX::SimpleMath::Color& color)
 
 BasicMeshEffect::BasicMeshEffect(ID3D11Device* device, ID3D11DeviceContext* context,
                                  const std::filesystem::path& shaderDirectory)
-    : IRenderEffect(device, context), m_states(std::make_unique<DirectX::CommonStates>(Device())),
-      m_frameConstants(Device()), m_objectConstants(Device()), m_materialConstants(Device()), m_lightConstants(Device())
+    : IRenderEffect(device, context), m_states(std::make_unique<DirectX::CommonStates>(Device()))
 {
     const auto vertexShader = LoadShader(shaderDirectory / L"BasicMeshVS.cso");
     const auto pixelShader = LoadShader(shaderDirectory / L"BasicMeshPS.cso");
@@ -76,41 +76,8 @@ const LightingSettings& BasicMeshEffect::Lights() const noexcept
     return m_lights;
 }
 
-void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext& draw)
+void BasicMeshEffect::PrepareFrame(const EffectFrameContext& frame)
 {
-    ID3D11DeviceContext* context = frame.DeviceContext();
-    const Material& material = draw.ResolvedMaterial();
-    if (material.GetBaseColorTexture() == nullptr || material.GetSampler() == nullptr)
-    {
-        throw std::invalid_argument("BasicMeshEffect requires a texture and sampler material");
-    }
-
-    constexpr DirectX::SimpleMath::Color selectionColor{1.0F, 0.84F, 0.0F, 1.0F};
-    const DirectX::SimpleMath::Color selectedTint =
-        draw.IsSelected() ? DirectX::SimpleMath::Color::Lerp(draw.Tint(), selectionColor, 0.28F) : draw.Tint();
-    const DirectX::SimpleMath::Color finalColor =
-        material.UsesBaseColorTexture() ? DirectX::SimpleMath::Color(1.0F, 1.0F, 1.0F, 1.0F) : selectedTint;
-
-    FrameConstants frameData{};
-    frameData.view = frame.View();
-    frameData.projection = frame.Projection();
-    frameData.mode = {static_cast<float>(material.GetDisplayMode()), static_cast<float>(frame.GetRenderMode()),
-                      material.UsesBaseColorTexture() ? 1.0F : 0.0F, 0.0F};
-    const auto& cameraPosition = frame.CameraPosition();
-    frameData.cameraPosition = {cameraPosition.x, cameraPosition.y, cameraPosition.z, 1.0F};
-    frameData.viewport = {frame.AspectRatio(), 1.0F, 0.0F, 0.0F};
-
-    ObjectConstants objectData{};
-    objectData.world = draw.World();
-    objectData.worldViewProjection = objectData.world * frame.View() * frame.Projection();
-    objectData.worldInverseTranspose = objectData.world.Invert().Transpose();
-
-    MaterialConstants materialData{};
-    materialData.baseColor = ToVector4(finalColor);
-    materialData.specularColor = ToVector4(material.GetSpecularColor());
-    materialData.materialParameters = {material.GetSpecularStrength(), material.GetShininess(),
-                                       material.GetDiffuseStrength(), static_cast<float>(material.GetDisplayMode())};
-
     LightConstants lightData{};
     lightData.ambientColor = ToVector4(m_lights.ambient);
     auto directionalDirection = m_lights.directional.direction;
@@ -134,11 +101,40 @@ void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawCont
         lightData.pointLightData[index * 2 + 1] = {light.color.x, light.color.y, light.color.z,
                                                    light.enabled ? light.intensity : 0.0F};
     }
+    lightData.pointLightCount = static_cast<std::uint32_t>(m_lights.points.size());
+    frame.ConstantBuffers().UpdateLight(lightData);
+    frame.ConstantBuffers().BindLight();
+}
 
-    m_frameConstants.Update(context, frameData);
-    m_objectConstants.Update(context, objectData);
-    m_materialConstants.Update(context, materialData);
-    m_lightConstants.Update(context, lightData);
+void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext& draw)
+{
+    ID3D11DeviceContext* context = frame.DeviceContext();
+    const Material& material = draw.ResolvedMaterial();
+    if (material.GetBaseColorTexture() == nullptr || material.GetSampler() == nullptr)
+    {
+        throw std::invalid_argument("BasicMeshEffect requires a texture and sampler material");
+    }
+
+    constexpr DirectX::SimpleMath::Color selectionColor{1.0F, 0.84F, 0.0F, 1.0F};
+    const DirectX::SimpleMath::Color selectedTint =
+        draw.IsSelected() ? DirectX::SimpleMath::Color::Lerp(draw.Tint(), selectionColor, 0.28F) : draw.Tint();
+    const DirectX::SimpleMath::Color finalColor =
+        material.UsesBaseColorTexture() ? DirectX::SimpleMath::Color(1.0F, 1.0F, 1.0F, 1.0F) : selectedTint;
+
+    ObjectConstants objectData{};
+    objectData.world = draw.World();
+    objectData.worldViewProjection = objectData.world * frame.View() * frame.Projection();
+    objectData.worldInverseTranspose = objectData.world.Invert().Transpose();
+
+    MaterialConstants materialData{};
+    materialData.baseColor = ToVector4(finalColor);
+    materialData.specularColor = ToVector4(material.GetSpecularColor());
+    materialData.materialParameters = {material.GetSpecularStrength(), material.GetShininess(),
+                                       material.GetDiffuseStrength(), static_cast<float>(material.GetDisplayMode())};
+
+    CommonConstantBuffers& buffers = frame.ConstantBuffers();
+    buffers.UpdateObject(objectData);
+    buffers.UpdateMaterial(materialData);
 
     context->IASetInputLayout(m_inputLayout.Get());
     // ColorProcessorEffect disables depth for its fullscreen pass. Restore the
@@ -148,12 +144,10 @@ void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawCont
                                       : (material.IsDoubleSided() ? m_states->CullNone() : m_states->CullClockwise()));
     context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-    m_frameConstants.BindVS(context, 0);
-    m_frameConstants.BindPS(context, 0);
-    m_objectConstants.BindVS(context, 1);
-    m_objectConstants.BindPS(context, 1);
-    m_materialConstants.BindPS(context, 2);
-    m_lightConstants.BindPS(context, 3);
+    buffers.BindFrame();
+    buffers.BindObject();
+    buffers.BindMaterial();
+    buffers.BindLight();
     ID3D11ShaderResourceView* texture = material.GetBaseColorTexture()->ShaderResourceView();
     ID3D11SamplerState* sampler = material.GetSampler()->Get();
     context->PSSetShaderResources(0, 1, &texture);

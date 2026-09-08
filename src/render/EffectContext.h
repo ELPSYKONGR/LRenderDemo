@@ -16,6 +16,7 @@ namespace lrender
 {
 
 class Camera;
+class CommonConstantBuffers;
 class Mesh;
 struct Entity;
 enum class RenderMode
@@ -27,20 +28,26 @@ enum class RenderMode
 class EffectFrameContext final
 {
   public:
-    EffectFrameContext(ID3D11DeviceContext* deviceContext, const Camera& camera, float aspectRatio);
+    EffectFrameContext(ID3D11DeviceContext* deviceContext, CommonConstantBuffers& constantBuffers,
+                       const Camera& camera, float aspectRatio);
 
     [[nodiscard]] ID3D11DeviceContext* DeviceContext() const noexcept;
+    [[nodiscard]] CommonConstantBuffers& ConstantBuffers() const noexcept;
     [[nodiscard]] const DirectX::SimpleMath::Matrix& View() const noexcept;
     [[nodiscard]] const DirectX::SimpleMath::Matrix& Projection() const noexcept;
+    [[nodiscard]] const DirectX::SimpleMath::Matrix& InverseViewProjection() const noexcept;
     [[nodiscard]] const DirectX::SimpleMath::Vector3& CameraPosition() const noexcept;
     [[nodiscard]] float AspectRatio() const noexcept;
     [[nodiscard]] RenderMode GetRenderMode() const noexcept;
     void SetRenderMode(RenderMode mode) noexcept;
+    void BeginFrame() const;
 
   private:
     ID3D11DeviceContext* m_deviceContext = nullptr;
+    CommonConstantBuffers* m_constantBuffers = nullptr;
     DirectX::SimpleMath::Matrix m_view;
     DirectX::SimpleMath::Matrix m_projection;
+    DirectX::SimpleMath::Matrix m_inverseViewProjection;
     DirectX::SimpleMath::Vector3 m_cameraPosition;
     RenderMode m_renderMode = RenderMode::DirectRendering;
     float m_aspectRatio = 0.0F;

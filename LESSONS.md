@@ -1,5 +1,20 @@
 # LESSONS - LRenderDemo
 
+### ADR-016：Effect 通过显式成员拥有具体 GPU 资源
+
+- **决策**：`EffectResource` 表示单个二维颜色/深度目标，`EffectCubeMapResource` 表示单个 Cubemap；具体 Effect 直接持有需要的资源成员，不使用字符串资源注册表。
+- **原因**：当前资源数量在编译期明确，显式成员更容易追踪所有权、调试和调整不同分辨率，也避免资源容器与资源实例职责重叠。
+- **边界**：跨 Effect 共享的 Mesh、Texture 和 Sampler 继续由 `ResourceCache` 管理；资源数量真正动态变化后才使用容器。
+- **工程约定**：`stdfx.h` 作为 CMake 预编译头集中维护常用依赖，但公共头仍必须自包含。
+- **状态**：已接受，取代 ADR-012 中“IRenderEffect 持有资源注册表”的部分。
+
+### ADR-017：由 Renderer 统一拥有公共 CBuffer
+
+- **决策**：`Dx11Renderer` 持有 `CommonConstantBuffers`，Frame/Object/Material/Light 四种 Buffer 每种只创建一份；`EffectFrameContext` 只借用该集合。
+- **原因**：公共 CBuffer 的生命周期与 D3D11 Device/Context 一致，避免每个 Effect 重复创建同一 ABI 的 Buffer；Object/Material 仍可按绘制项复用更新。
+- **边界**：这是每个 Device/ImmediateContext 一份，不是进程级静态全局；DeferredContext 或多设备场景需要各自创建一组。
+- **状态**：已接受。
+
 ### ADR-015：普通函数声明与实现分离
 
 - **决策**：普通类在头文件中只保留声明，函数体放入对应的 `.cpp`；模板、接口和 GPU 布局继续保留在头文件。
@@ -20,7 +35,7 @@
 - **决策**：`IRenderEffect` 持有 `EffectResource`；高层 `Draw` 负责实际绘制，`Bind` 保留为可调试的管线绑定步骤；`ViewStateGuard` 用 RAII 保存并恢复 DX11 Context 状态。
 - **原因**：多 Pass 效果需要多个离屏目标和 SRV，且 Effect 不应把资源生命周期泄漏到 Renderer；即时 Context 的状态泄漏会影响后续 Effect 和 ImGui。
 - **边界**：当前 ViewManager 管理逻辑 View 和 HWND 记录，Renderer 仍使用单交换链；后续接入多交换链无需改变 EffectResource 接口。
-- **状态**：已接受。
+- **状态**：部分被 ADR-016 取代；`Draw/Bind` 和 `ViewStateGuard` 结论继续有效。
 
 ### ADR-011：公共 Shader 契约按更新频率拆分
 
