@@ -4,7 +4,7 @@
 #pragma once
 
 #include "core/Camera.h"
-#include "render/RenderTarget.h"
+#include "render/EffectResource.h"
 
 #include <array>
 #include <cstddef>
@@ -56,6 +56,14 @@ enum class DepthMode
     ReadWrite
 };
 
+enum class BlendMode
+{
+    Opaque,
+    AlphaBlend,
+    Additive,
+    Premultiplied
+};
+
 struct StencilDescription
 {
     bool enabled = false;
@@ -77,7 +85,7 @@ struct ViewInfo
     std::uint32_t height = 1;
     HWND windowHandle = nullptr;
     Camera camera;
-    std::unique_ptr<RenderTarget> target;
+    std::unique_ptr<EffectResource> resource;
 };
 
 class ViewManager final
@@ -103,15 +111,35 @@ class ViewManager final
     [[nodiscard]] std::size_t ViewCount() const noexcept;
 
     [[nodiscard]] std::unique_ptr<ViewStateGuard> CaptureState() const;
+    [[nodiscard]] ID3D11DepthStencilState* GetDepthStencilState(DepthMode mode) const noexcept;
+    [[nodiscard]] ID3D11BlendState* GetBlendState(BlendMode mode) const noexcept;
     void SetDepthMode(DepthMode mode);
     void SetStencil(const StencilDescription& description);
+    void SetBlendMode(BlendMode mode, const std::array<float, 4>& blendFactor = {},
+                      UINT sampleMask = 0xffffffffU);
+    void SetBlendState(const D3D11_BLEND_DESC& description, const std::array<float, 4>& blendFactor = {},
+                       UINT sampleMask = 0xffffffffU);
+    [[nodiscard]] Microsoft::WRL::ComPtr<ID3D11DepthStencilState> CreateDepthStencilState(
+        const D3D11_DEPTH_STENCIL_DESC& description) const;
+    [[nodiscard]] Microsoft::WRL::ComPtr<ID3D11BlendState> CreateBlendState(
+        const D3D11_BLEND_DESC& description) const;
 
   private:
     ViewManager(ID3D11Device* device, ID3D11DeviceContext* context);
+    void CreateCommonStates();
+    [[nodiscard]] static D3D11_DEPTH_STENCIL_DESC BuildDepthStencilDescription(DepthMode mode);
+    [[nodiscard]] static D3D11_BLEND_DESC BuildBlendDescription(BlendMode mode);
 
     static std::unique_ptr<ViewManager> m_instance;
     ID3D11Device* m_device = nullptr;
     ID3D11DeviceContext* m_context = nullptr;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthDisabledState;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthReadOnlyState;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthReadWriteState;
+    Microsoft::WRL::ComPtr<ID3D11BlendState> m_opaqueBlendState;
+    Microsoft::WRL::ComPtr<ID3D11BlendState> m_alphaBlendState;
+    Microsoft::WRL::ComPtr<ID3D11BlendState> m_additiveBlendState;
+    Microsoft::WRL::ComPtr<ID3D11BlendState> m_premultipliedBlendState;
     std::unordered_map<ViewId, ViewInfo> m_views;
     ViewId m_nextViewId = 1;
     ViewId m_activeViewId = 0;

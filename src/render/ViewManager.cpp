@@ -116,6 +116,7 @@ ViewManager::ViewManager(ID3D11Device* device, ID3D11DeviceContext* context) : m
     {
         throw std::invalid_argument("ViewManager requires a D3D11 device and context");
     }
+    CreateCommonStates();
 }
 
 ViewId ViewManager::CreateView(std::uint32_t width, std::uint32_t height, HWND windowHandle)
@@ -125,8 +126,8 @@ ViewId ViewManager::CreateView(std::uint32_t width, std::uint32_t height, HWND w
     view.width = std::max(width, 1U);
     view.height = std::max(height, 1U);
     view.windowHandle = windowHandle;
-    view.target = std::make_unique<RenderTarget>();
-    view.target->Resize(m_device, view.width, view.height);
+    view.resource = std::make_unique<EffectResource>();
+    view.resource->Resize(m_device, view.width, view.height);
     const ViewId id = view.id;
     m_views.emplace(id, std::move(view));
     if (m_activeViewId == 0)
@@ -170,7 +171,7 @@ void ViewManager::ResizeView(ViewId id, std::uint32_t width, std::uint32_t heigh
     }
     view->width = std::max(width, 1U);
     view->height = std::max(height, 1U);
-    view->target->Resize(m_device, view->width, view->height);
+    view->resource->Resize(m_device, view->width, view->height);
 }
 
 void ViewManager::AttachWindow(ViewId id, HWND windowHandle)
@@ -197,19 +198,41 @@ std::unique_ptr<ViewStateGuard> ViewManager::CaptureState() const
     return std::make_unique<ViewStateGuard>(m_context);
 }
 
+ID3D11DepthStencilState* ViewManager::GetDepthStencilState(DepthMode mode) const noexcept
+{
+    switch (mode)
+    {
+    case DepthMode::Disabled:
+        return m_depthDisabledState.Get();
+    case DepthMode::ReadOnly:
+        return m_depthReadOnlyState.Get();
+    case DepthMode::ReadWrite:
+        return m_depthReadWriteState.Get();
+    default:
+        return nullptr;
+    }
+}
+
+ID3D11BlendState* ViewManager::GetBlendState(BlendMode mode) const noexcept
+{
+    switch (mode)
+    {
+    case BlendMode::Opaque:
+        return m_opaqueBlendState.Get();
+    case BlendMode::AlphaBlend:
+        return m_alphaBlendState.Get();
+    case BlendMode::Additive:
+        return m_additiveBlendState.Get();
+    case BlendMode::Premultiplied:
+        return m_premultipliedBlendState.Get();
+    default:
+        return nullptr;
+    }
+}
+
 void ViewManager::SetDepthMode(DepthMode mode)
 {
-    D3D11_DEPTH_STENCIL_DESC description{};
-    description.DepthEnable = mode != DepthMode::Disabled;
-    description.DepthWriteMask =
-        mode == DepthMode::ReadWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-    description.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> state;
-    if (FAILED(m_device->CreateDepthStencilState(&description, state.GetAddressOf())))
-    {
-        throw std::runtime_error("Failed to create depth state");
-    }
-    m_context->OMSetDepthStencilState(state.Get(), 0);
+    m_context->OMSetDepthStencilState(GetDepthStencilState(mode), 0);
 }
 
 void ViewManager::SetStencil(const StencilDescription& stencil)
@@ -224,12 +247,106 @@ void ViewManager::SetStencil(const StencilDescription& stencil)
     description.FrontFace = {stencil.failOperation, stencil.depthFailOperation, stencil.passOperation,
                              stencil.comparison};
     description.BackFace = description.FrontFace;
+    const auto state = CreateDepthStencilState(description);
+    m_context->OMSetDepthStencilState(state.Get(), stencil.reference);
+}
+
+void ViewManager::SetBlendMode(BlendMode mode, const std::array<float, 4>& blendFactor, UINT sampleMask)
+{
+    const auto state = CreateBlendState(BuildBlendDescription(mode));
+    m_context->OMSetBlendState(state.Get(), blendFactor.data(), sampleMask);
+}
+
+void ViewManager::SetBlendState(const D3D11_BLEND_DESC& description,
+                                const std::array<float, 4>& blendFactor, UINT sampleMask)
+{
+    const auto state = CreateBlendState(description);
+    m_context->OMSetBlendState(state.Get(), blendFactor.data(), sampleMask);
+}
+
+Microsoft::WRL::ComPtr<ID3D11DepthStencilState> ViewManager::CreateDepthStencilState(
+    const D3D11_DEPTH_STENCIL_DESC& description) const
+{
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState> state;
     if (FAILED(m_device->CreateDepthStencilState(&description, state.GetAddressOf())))
     {
-        throw std::runtime_error("Failed to create stencil state");
+        throw std::runtime_error("Failed to create depth stencil state");
     }
-    m_context->OMSetDepthStencilState(state.Get(), stencil.reference);
+    return state;
+}
+
+Microsoft::WRL::ComPtr<ID3D11BlendState> ViewManager::CreateBlendState(const D3D11_BLEND_DESC& description) const
+{
+    Microsoft::WRL::ComPtr<ID3D11BlendState> state;
+    if (FAILED(m_device->CreateBlendState(&description, state.GetAddressOf())))
+    {
+        throw std::runtime_error("Failed to create blend state");
+    }
+    return state;
+}
+
+void ViewManager::CreateCommonStates()
+{
+    m_depthDisabledState = CreateDepthStencilState(BuildDepthStencilDescription(DepthMode::Disabled));
+    m_depthReadOnlyState = CreateDepthStencilState(BuildDepthStencilDescription(DepthMode::ReadOnly));
+    m_depthReadWriteState = CreateDepthStencilState(BuildDepthStencilDescription(DepthMode::ReadWrite));
+    m_opaqueBlendState = CreateBlendState(BuildBlendDescription(BlendMode::Opaque));
+    m_alphaBlendState = CreateBlendState(BuildBlendDescription(BlendMode::AlphaBlend));
+    m_additiveBlendState = CreateBlendState(BuildBlendDescription(BlendMode::Additive));
+    m_premultipliedBlendState = CreateBlendState(BuildBlendDescription(BlendMode::Premultiplied));
+}
+
+D3D11_DEPTH_STENCIL_DESC ViewManager::BuildDepthStencilDescription(DepthMode mode)
+{
+    D3D11_DEPTH_STENCIL_DESC description{};
+    description.DepthEnable = mode != DepthMode::Disabled ? TRUE : FALSE;
+    description.DepthWriteMask = mode == DepthMode::ReadWrite ? D3D11_DEPTH_WRITE_MASK_ALL
+                                                               : D3D11_DEPTH_WRITE_MASK_ZERO;
+    description.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+    return description;
+}
+
+D3D11_BLEND_DESC ViewManager::BuildBlendDescription(BlendMode mode)
+{
+    D3D11_BLEND_DESC description{};
+    D3D11_RENDER_TARGET_BLEND_DESC& target = description.RenderTarget[0];
+    target.BlendOp = D3D11_BLEND_OP_ADD;
+    target.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    target.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    switch (mode)
+    {
+    case BlendMode::Opaque:
+        target.SrcBlend = D3D11_BLEND_ONE;
+        target.DestBlend = D3D11_BLEND_ZERO;
+        target.SrcBlendAlpha = D3D11_BLEND_ONE;
+        target.DestBlendAlpha = D3D11_BLEND_ZERO;
+        break;
+    case BlendMode::AlphaBlend:
+        target.BlendEnable = TRUE;
+        target.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+        target.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        target.SrcBlendAlpha = D3D11_BLEND_ONE;
+        target.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+        break;
+    case BlendMode::Additive:
+        target.BlendEnable = TRUE;
+        target.SrcBlend = D3D11_BLEND_ONE;
+        target.DestBlend = D3D11_BLEND_ONE;
+        target.SrcBlendAlpha = D3D11_BLEND_ONE;
+        target.DestBlendAlpha = D3D11_BLEND_ONE;
+        break;
+    case BlendMode::Premultiplied:
+        target.BlendEnable = TRUE;
+        target.SrcBlend = D3D11_BLEND_ONE;
+        target.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        target.SrcBlendAlpha = D3D11_BLEND_ONE;
+        target.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+        break;
+    default:
+        throw std::invalid_argument("Unsupported blend mode");
+    }
+    return description;
 }
 
 ViewId ViewManager::ActiveViewId() const noexcept
