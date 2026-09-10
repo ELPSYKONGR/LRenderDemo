@@ -1,5 +1,10 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-10 版本化 ImGui 默认布局
+
+- 将根目录 `imgui.ini` 纳入版本控制，保存当前本地窗口、Docking 和控件面板布局。
+- CMake 构建 `LRenderDemo` 后把该布局复制到 exe 同级目录，使其他机器首次编译启动时使用同一套界面位置。
+
 ## 2026-09-10 新增通用直接渲染与延迟渲染学习笔记
 
 - 新增 `docs/forward-and-deferred-rendering.md`，以通用图形学视角解释 Forward Rendering、

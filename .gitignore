@@ -2,7 +2,6 @@
 /build/
 /.vs/
 /out/
-/imgui.ini
 *.user
 *.suo
 *.VC.db

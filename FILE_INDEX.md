@@ -8,6 +8,8 @@
 
 > ImGui 布局固定保存在可执行文件目录的 `imgui.ini`，VS 调试和直接启动使用同一份配置。
 
+> 根目录 `imgui.ini` 是受版本控制的默认布局；CMake 构建后复制到 exe 同级目录，保证新机器首次启动布局一致。
+
 > `ViewManager` 使用单例实例：由 `ViewManager::Initialize` 初始化，通过静态 `ViewManager::Instance()` 访问，退出时调用 `ViewManager::Shutdown()`。
 
 > `src/stdfx.h` 是所有第一方 C++ 目标共用的 CMake 预编译头；公共头文件仍保持自包含，避免脱离 PCH 后无法编译。
@@ -84,6 +86,7 @@
 | `CMakeLists.txt`、`src/CMakeLists.txt` | CMake 目标、`stdfx.h` 预编译头、VS 分组、启动项目和 HLSL 构建规则 |
 | `src/stdfx.h` | 第一方 C++ 目标统一使用的常用标准库、Win32 和 DX11 预编译头 |
 | `.clang-format` | C++ Allman 大括号、缩进、指针/引用和行宽格式配置 |
+| `imgui.ini` | 受版本控制的 ImGui 默认停靠布局，构建后复制到 exe 同级目录 |
 | `CMakePresets.json` | 可移植的 VS2022 x64 配置/构建/测试预设 |
 | `cmake/Dependencies.cmake` | 固定版本的子模块目标定义 |
 | `cmake/CompilerWarnings.cmake` | 第一方代码警告基线 |

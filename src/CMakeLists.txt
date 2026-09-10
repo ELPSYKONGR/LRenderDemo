@@ -206,6 +206,10 @@ add_custom_command(TARGET LRenderDemo POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_SOURCE_DIR}/assets"
     "$<TARGET_FILE_DIR:LRenderDemo>/assets")
+add_custom_command(TARGET LRenderDemo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_SOURCE_DIR}/imgui.ini"
+    "$<TARGET_FILE_DIR:LRenderDemo>/imgui.ini")
 target_compile_definitions(LRenderDemo PRIVATE
     LRENDER_SHADER_OUTPUT_DIR="${LRENDER_SHADER_RUNTIME_OUTPUT_DIR}")
 target_include_directories(LRenderDemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
