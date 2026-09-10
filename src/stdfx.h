@@ -37,11 +37,21 @@
 #include <SimpleMath.h>
 #include <CommonStates.h>
 
-#include "render/CommonConstants.h"
 #include "render/CommonConstantBuffers.h"
 #include "render/Dx11ConstantBuffer.h"
 #include "render/IRenderEffect.h"
 #include "render/EffectCubeMapResource.h"
 #include "render/viewManager.h"
+//
+#define FrameInfoSLOT 0
+#define ObjectInfoSLOT 1
+#define MaterialInfoSLOT 2
+#define LightInfoSLOT 3
 
 
+//
+#define SkyTextureCubeSLOT 0
+
+
+//
+#define LinearClampSamplerSLOT 0

@@ -18,6 +18,8 @@
 namespace lrender
 {
 
+class Scene;
+
 class ViewStateGuard final
 {
   public:
@@ -111,6 +113,7 @@ class ViewManager final
     [[nodiscard]] std::size_t ViewCount() const noexcept;
 
     [[nodiscard]] std::unique_ptr<ViewStateGuard> CaptureState() const;
+    void CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) const;
     [[nodiscard]] ID3D11DepthStencilState* GetDepthStencilState(DepthMode mode) const noexcept;
     [[nodiscard]] ID3D11BlendState* GetBlendState(BlendMode mode) const noexcept;
     void SetDepthMode(DepthMode mode);

@@ -7,6 +7,7 @@
 #include "app/Application.h"
 
 #include "platform/RuntimePaths.h"
+#include "render/ViewManager.h"
 #include "utils/Logger.h"
 
 #include <backends/imgui_impl_dx11.h>
@@ -110,54 +111,56 @@ void Application::Initialize()
 
     Model& defaultModel = m_scene.CreateModel("Default Model");
     const ModelId defaultModelId = defaultModel.id;
-    auto& cube = m_scene.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
-    cube.transform.position.x = -0.8F;
-    cube.EntityMaterialData().baseColor = {0.25F, 0.55F, 0.92F, 1.0F};
-    auto& sphere = m_scene.CreateEntity(defaultModelId, PrimitiveType::Sphere, "Sphere 2");
-    sphere.transform.position.x = 0.8F;
-    sphere.EntityMaterialData().baseColor = {0.92F, 0.42F, 0.22F, 1.0F};
-    auto& plane = m_scene.CreateEntity(defaultModelId, PrimitiveType::Plane, "Plane 3");
-    plane.transform.position.y = -0.5F;
-    plane.EntityMaterialData().baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
+    ViewManager::Instance().CreateSphereTestEntity(m_scene, defaultModelId);
 
-    const std::filesystem::path sampleModel = "assets/test-scenes/downloads/suzanne/Suzanne.gltf";
+    //auto& cube = m_scene.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
+    //cube.transform.position.x = -0.8F;
+    //cube.EntityMaterialData().baseColor = {0.25F, 0.55F, 0.92F, 1.0F};
+    //auto& sphere = m_scene.CreateEntity(defaultModelId, PrimitiveType::Sphere, "Sphere 2");
+    //sphere.transform.position.x = 0.8F;
+    //sphere.EntityMaterialData().baseColor = {0.92F, 0.42F, 0.22F, 1.0F};
+    //auto& plane = m_scene.CreateEntity(defaultModelId, PrimitiveType::Plane, "Plane 3");
+    //plane.transform.position.y = -0.5F;
+    //plane.EntityMaterialData().baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
+
+    //const std::filesystem::path sampleModel = "assets/test-scenes/downloads/suzanne/Suzanne.gltf";
     //"assets/test-scenes/downloads/sponza/Sponza.gltf";
-    if (std::filesystem::is_regular_file(sampleModel))
-    {
-        try
-        {
-            const auto asset = m_renderer.PreloadModel(sampleModel);
-            std::vector<std::string> entityNames;
-            for (const MeshAssetEntity& entity : asset->entities)
-            {
-                entityNames.push_back(entity.name);
-            }
-            auto& model = m_scene.CreateMeshModel(sampleModel, "Suzanne (glTF)", entityNames);
-            for (Entity& entity : model.entities)
-            {
-                entity.transform.position.y = 1.8F;
-            }
-            Logger::Instance().Info("assets", "Loaded optional Suzanne glTF sample");
-        }
-        catch (const std::exception& error)
-        {
-            Logger::Instance().Error("assets", std::format("Optional Suzanne sample failed: {}", error.what()));
-        }
-    }
+    //if (std::filesystem::is_regular_file(sampleModel))
+    //{
+    //    try
+    //    {
+    //        const auto asset = m_renderer.PreloadModel(sampleModel);
+    //        std::vector<std::string> entityNames;
+    //        for (const MeshAssetEntity& entity : asset->entities)
+    //        {
+    //            entityNames.push_back(entity.name);
+    //        }
+    //        auto& model = m_scene.CreateMeshModel(sampleModel, "Suzanne (glTF)", entityNames);
+    //        for (Entity& entity : model.entities)
+    //        {
+    //            entity.transform.position.y = 1.8F;
+    //        }
+    //        Logger::Instance().Info("assets", "Loaded optional Suzanne glTF sample");
+    //    }
+    //    catch (const std::exception& error)
+    //    {
+    //        Logger::Instance().Error("assets", std::format("Optional Suzanne sample failed: {}", error.what()));
+    //    }
+    //}
 
-    const std::filesystem::path glbValidationModel = "assets/test-scenes/downloads/damaged-helmet/DamagedHelmet.glb";
-    if (std::filesystem::is_regular_file(glbValidationModel))
-    {
-        try
-        {
-            static_cast<void>(m_renderer.PreloadModel(glbValidationModel));
-            Logger::Instance().Info("assets", "Validated optional Damaged Helmet GLB and embedded texture");
-        }
-        catch (const std::exception& error)
-        {
-            Logger::Instance().Error("assets", std::format("Optional GLB validation failed: {}", error.what()));
-        }
-    }
+    //const std::filesystem::path glbValidationModel = "assets/test-scenes/downloads/damaged-helmet/DamagedHelmet.glb";
+    //if (std::filesystem::is_regular_file(glbValidationModel))
+    //{
+    //    try
+    //    {
+    //        static_cast<void>(m_renderer.PreloadModel(glbValidationModel));
+    //        Logger::Instance().Info("assets", "Validated optional Damaged Helmet GLB and embedded texture");
+    //    }
+    //    catch (const std::exception& error)
+    //    {
+    //        Logger::Instance().Error("assets", std::format("Optional GLB validation failed: {}", error.what()));
+    //    }
+    //}
 }
 
 void Application::Shutdown() noexcept

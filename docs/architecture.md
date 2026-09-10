@@ -90,7 +90,7 @@ graph TD
     Renderer --> Draw
     Frame --> Effect
     Draw --> Effect
-    Effect --> CpuLayout[CommonConstants.h]
+    Effect --> CpuLayout[CommonConstantBuffers.h]
     Effect --> Buffer[Frame/Object/Material/Light typed buffers]
     Buffer --> D3DBuffer[ID3D11Buffer]
     Buffer --> Context[ID3D11DeviceContext]

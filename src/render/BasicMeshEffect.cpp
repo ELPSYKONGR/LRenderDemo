@@ -102,8 +102,8 @@ void BasicMeshEffect::PrepareFrame(const EffectFrameContext& frame)
                                                    light.enabled ? light.intensity : 0.0F};
     }
     lightData.pointLightCount = static_cast<std::uint32_t>(m_lights.points.size());
-    frame.ConstantBuffers().UpdateLight(lightData);
-    frame.ConstantBuffers().BindLight();
+    frame.ConstantBuffers().UpdateLightBuffer(lightData);
+    frame.ConstantBuffers().BindLightBuffer();
 }
 
 void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext& draw)
@@ -133,8 +133,8 @@ void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawCont
                                        material.GetDiffuseStrength(), static_cast<float>(material.GetDisplayMode())};
 
     CommonConstantBuffers& buffers = frame.ConstantBuffers();
-    buffers.UpdateObject(objectData);
-    buffers.UpdateMaterial(materialData);
+    buffers.UpdateObjectBuffer(objectData);
+    buffers.UpdateMaterialBuffer(materialData);
 
     context->IASetInputLayout(m_inputLayout.Get());
     // ColorProcessorEffect disables depth for its fullscreen pass. Restore the
@@ -144,10 +144,10 @@ void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawCont
                                       : (material.IsDoubleSided() ? m_states->CullNone() : m_states->CullClockwise()));
     context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-    buffers.BindFrame();
-    buffers.BindObject();
-    buffers.BindMaterial();
-    buffers.BindLight();
+    buffers.BindFrameBuffer();
+    buffers.BindObjectBuffer();
+    buffers.BindMaterialBuffer();
+    buffers.BindLightBuffer();
     ID3D11ShaderResourceView* texture = material.GetBaseColorTexture()->ShaderResourceView();
     ID3D11SamplerState* sampler = material.GetSampler()->Get();
     context->PSSetShaderResources(0, 1, &texture);

@@ -42,7 +42,7 @@ SkyCubeEffect::SkyCubeEffect(ID3D11Device* device, ID3D11DeviceContext* context,
 void SkyCubeEffect::Bind(const EffectFrameContext& frame)
 {
     ID3D11DeviceContext* context = frame.DeviceContext();
-    frame.ConstantBuffers().BindFrame();
+    frame.ConstantBuffers().BindFrameBuffer();
     context->IASetInputLayout(nullptr);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
@@ -57,24 +57,28 @@ void SkyCubeEffect::Bind(const EffectFrameContext& frame, const EffectDrawContex
 void SkyCubeEffect::Draw(const EffectFrameContext& frame)
 {
     Bind(frame);
-    //½«Ìì¿ÕºÐÔØÈëHLSLµÄTextureCubeÖÐ
+    //å°†å¤©ç©ºç›’è½½å…¥ HLSL çš„ TextureCube ä¸­
     ID3D11DeviceContext* context = frame.DeviceContext();
-	ID3D11ShaderResourceView* cubeMap = m_cubeMapResource.GetShaderResourceView();
-	context->PSSetShaderResources(0, 1, &cubeMap);
-	ID3D11SamplerState* sampler = m_states->LinearClamp();
-	context->PSSetSamplers(0, 1, &sampler);
-    //ÔÚ¹âÕ¤»¯½×¶Î¹Ø±Õ±³ÃæÏûÒþ(ÕýÃæÊÇÁ¢·½ÌåÏòÍâµÄÃæ£¬µ«ÉãÏñ»úÔÚÄÚ²¿)
+    ID3D11ShaderResourceView* cubeMap = m_cubeMapResource.GetShaderResourceView();
+    context->PSSetShaderResources(SkyTextureCubeSLOT, 1, &cubeMap);
+    ID3D11SamplerState* sampler = m_states->LinearClamp();
+    context->PSSetSamplers(LinearClampSamplerSLOT, 1, &sampler);
+    //åœ¨å…‰æ …åŒ–é˜¶æ®µå…³é—­èƒŒé¢æ¶ˆéšï¼ˆæ­£é¢æ˜¯ç«‹æ–¹ä½“å‘å¤–çš„é¢ï¼Œä½†æ‘„åƒæœºåœ¨å†…éƒ¨ï¼‰
     context->RSSetState(m_states->CullNone());
-    //ÔÚÊä³öºÏ²¢½×¶ÎµÄÉî¶È/Ä£°å×´Ì¬£¬ÉèÖÃÉî¶È±È½Ïº¯ÊýÎªÐ¡ÓÚµÈÓÚ£¬ÒÔÔÊÐíÉî¶ÈÖµÎª1µÄÏñËØ»æÖÆ
-    auto depthStencilState = ViewManager::Instance().GetDepthStencilState(DepthMode::ReadOnly);
-    //»æÖÆ
-    context->OMSetDepthStencilState(depthStencilState, 0);
+    //åœ¨è¾“å‡ºåˆå¹¶é˜¶æ®µè®¾ç½®æ·±åº¦/æ¨¡æ¿çŠ¶æ€ï¼Œæ·±åº¦æ¯”è¾ƒå‡½æ•°ä¸ºå°äºŽç­‰äºŽï¼Œä»¥å…è®¸æ·±åº¦å€¼ä¸º 1 çš„åƒç´ ç»˜åˆ¶
+    D3D11_DEPTH_STENCIL_DESC description{};
+    description.DepthEnable = TRUE;
+    description.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+    description.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+    const auto depthStencilState = ViewManager::Instance().CreateDepthStencilState(description);
+    //ç»˜åˆ¶
+    context->OMSetDepthStencilState(depthStencilState.Get(), 0);
     context->Draw(3, 0);
-    //»¹Ô­
+    //è¿˜åŽŸ
     ID3D11ShaderResourceView* nullResource = nullptr;
     ID3D11SamplerState* nullSample = nullptr;
-    context->PSSetShaderResources(0, 1, &nullResource);
-    context->PSSetSamplers(0, 1, &nullSample);
+    context->PSSetShaderResources(SkyTextureCubeSLOT, 1, &nullResource);
+    context->PSSetSamplers(LinearClampSamplerSLOT, 1, &nullSample);
 }
 
 void SkyCubeEffect::Draw(const EffectFrameContext& frame, const EffectDrawContext&)

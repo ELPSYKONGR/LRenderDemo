@@ -96,7 +96,6 @@ set(LRENDER_DEMO_HEADERS
     render/BasicMeshEffect.h
     render/ColorProcessorEffect.h
     render/CommonConstantBuffers.h
-    render/CommonConstants.h
     render/Dx11ConstantBuffer.h
     render/Dx11Renderer.h
     render/EffectCubeMapResource.h

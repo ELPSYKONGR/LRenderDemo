@@ -2,7 +2,7 @@
 
 ## 目标
 
-本版本使用 `common.hlsli` 作为所有 DX11 Effect 的公共 Shader 契约。C++ 侧的 `CommonConstants.h` 必须与该文件保持字段顺序、矩阵类型和 16 字节对齐一致。
+本版本使用 `common.hlsli` 作为所有 DX11 Effect 的公共 Shader 契约。C++ 侧的 `CommonConstantBuffers.h` 同时定义常量布局和 GPU Buffer 管理接口，必须与该文件保持字段顺序、矩阵类型和 16 字节对齐一致。
 
 ## CBuffer 约定
 

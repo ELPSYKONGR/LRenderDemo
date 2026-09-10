@@ -3,7 +3,6 @@
  */
 #pragma once
 
-#include "render/CommonConstants.h"
 #include "render/IRenderEffect.h"
 #include "render/Lighting.h"
 

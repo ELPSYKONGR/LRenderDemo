@@ -1,5 +1,11 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-10 新增通用直接渲染与延迟渲染学习笔记
+
+- 新增 `docs/forward-and-deferred-rendering.md`，以通用图形学视角解释 Forward Rendering、
+  Deferred Rendering、G-Buffer、Forward+、混合渲染和坐标空间选择。
+- 文档不依赖具体工程类名和目录结构，包含实现步骤、资源协议、调试清单和学习路线。
+
 ## 2026-09-08 ViewManager 增加 Blend 状态接口
 
 - 新增 `BlendMode`，提供不透明、Alpha、加法和预乘 Alpha 四种常用混合模式。

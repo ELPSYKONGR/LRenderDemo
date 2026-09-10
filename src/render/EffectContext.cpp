@@ -89,8 +89,8 @@ void EffectFrameContext::BeginFrame() const
     data.cameraPosition = {m_cameraPosition.x, m_cameraPosition.y, m_cameraPosition.z, 1.0F};
     data.viewport = {m_aspectRatio, 1.0F, 0.0F, 0.0F};
     data.frameParameters = {static_cast<float>(m_renderMode), 0.0F, 0.0F, 0.0F};
-    m_constantBuffers->UpdateFrame(data);
-    m_constantBuffers->BindFrame();
+    m_constantBuffers->UpdateFrameBuffer(data);
+    m_constantBuffers->BindFrameBuffer();
 }
 
 const DirectX::SimpleMath::Matrix& EffectDrawContext::World() const noexcept

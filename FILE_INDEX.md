@@ -22,10 +22,11 @@
 | `src/render/IRenderEffect.h/.cpp` | Effect 的 Bind/Draw/ResizeResources 边界和设备访问 | `IRenderEffect::Draw` |
 | `src/render/ViewManager.h/.cpp` | 逻辑多 View、深度/模板状态设置和 DX11 状态 RAII 恢复 | `ViewManager`、`ViewStateGuard` |
 | `docs/effect-resource-view-manager.md` | Effect 资源、Draw/Pass 和 View 状态设计说明 | 中文学习文档 |
+| `docs/forward-and-deferred-rendering.md` | 独立的直接渲染与延迟渲染图形学学习笔记 | 中文学习文档 |
 
-本次框架补充：`src/render/CommonConstants.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 与 `SkyVS/SkyPS` 实现 TextureCube 天空背景。详细设计见 `docs/render-framework-common-shader.md`。
+本次框架补充：`src/render/CommonConstantBuffers.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer 和统一 Buffer 管理；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 与 `SkyVS/SkyPS` 实现 TextureCube 天空背景。详细设计见 `docs/render-framework-common-shader.md`。
 
-> 最后更新：2026-09-07 | 维护者：Codex
+> 最后更新：2026-09-10 | 维护者：Codex
 
 ## 源文件
 
@@ -54,9 +55,9 @@
 | `src/render/EffectResource.*` | 单个离屏颜色/深度资源的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
 | `src/render/EffectCubeMapResource.*` | DDS/动态 Cubemap 及可选整体/单面 RTV | `LoadDDS()`、`Create()` | D3D11、DirectXTK |
 | `src/render/Dx11ConstantBuffer.h` | 16 字节对齐的类型化 DX11 常量缓冲 RAII 封装 | `Update()`、`BindVS()`、`BindPS()` | D3D11、ComPtr |
-| `src/render/CommonConstants.h` | BasicMesh 和公共 Effect C++ 常量布局 | `FrameConstants`、`ObjectConstants`、`MaterialConstants`、`LightConstants` | SimpleMath |
-| `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `PrepareFrame()`、`Bind()`、`Lights()` | CommonConstants、CommonConstantBuffers、D3DCompiler |
-| `src/shaders/common.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `CommonConstants` cbuffer | 无 |
+| `src/render/CommonConstantBuffers.h` | BasicMesh 和公共 Effect C++ 常量布局及 GPU Buffer 管理 | `FrameConstants`、`ObjectConstants`、`MaterialConstants`、`LightConstants`、`CommonConstantBuffers` | SimpleMath、D3D11 |
+| `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `PrepareFrame()`、`Bind()`、`Lights()` | CommonConstantBuffers、D3DCompiler |
+| `src/shaders/common.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `FrameInfo`、`ObjectInfo`、`MaterialInfo`、`LightInfo` cbuffers | 无 |
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | common.hlsli |
 | `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | common.hlsli |
 | `src/render/Mesh.*` | 带 UV 的 D3D11 顶点/32 位索引缓冲区 | `Draw()` | D3D11、DirectXMath |
@@ -98,6 +99,7 @@
 | `docs/adding-an-effect.md` | Effect 扩展流程和学习顺序 |
 | `docs/examples/skybox-pass.md` | 天空盒 Pass 的逐文件设计与实现示例 |
 | `docs/directx11-feature-roadmap.md` | DX11 教程功能差距、实现顺序和验收标准 |
+| `docs/forward-and-deferred-rendering.md` | 独立的直接渲染与延迟渲染图形学学习笔记 |
 | `docs/model-import-and-material.md` | 纹理、材质、glTF/GLB、缓存与多光源学习指南 |
 | `docs/parameterized-solid-and-scene-save.md` | 参数化 Solid、实时编辑、运行时 Mesh 和场景保存指南 |
 | `AGENTS.md` | 仓库专用开发规则 |

@@ -3,7 +3,10 @@
  */
 #include "render/ViewManager.h"
 
+#include "core/Scene.h"
+
 #include <algorithm>
+#include <random>
 #include <stdexcept>
 
 namespace lrender
@@ -196,6 +199,39 @@ void ViewManager::SetActiveView(ViewId id)
 std::unique_ptr<ViewStateGuard> ViewManager::CaptureState() const
 {
     return std::make_unique<ViewStateGuard>(m_context);
+}
+
+void ViewManager::CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) const
+{
+    constexpr std::uint32_t gridSize = 9;
+    constexpr float radius = 0.5F;
+    constexpr float spacing = 1.5F;
+    constexpr float height = radius;
+    constexpr int center = static_cast<int>(gridSize / 2);
+    std::mt19937 generator(20260909U);
+    std::uniform_real_distribution<float> colorDistribution(0.15F, 0.95F);
+
+    for (std::uint32_t row = 0; row < gridSize; ++row)
+    {
+        for (std::uint32_t column = 0; column < gridSize; ++column)
+        {
+            const std::string name =
+                "SphereTest_" + std::to_string(row + 1) + "_" + std::to_string(column + 1);
+            Entity& entity = scene.CreateEntity(modelId, PrimitiveType::Sphere, name);
+            entity.transform.position = {
+                static_cast<float>(static_cast<int>(column) - center) * spacing
+                ,static_cast<float>(static_cast<int>(row) - center) * spacing,
+                height};
+
+            EntityMaterial& material = entity.EntityMaterialData();
+            material.baseColor = {colorDistribution(generator), colorDistribution(generator),
+                                  colorDistribution(generator), 1.0F};
+            material.displayMode = SurfaceDisplayMode::LitUntextured;
+            material.useSourceTexture = false;
+            material.baseColorTexturePath.clear();
+            material.doubleSided = false;
+        }
+    }
 }
 
 ID3D11DepthStencilState* ViewManager::GetDepthStencilState(DepthMode mode) const noexcept
