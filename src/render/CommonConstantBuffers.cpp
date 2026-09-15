@@ -12,7 +12,7 @@ namespace lrender
 {
 
 CommonConstantBuffers::CommonConstantBuffers(ID3D11Device* device, ID3D11DeviceContext* context)
-    : m_context(context), m_frameBuffer(device), m_objectBuffer(device), m_materialBuffer(device), m_lightBuffer(device)
+    : m_context(context), m_frameBuffer(device), m_objectBuffer(device), m_materialBuffer(device)
 {
     if (m_context == nullptr)
     {
@@ -35,11 +35,6 @@ void CommonConstantBuffers::UpdateMaterialBuffer(const MaterialConstants& data) 
     m_materialBuffer.Update(m_context, data);
 }
 
-void CommonConstantBuffers::UpdateLightBuffer(const LightConstants& data) const
-{
-    m_lightBuffer.Update(m_context, data);
-}
-
 void CommonConstantBuffers::BindFrameBuffer() const
 {
     m_frameBuffer.BindVS(m_context, 0);
@@ -55,11 +50,6 @@ void CommonConstantBuffers::BindObjectBuffer() const
 void CommonConstantBuffers::BindMaterialBuffer() const
 {
     m_materialBuffer.BindPS(m_context, 2);
-}
-
-void CommonConstantBuffers::BindLightBuffer() const
-{
-    m_lightBuffer.BindPS(m_context, 3);
 }
 
 } // namespace lrender

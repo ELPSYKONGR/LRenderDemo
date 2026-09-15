@@ -5,6 +5,7 @@
  * @depends render/Dx11Renderer.h, render/PrimitiveFactory.h, ImGui DX11 backend
  */
 #include "render/Dx11Renderer.h"
+#include "render/LightManager.h"
 #include "render/ViewManager.h"
 
 #include <backends/imgui_impl_dx11.h>
@@ -99,6 +100,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     m_commonConstantBuffers = std::make_unique<CommonConstantBuffers>(m_device.Get(), m_context.Get());
     CreateBackBuffer();
     ViewManager::Initialize(m_device.Get(), m_context.Get());
+    LightManager::Initialize(m_device.Get(), m_context.Get());
     m_sceneResource.Resize(m_device.Get(), 960, 640);
     m_normalResource.Resize(m_device.Get(), 960, 640);
     m_viewportResource.Resize(m_device.Get(), 960, 640);
@@ -111,6 +113,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
 
 void Dx11Renderer::Shutdown() noexcept
 {
+    LightManager::Shutdown();
     ViewManager::Shutdown();
     if (m_context)
     {
@@ -178,48 +181,13 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     m_sceneResource.BindAndClear(m_context.Get(), clearColor, &m_normalResource);
     constexpr float normalClearColor[4] = {0.5F, 0.5F, 0.5F, 1.0F};
     m_context->ClearRenderTargetView(m_normalResource.GetRenderTargetView(), normalClearColor);
-    const float aspect =
-        static_cast<float>(m_sceneResource.GetWidth()) / static_cast<float>(m_sceneResource.GetHeight());
+    const float aspect = static_cast<float>(m_sceneResource.GetWidth()) / static_cast<float>(m_sceneResource.GetHeight());
     EffectFrameContext frameContext(m_context.Get(), *m_commonConstantBuffers, camera, aspect);
-    std::unordered_set<EntityId> activeSolids;
     frameContext.SetRenderMode(RenderMode::DirectRendering);
     frameContext.BeginFrame();
-    m_effect->PrepareFrame(frameContext);
-    //opq pass
-    for (const Model& sceneModel : scene.Models())
-    {
-        for (const Entity& entity : sceneModel.entities)
-        {
-            if (const MeshGeometry* meshGeometry = entity.Mesh())
-            {
-                const auto asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
-                if (meshGeometry->assetEntityIndex >= asset->entities.size())
-                {
-                    throw std::runtime_error("Mesh entity index is outside the cached asset");
-                }
-                for (const MeshPart& part : asset->entities[meshGeometry->assetEntityIndex].parts)
-                {
-                    EffectDrawContext drawContext(entity, ResolveMaterial(part.material, entity.EffectiveMaterial()),
-                                                  selectedEntityId, part.mesh.get());
-                    m_effect->Draw(frameContext, drawContext);
-                }
-                continue;
-            }
-
-            const SolidGeometry* solid = entity.Solid();
-            if (solid == nullptr || m_solidMeshes == nullptr)
-            {
-                throw std::runtime_error("Solid geometry cache is not initialized");
-            }
-            activeSolids.insert(entity.id);
-            const Mesh& mesh = m_solidMeshes->Resolve(entity.id, *solid);
-            const EffectDrawContext drawContext(
-                entity, ResolveMaterial(m_resources->DefaultMaterial(), entity.EffectiveMaterial()), selectedEntityId,
-                &mesh);
-            m_effect->Draw(frameContext, drawContext);
-        }
-    }
-    m_solidMeshes->Prune(activeSolids);
+    LightManager::Instance().UpdateBuffer();
+	//opq pass
+    DrawOpqEntity(scene, camera, selectedEntityId, frameContext);
     //sky pass
     m_skyCubeEffect->Draw(frameContext);
 
@@ -231,7 +199,52 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     m_context->RSSetState(nullptr);
 
     m_viewportResource.BindAndClear(m_context.Get(), clearColor);
-    m_colorProcessor->Draw(m_context.Get(), m_sceneResource.GetShaderResourceView());
+    ID3D11ShaderResourceView* viewportSource = m_sceneResource.GetShaderResourceView();
+    if (m_viewportDebugView == ViewportDebugView::WorldNormal)
+    {
+        viewportSource = m_normalResource.GetShaderResourceView();
+    }
+    m_colorProcessor->Draw(m_context.Get(), viewportSource);
+}
+
+
+void Dx11Renderer::DrawOpqEntity(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId, EffectFrameContext frameContext)
+{
+    std::unordered_set<EntityId> activeSolids;
+	for (const Model& sceneModel : scene.Models())
+	{
+		for (const Entity& entity : sceneModel.entities)
+		{
+			if (const MeshGeometry* meshGeometry = entity.Mesh())
+			{
+				const auto asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
+				if (meshGeometry->assetEntityIndex >= asset->entities.size())
+				{
+					throw std::runtime_error("Mesh entity index is outside the cached asset");
+				}
+				for (const MeshPart& part : asset->entities[meshGeometry->assetEntityIndex].parts)
+				{
+					EffectDrawContext drawContext(entity, ResolveMaterial(part.material, entity.EffectiveMaterial()),
+						selectedEntityId, part.mesh.get());
+					m_effect->Draw(frameContext, drawContext);
+				}
+				continue;
+			}
+
+			const SolidGeometry* solid = entity.Solid();
+			if (solid == nullptr || m_solidMeshes == nullptr)
+			{
+				throw std::runtime_error("Solid geometry cache is not initialized");
+			}
+			activeSolids.insert(entity.id);
+			const Mesh& mesh = m_solidMeshes->Resolve(entity.id, *solid);
+			const EffectDrawContext drawContext(
+				entity, ResolveMaterial(m_resources->DefaultMaterial(), entity.EffectiveMaterial()), selectedEntityId,
+				&mesh);
+			m_effect->Draw(frameContext, drawContext);
+		}
+	}
+	m_solidMeshes->Prune(activeSolids);
 }
 
 std::shared_ptr<const MeshAsset> Dx11Renderer::PreloadModel(const std::filesystem::path& path)
@@ -367,6 +380,16 @@ EffectResource& Dx11Renderer::ViewportResource() noexcept
 const EffectResource& Dx11Renderer::NormalResource() const noexcept
 {
     return m_normalResource;
+}
+
+void Dx11Renderer::SetViewportDebugView(ViewportDebugView view) noexcept
+{
+    m_viewportDebugView = view;
+}
+
+ViewportDebugView Dx11Renderer::GetViewportDebugView() const noexcept
+{
+    return m_viewportDebugView;
 }
 
 BasicMeshEffect& Dx11Renderer::Effect() noexcept

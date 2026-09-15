@@ -1,5 +1,30 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-14 拆分全局 LightManager
+
+- 将 `LightingSettings`、灯光常量打包和 `b3` Light CBuffer 从 `BasicMeshEffect`、`CommonConstantBuffers` 迁入 `LightManager` 单例。
+- 支持一盏方向光和最多四盏点光的稳定 ID、新增、删除、查找与默认值恢复；禁用点光不会占用 GPU 有效灯光槽。
+- Lighting 面板改为直接编辑 `LightManager`，支持动态增加和删除方向光、点光；`BasicMeshEffect` 只绑定已准备好的灯光 Buffer。
+- 新增 WARP 灯光管理回归测试；Ninja 验证构建和 5/5 CTest 通过。
+
+## 2026-09-14 增加 SSR 测试平面
+
+- `ViewManager` 新增测试平面创建函数，并在默认测试场景中创建一块位于球体阵列下方、向后方延伸的高光平面，供 SSR 效果验证使用。
+
+## 2026-09-14 新增 SSR Effect 骨架
+
+- 新增 `SSREffect` 头文件和空实现，预留与现有 Effect 一致的 Bind/Draw 生命周期入口。
+- 新增可编译的 `SSREffectVS.hlsl`、`SSREffectPS.hlsl` 占位入口并接入 CMake Shader 构建规则；暂不接入运行时渲染顺序。
+- Ninja 验证构建、两个 Shader 的 FXC 5.0 编译和 4/4 CTest 通过。
+
+## 2026-09-11 新增 World Normal 视口调试模式
+
+- `Dx11Renderer` 新增 `Lit / WorldNormal` 视口模式，复用现有 Normal Render Target 和全屏颜色处理通路。
+- Viewport 增加 Debug View 下拉框与 `F2` 快捷切换，便于人工调试和稳定的截图自动化。
+- `CoreTests` 增加非均匀缩放法线测试，验证逆转置矩阵保持变换后法线与切线垂直，并证明直接使用 World 矩阵会失败。
+- 新增 `scratch/capture-world-normal.ps1`，用于采集同场景 Lit 与 World Normal 学习证据。
+- VS2022 Debug 构建通过，4/4 CTest 通过。
+
 ## 2026-09-10 版本化 ImGui 默认布局
 
 - 将根目录 `imgui.ini` 纳入版本控制，保存当前本地窗口、Docking 和控件面板布局。

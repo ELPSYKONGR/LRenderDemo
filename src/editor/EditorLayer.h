@@ -37,7 +37,7 @@ class EditorLayer final
     void DrawSceneFilePopups(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void DrawToolbar(CommandHistory& history, Dx11Renderer& renderer);
     void DrawCameraControls(Camera& camera);
-    void DrawLighting(Dx11Renderer& renderer);
+    void DrawLighting();
     void DrawResources(Dx11Renderer& renderer);
     void DrawHierarchy(Scene& scene);
     void DrawInspector(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);

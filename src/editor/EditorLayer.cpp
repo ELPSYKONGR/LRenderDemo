@@ -49,10 +49,17 @@ std::uint32_t EditorLayer::SelectedEntityId() const noexcept
 void EditorLayer::Draw(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer)
 {
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+    if (ImGui::IsKeyPressed(ImGuiKey_F2, false))
+    {
+        const ViewportDebugView nextView = renderer.GetViewportDebugView() == ViewportDebugView::Lit
+                                               ? ViewportDebugView::WorldNormal
+                                               : ViewportDebugView::Lit;
+        renderer.SetViewportDebugView(nextView);
+    }
     DrawMainMenu(scene, history, renderer);
     DrawToolbar(history, renderer);
     DrawCameraControls(camera);
-    DrawLighting(renderer);
+    DrawLighting();
     DrawResources(renderer);
     DrawHierarchy(scene);
     ValidateSelection(scene);
@@ -207,8 +214,16 @@ void EditorLayer::DrawInspector(Scene& scene, CommandHistory& history, Dx11Rende
 
 void EditorLayer::DrawViewport(Scene& scene, CommandHistory& history, Camera& camera, Dx11Renderer& renderer)
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0F, 0.0F));
     ImGui::Begin("Viewport");
+    const char* debugViewNames[] = {"Lit", "World Normal"};
+    int debugViewIndex = static_cast<int>(renderer.GetViewportDebugView());
+    ImGui::SetNextItemWidth(150.0F);
+    if (ImGui::Combo("Debug View (F2)", &debugViewIndex, debugViewNames, IM_ARRAYSIZE(debugViewNames)))
+    {
+        renderer.SetViewportDebugView(static_cast<ViewportDebugView>(debugViewIndex));
+    }
+    ItemTooltip("Lit shows final shading. World Normal shows encoded world-space XYZ directions as RGB. Press F2 to toggle.");
+    ImGui::Separator();
     const ImVec2 available = ImGui::GetContentRegionAvail();
     const auto width = static_cast<std::uint32_t>(std::max(available.x, 1.0F));
     const auto height = static_cast<std::uint32_t>(std::max(available.y, 1.0F));
@@ -287,7 +302,6 @@ void EditorLayer::DrawViewport(Scene& scene, CommandHistory& history, Camera& ca
     }
 
     ImGui::End();
-    ImGui::PopStyleVar();
 }
 
 void EditorLayer::TrackPropertyEdit(Scene& scene, CommandHistory& history, Entity& entity,

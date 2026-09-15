@@ -112,6 +112,7 @@ void Application::Initialize()
     Model& defaultModel = m_scene.CreateModel("Default Model");
     const ModelId defaultModelId = defaultModel.id;
     ViewManager::Instance().CreateSphereTestEntity(m_scene, defaultModelId);
+    ViewManager::Instance().CreatePlaneTestEntity(m_scene, defaultModelId);
 
     //auto& cube = m_scene.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
     //cube.transform.position.x = -0.8F;

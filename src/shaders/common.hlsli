@@ -39,7 +39,7 @@ cbuffer LightInfo : register(b3)
     uint3 C_LightPadding; // 对齐填充
 };
 
-TextureCube C_SkyCubeTexture : register(t0);
+TextureCube C_SkyCubeTexture : register(t3);
 SamplerState C_SkyCubeSampler : register(s0);
 
 bool IfDelayedRenderMode()

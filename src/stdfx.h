@@ -49,9 +49,15 @@
 #define LightInfoSLOT 3
 
 
-//
-#define SkyTextureCubeSLOT 0
+
 
 
 //
 #define LinearClampSamplerSLOT 0
+
+
+//
+#define ColorSLOT 0
+#define MaterialSLOT 1
+#define NormalSLOT 2
+#define SkyTextureCubeSLOT 3

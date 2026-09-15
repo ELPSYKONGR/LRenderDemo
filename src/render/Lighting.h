@@ -7,13 +7,19 @@
 #pragma once
 
 #include <SimpleMath.h>
-#include <array>
+
+#include <cstdint>
+#include <optional>
+#include <vector>
 
 namespace lrender
 {
 
+using LightId = std::uint32_t;
+
 struct DirectionalLight
 {
+    LightId id = 0;
     bool enabled = true;
     DirectX::SimpleMath::Vector3 direction = {-0.45F, -0.8F, 0.35F};
     DirectX::SimpleMath::Color color = {1.0F, 0.96F, 0.88F, 1.0F};
@@ -22,6 +28,7 @@ struct DirectionalLight
 
 struct PointLight
 {
+    LightId id = 0;
     bool enabled = true;
     DirectX::SimpleMath::Vector3 position = {};
     DirectX::SimpleMath::Color color = {1.0F, 1.0F, 1.0F, 1.0F};
@@ -32,11 +39,8 @@ struct PointLight
 struct LightingSettings
 {
     DirectX::SimpleMath::Color ambient = {0.12F, 0.14F, 0.18F, 1.0F};
-    DirectionalLight directional;
-    std::array<PointLight, 4> points = {PointLight{true, {-2.5F, 2.0F, -1.0F}, {1.0F, 0.32F, 0.20F, 1.0F}, 1.8F, 5.5F},
-                                        PointLight{true, {2.5F, 1.5F, 0.5F}, {0.20F, 0.48F, 1.0F, 1.0F}, 1.7F, 5.5F},
-                                        PointLight{true, {0.0F, 3.5F, 2.0F}, {0.42F, 1.0F, 0.55F, 1.0F}, 1.4F, 6.0F},
-                                        PointLight{false, {0.0F, 1.0F, -3.0F}, {1.0F, 1.0F, 1.0F, 1.0F}, 1.0F, 5.0F}};
+    std::optional<DirectionalLight> directional;
+    std::vector<PointLight> points;
 };
 
 } // namespace lrender

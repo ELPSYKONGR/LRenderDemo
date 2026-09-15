@@ -91,7 +91,9 @@ graph TD
     Frame --> Effect
     Draw --> Effect
     Effect --> CpuLayout[CommonConstantBuffers.h]
-    Effect --> Buffer[Frame/Object/Material/Light typed buffers]
+    Effect --> Buffer[Frame/Object/Material typed buffers]
+    LightManager[LightManager] --> LightBuffer[Light typed buffer]
+    LightBuffer --> D3DBuffer
     Buffer --> D3DBuffer[ID3D11Buffer]
     Buffer --> Context[ID3D11DeviceContext]
     HlslLayout[common.hlsli] --> VS[BasicMeshVS.hlsl]
@@ -102,8 +104,9 @@ graph TD
 
 `Dx11ConstantBuffer<T>` 只封装类型大小检查、`ComPtr` 所有权、数据更新和 VS/PS 槽位绑定。
 `CommonConstantBuffers` 由 `Dx11Renderer` 持有，每种公共 CBuffer 只创建一份；`EffectFrameContext` 只
-借用它。Renderer 在每帧开始上传 Frame 和 Light，BasicMeshEffect 在每个网格绘制前更新 Object 和
-Material。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli` 消除重复声明。
+借用它。Renderer 在每帧开始上传 Frame，并通过 `LightManager` 上传 Light；BasicMeshEffect 在每个
+网格绘制前更新 Object 和 Material。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli`
+消除重复声明。
 
 `Dx11Renderer` 每帧从 Camera 构造一次 `EffectFrameContext`，每个 MeshPart 从 Entity、解析后的
 Material 和选择 ID 构造一个 `EffectDrawContext`，然后调用 `Draw(frame, draw)`。两个 Context 是
@@ -115,9 +118,11 @@ Material 和选择 ID 构造一个 `EffectDrawContext`，然后调用 `Draw(fram
 多 Pass Effect 可以直接持有多个具名成员，例如 `m_blurResource` 和 `m_bloomResource`，在同一个
 `Draw` 中完成 RTV/SRV 切换。这种所有权可以直接在调试器中观察，也避免依赖字符串查找。
 
-四类公共缓冲按 Frame/Object/Material/Light 拆分，并由 Renderer 统一拥有。Buffer 对象只创建一次，
-但 Object 和 Material 会在每个绘制项之间复用并更新。后续出现 DeferredContext 或多设备时，应按
-Context/Device 各自创建一组，不要改成进程级静态对象。
+Frame/Object/Material 三类公共缓冲由 Renderer 统一拥有。Light Buffer 与全局灯光设置由
+`LightManager` 单例管理：Renderer 每帧上传一次，需要光照的 Effect 显式绑定 `b3`。Buffer 对象只
+创建一次，但 Object 和 Material 会在每个绘制项之间复用并更新。`LightManager` 的单例生命周期仍
+严格绑定当前 Device/ImmediateContext；后续出现 DeferredContext 或多设备时，应为各 Context/Device
+建立独立实例边界。
 
 ## RHI 迁移边界
 

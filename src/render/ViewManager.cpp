@@ -203,35 +203,57 @@ std::unique_ptr<ViewStateGuard> ViewManager::CaptureState() const
 
 void ViewManager::CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) const
 {
-    constexpr std::uint32_t gridSize = 9;
+    constexpr std::uint32_t gridSize = 3;
     constexpr float radius = 0.5F;
-    constexpr float spacing = 1.5F;
+    constexpr float spacing = 1.F;
     constexpr float height = radius;
-    constexpr int center = static_cast<int>(gridSize / 2);
+    constexpr int center = static_cast<int>(radius / 2);
     std::mt19937 generator(20260909U);
     std::uniform_real_distribution<float> colorDistribution(0.15F, 0.95F);
-
-    for (std::uint32_t row = 0; row < gridSize; ++row)
+    for (std::uint32_t z = 0; z < gridSize; ++z)
     {
-        for (std::uint32_t column = 0; column < gridSize; ++column)
+        for (std::uint32_t row = 0; row < gridSize; ++row)
         {
-            const std::string name =
-                "SphereTest_" + std::to_string(row + 1) + "_" + std::to_string(column + 1);
-            Entity& entity = scene.CreateEntity(modelId, PrimitiveType::Sphere, name);
-            entity.transform.position = {
-                static_cast<float>(static_cast<int>(column) - center) * spacing
-                ,static_cast<float>(static_cast<int>(row) - center) * spacing,
-                height};
+            for (std::uint32_t column = 0; column < gridSize; ++column)
+            {
+                const std::string name =
+                    "SphereTest_" + std::to_string(row + 1) + "_" + std::to_string(column + 1);
+                Entity& entity = scene.CreateEntity(modelId, PrimitiveType::Sphere, name);
+                entity.transform.position = {
+                    static_cast<float>(static_cast<int>(column) - center) * spacing
+                    ,static_cast<float>(static_cast<int>(row) - center) * spacing,
+                    static_cast<float>(static_cast<int>(z) - center) * spacing};
 
-            EntityMaterial& material = entity.EntityMaterialData();
-            material.baseColor = {colorDistribution(generator), colorDistribution(generator),
-                                  colorDistribution(generator), 1.0F};
-            material.displayMode = SurfaceDisplayMode::LitUntextured;
-            material.useSourceTexture = false;
-            material.baseColorTexturePath.clear();
-            material.doubleSided = false;
+                EntityMaterial& material = entity.EntityMaterialData();
+                material.baseColor = {colorDistribution(generator), colorDistribution(generator),colorDistribution(generator), 1.0F};
+                material.displayMode = SurfaceDisplayMode::LitUntextured;
+                material.useSourceTexture = false;
+                material.baseColorTexturePath.clear();
+                material.doubleSided = false;
+            }
         }
     }
+}
+
+void ViewManager::CreatePlaneTestEntity(Scene& scene, std::uint32_t modelId) const
+{
+    constexpr float planeSize = 24.0F;
+    constexpr float sphereGridBottom = -0.5F;
+    constexpr float rearOffset = -3.0F;
+
+    PlaneParameters parameters;
+    parameters.size = {planeSize, planeSize};
+    Entity& entity = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(parameters), "SSRTestPlane");
+    entity.transform.position = {0.0F, sphereGridBottom, rearOffset};
+
+    EntityMaterial& material = entity.EntityMaterialData();
+    material.baseColor = {1.F, 1.F, 1.F, 1.0F};
+    material.specularStrength = 1.0F;
+    material.shininess = 128.0F;
+    material.displayMode = SurfaceDisplayMode::LitUntextured;
+    material.useSourceTexture = false;
+    material.baseColorTexturePath.clear();
+    material.doubleSided = false;
 }
 
 ID3D11DepthStencilState* ViewManager::GetDepthStencilState(DepthMode mode) const noexcept

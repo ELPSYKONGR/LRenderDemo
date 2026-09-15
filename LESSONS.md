@@ -1,5 +1,21 @@
 # LESSONS - LRenderDemo
 
+### ADR-019：灯光状态和 Light CBuffer 由 LightManager 统一管理
+
+- **决策**：`LightManager` 按 `ViewManager` 的生命周期模式作为单例存在，拥有全局 `LightingSettings`、稳定 `LightId` 和 `b3` Light CBuffer；第一阶段支持零或一盏方向光及最多四盏点光。
+- **原因**：灯光是跨 Effect 的帧级输入，不应由 `BasicMeshEffect` 拥有；把 CPU 灯光集合、GPU 打包和 Buffer 生命周期放在同一边界，可以让后续 Effect 复用并允许编辑器直接增删灯光。
+- **更新顺序**：Renderer 每帧上传一次 Light Buffer，各 Effect 在需要时显式绑定；禁用点光保留 CPU 编辑状态，但不会占用 GPU 有效灯光槽。
+- **边界**：当前灯光仍是全局编辑器状态，不属于 `Scene`，也不写入 `.lscene`；需要场景级灯光持久化时，应将语义数据迁入 Core，`LightManager` 只保留 GPU 镜像职责。
+- **状态**：已接受，取代 ADR-017 中 Light Buffer 由 `CommonConstantBuffers` 所有的部分。
+
+### ADR-018：调试视图复用已有帧资源，并提供稳定快捷入口
+
+- **决策**：World Normal 调试模式复用 `m_normalResource`，在最终全屏显示前选择输入 SRV；不新增 Shader、Render Target 或 Render Graph。编辑器同时提供 Combo 与 `F2` 切换。
+- **原因**：当前资源与显示 Pass 已经存在，最小选择层就能形成可视化闭环；快捷键比依赖 ImGui Docking 绝对坐标的截图脚本更稳定。
+- **验证**：同场景 Lit/World Normal 截图已采集；非均匀缩放 CPU 测试验证正确法线点积为零、错误变换明显偏离零；4/4 CTest 通过。
+- **边界**：灰色清屏区表示没有有效法线；后续 UV、Depth、Entity ID 应按资源语义分别设计，不能把所有模式塞进一个巨大 Shader。
+- **状态**：已接受。
+
 ### ADR-016：Effect 通过显式成员拥有具体 GPU 资源
 
 - **决策**：`EffectResource` 表示单个二维颜色/深度目标，`EffectCubeMapResource` 表示单个 Cubemap；具体 Effect 直接持有需要的资源成员，不使用字符串资源注册表。
@@ -10,7 +26,7 @@
 
 ### ADR-017：由 Renderer 统一拥有公共 CBuffer
 
-- **决策**：`Dx11Renderer` 持有 `CommonConstantBuffers`，Frame/Object/Material/Light 四种 Buffer 每种只创建一份；`EffectFrameContext` 只借用该集合。
+- **决策**：`Dx11Renderer` 持有 `CommonConstantBuffers`，Frame/Object/Material 三种 Buffer 每种只创建一份；`EffectFrameContext` 只借用该集合。Light Buffer 后续由 ADR-019 迁入 `LightManager`。
 - **原因**：公共 CBuffer 的生命周期与 D3D11 Device/Context 一致，避免每个 Effect 重复创建同一 ABI 的 Buffer；Object/Material 仍可按绘制项复用更新。
 - **边界**：这是每个 Device/ImmediateContext 一份，不是进程级静态全局；DeferredContext 或多设备场景需要各自创建一组。
 - **状态**：已接受。

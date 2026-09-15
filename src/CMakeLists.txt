@@ -102,8 +102,10 @@ set(LRENDER_DEMO_HEADERS
     render/EffectContext.h
     render/EffectResource.h
     render/IRenderEffect.h
+    render/LightManager.h
     render/Lighting.h
     render/PrimitiveFactory.h
+    render/SSREffect.h
     render/ViewManager.h)
 list(APPEND LRENDER_DEMO_HEADERS render/SolidMeshCache.h render/SkyCubeEffect.h)
 
@@ -129,6 +131,8 @@ add_executable(LRenderDemo WIN32
     render/EffectResource.cpp
     render/ViewManager.cpp
     render/IRenderEffect.cpp
+    render/LightManager.cpp
+    render/SSREffect.cpp
     render/SkyCubeEffect.cpp
     render/Dx11Renderer.cpp
     render/EffectContext.cpp
@@ -149,6 +153,8 @@ set(LRENDER_SHADER_SOURCES
     shaders/BasicMeshPS.hlsl
     shaders/QuadViewVS.hlsl
     shaders/ColorProcessorPS.hlsl
+    shaders/SSREffectVS.hlsl
+    shaders/SSREffectPS.hlsl
     shaders/SkyVS.hlsl
     shaders/SkyPS.hlsl)
 set(LRENDER_SHADER_HEADERS
@@ -181,6 +187,20 @@ set_source_files_properties(shaders/ColorProcessorPS.hlsl PROPERTIES
     VS_SHADER_MODEL 5.0
     VS_SHADER_ENTRYPOINT PSMain
     VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/ColorProcessorPS.cso"
+    VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
+    VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
+set_source_files_properties(shaders/SSREffectVS.hlsl PROPERTIES
+    VS_SHADER_TYPE Vertex
+    VS_SHADER_MODEL 5.0
+    VS_SHADER_ENTRYPOINT VSMain
+    VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/SSREffectVS.cso"
+    VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
+    VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
+set_source_files_properties(shaders/SSREffectPS.hlsl PROPERTIES
+    VS_SHADER_TYPE Pixel
+    VS_SHADER_MODEL 5.0
+    VS_SHADER_ENTRYPOINT PSMain
+    VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/SSREffectPS.cso"
     VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
     VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
 set_source_files_properties(shaders/SkyVS.hlsl PROPERTIES

@@ -18,9 +18,11 @@
 
 | 路径 | 用途 | 关键 API |
 |---|---|---|
+| `src/render/LightManager.h/.cpp` | 全局灯光增删、默认灯光和 `b3` Light CBuffer 单例管理 | `LightManager` |
+| `src/render/SSREffect.h/.cpp`、`src/shaders/SSREffectVS.hlsl`、`src/shaders/SSREffectPS.hlsl` | SSR Pass 的可编译空实现骨架 | `SSREffect` |
 | `src/render/EffectResource.h/.cpp` | 单个二维颜色/深度渲染资源，封装 RTV/SRV/DSV | `EffectResource` |
 | `src/render/EffectCubeMapResource.h/.cpp` | Effect 私有 TextureCube、SRV 和可选六面 RTV | `EffectCubeMapResource` |
-| `src/render/CommonConstantBuffers.h/.cpp` | Renderer 统一拥有和更新四类公共 CBuffer | `CommonConstantBuffers` |
+| `src/render/CommonConstantBuffers.h/.cpp` | Renderer 统一拥有和更新 Frame/Object/Material 三类公共 CBuffer | `CommonConstantBuffers` |
 | `src/render/IRenderEffect.h/.cpp` | Effect 的 Bind/Draw/ResizeResources 边界和设备访问 | `IRenderEffect::Draw` |
 | `src/render/ViewManager.h/.cpp` | 逻辑多 View、深度/模板状态设置和 DX11 状态 RAII 恢复 | `ViewManager`、`ViewStateGuard` |
 | `docs/effect-resource-view-manager.md` | Effect 资源、Draw/Pass 和 View 状态设计说明 | 中文学习文档 |
@@ -28,7 +30,7 @@
 
 本次框架补充：`src/render/CommonConstantBuffers.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer 和统一 Buffer 管理；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 与 `SkyVS/SkyPS` 实现 TextureCube 天空背景。详细设计见 `docs/render-framework-common-shader.md`。
 
-> 最后更新：2026-09-10 | 维护者：Codex
+> 最后更新：2026-09-14 | 维护者：Codex
 
 ## 源文件
 
@@ -57,8 +59,9 @@
 | `src/render/EffectResource.*` | 单个离屏颜色/深度资源的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
 | `src/render/EffectCubeMapResource.*` | DDS/动态 Cubemap 及可选整体/单面 RTV | `LoadDDS()`、`Create()` | D3D11、DirectXTK |
 | `src/render/Dx11ConstantBuffer.h` | 16 字节对齐的类型化 DX11 常量缓冲 RAII 封装 | `Update()`、`BindVS()`、`BindPS()` | D3D11、ComPtr |
-| `src/render/CommonConstantBuffers.h` | BasicMesh 和公共 Effect C++ 常量布局及 GPU Buffer 管理 | `FrameConstants`、`ObjectConstants`、`MaterialConstants`、`LightConstants`、`CommonConstantBuffers` | SimpleMath、D3D11 |
-| `src/render/BasicMeshEffect.*` | 组装纹理材质与多光源常量并绑定基础管线 | `PrepareFrame()`、`Bind()`、`Lights()` | CommonConstantBuffers、D3DCompiler |
+| `src/render/CommonConstantBuffers.h` | Renderer 共享的 Frame/Object/Material C++ 常量布局及 GPU Buffer 管理 | `FrameConstants`、`ObjectConstants`、`MaterialConstants`、`CommonConstantBuffers` | SimpleMath、D3D11 |
+| `src/render/LightManager.*`、`Lighting.h` | 全局环境光、方向光、点光增删及 Light CBuffer 上传/绑定 | `AddDirectionalLight()`、`AddPointLight()`、`RemoveLight()`、`UpdateBuffer()` | Dx11ConstantBuffer、SimpleMath、D3D11 |
+| `src/render/BasicMeshEffect.*` | 组装纹理材质常量并绑定基础光照管线 | `Bind()`、`Draw()` | CommonConstantBuffers、LightManager、D3DCompiler |
 | `src/shaders/common.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `FrameInfo`、`ObjectInfo`、`MaterialInfo`、`LightInfo` cbuffers | 无 |
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | common.hlsli |
 | `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | common.hlsli |
@@ -71,13 +74,14 @@
 | `src/render/IModelImporter.h`、`ModelLoader.*` | 按扩展名分发模型格式导入器 | `IModelImporter::Import()`、`ModelLoader::Load()` | GltfLoader、ObjLoader |
 | `src/render/GltfLoader.*`、`ObjLoader.*`、`MeshImportUtils.*` | glTF/GLB 与 OBJ/MTL 静态网格导入 | `Import()` | cgltf、tinyobjloader、ResourceCache |
 | `src/render/ResourceCache.*` | 按规范化路径缓存网格资产/纹理/Sampler | `LoadMeshAsset()`、`LoadTexture()` | ModelLoader、Texture2D |
-| `src/render/Dx11Renderer.*` | 设备、交换链、材质解析和场景遍历 | `RenderScene()`、`MaterialPreview()` | Effect、Mesh、ResourceCache |
+| `src/render/Dx11Renderer.*` | 设备、交换链、材质解析、场景遍历和视口调试资源选择 | `RenderScene()`、`SetViewportDebugView()`、`MaterialPreview()` | Effect、Mesh、ResourceCache |
 | `src/editor/EditorLayer.*`、`EditorHierarchy.cpp`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | Model/Entity 层级、资源、视角、材质和光照控制 | `Draw()`、`DrawHierarchy()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
 | `src/editor/EditorSolid.cpp`、`EditorScene.cpp` | 参数化创建/编辑与场景文件工作流 | `DrawSolidGeometryEditor()`、`SaveScene()` | SolidGeometry、SceneSerializer、原生对话框 |
 | `src/persistence/SceneSerializer.*` | 版本化 `.lscene` JSON 原子保存和事务加载 | `Save()`、`Load()` | LRenderCore、nlohmann/json |
 | `src/utils/Logger.*` | 按日期写入文件日志 | `Initialize()`、`Info()`、`Error()` | C++ filesystem |
 | `tests/CoreTests.cpp` | CPU 行为回归测试 | 场景/命令测试用例 | LRenderCore |
 | `tests/ImportTests.cpp`、`tests/assets/obj/` | WARP 支持的 OBJ/MTL 与资源缓存回归测试 | `LRenderImportTests` | LRenderAssets、D3D11 WARP |
+| `tests/LightManagerTests.cpp` | WARP 支持的灯光增删、容量、稳定 ID 和 `b3` Buffer 绑定测试 | `LRenderLightManagerTests` | LightManager、D3D11 WARP |
 
 ## 配置和文档
 
@@ -94,6 +98,7 @@
 | `scripts/download-test-scenes.ps1` | 下载经典图形学测试模型并生成 SHA-256 清单 |
 | `scripts/download-skybox-assets.ps1` | 下载固定版本的天空盒 cubemap DDS |
 | `scripts/verify-learning-assets.ps1` | 按 SHA-256 清单校验学习路线必需素材 |
+| `scratch/capture-world-normal.ps1` | 最大化运行中的 Demo、用 F2 切换世界法线视图并保存实验截图 |
 | `assets/test-scenes/README.md` | 测试模型来源、许可和学习用途索引 |
 | `assets/skyboxes/README.md` | 天空盒素材来源、许可和下载说明 |
 | `assets/learning-roadmap/README.md` | 将已下载素材映射到渲染效果实现阶段 |

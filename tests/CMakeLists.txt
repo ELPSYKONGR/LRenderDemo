@@ -32,3 +32,12 @@ lrender_set_warnings(LRenderPersistenceTests)
 lrender_enable_stdfx(LRenderPersistenceTests)
 set_target_properties(LRenderPersistenceTests PROPERTIES FOLDER "Tests")
 add_test(NAME LRenderPersistenceTests COMMAND LRenderPersistenceTests)
+
+add_executable(LRenderLightManagerTests
+    LightManagerTests.cpp
+    ../src/render/LightManager.cpp)
+target_link_libraries(LRenderLightManagerTests PRIVATE LRenderCore d3d11)
+lrender_set_warnings(LRenderLightManagerTests)
+lrender_enable_stdfx(LRenderLightManagerTests)
+set_target_properties(LRenderLightManagerTests PROPERTIES FOLDER "Tests")
+add_test(NAME LRenderLightManagerTests COMMAND LRenderLightManagerTests)

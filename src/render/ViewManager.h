@@ -114,6 +114,7 @@ class ViewManager final
 
     [[nodiscard]] std::unique_ptr<ViewStateGuard> CaptureState() const;
     void CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) const;
+    void CreatePlaneTestEntity(Scene& scene, std::uint32_t modelId) const;
     [[nodiscard]] ID3D11DepthStencilState* GetDepthStencilState(DepthMode mode) const noexcept;
     [[nodiscard]] ID3D11BlendState* GetBlendState(BlendMode mode) const noexcept;
     void SetDepthMode(DepthMode mode);

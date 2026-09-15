@@ -29,6 +29,12 @@ struct ImDrawData;
 namespace lrender
 {
 
+enum class ViewportDebugView
+{
+    Lit,
+    WorldNormal
+};
+
 class Dx11Renderer final
 {
   public:
@@ -37,12 +43,14 @@ class Dx11Renderer final
     void ResizeSwapChain(std::uint32_t width, std::uint32_t height);
     void ResizeViewport(std::uint32_t width, std::uint32_t height);
     void RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId);
+    void DrawOpqEntity(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId, EffectFrameContext frameContext);
     void RenderEditor(ImDrawData* drawData);
     void Present();
     [[nodiscard]] std::shared_ptr<const MeshAsset> PreloadModel(const std::filesystem::path& path);
     void PreloadTexture(const std::filesystem::path& path);
     void ClearRuntimeCaches() noexcept;
     void ClearTarget() noexcept;
+    void SetViewportDebugView(ViewportDebugView view) noexcept;
 
     [[nodiscard]] ID3D11ShaderResourceView* MaterialPreview(const Entity& entity);
 
@@ -50,6 +58,7 @@ class Dx11Renderer final
     [[nodiscard]] ID3D11DeviceContext* Context() const noexcept;
     [[nodiscard]] EffectResource& ViewportResource() noexcept;
     [[nodiscard]] const EffectResource& NormalResource() const noexcept;
+    [[nodiscard]] ViewportDebugView GetViewportDebugView() const noexcept;
     [[nodiscard]] BasicMeshEffect& Effect() noexcept;
     [[nodiscard]] std::size_t CachedMeshAssetCount() const noexcept;
     [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
@@ -75,6 +84,7 @@ class Dx11Renderer final
     std::unique_ptr<ColorProcessorEffect> m_colorProcessor;
     std::unique_ptr<ResourceCache> m_resources;
     std::unique_ptr<CommonConstantBuffers> m_commonConstantBuffers;
+    ViewportDebugView m_viewportDebugView = ViewportDebugView::Lit;
 };
 
 } // namespace lrender

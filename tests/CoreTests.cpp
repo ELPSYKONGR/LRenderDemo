@@ -95,6 +95,30 @@ void TestCameraViewPresets()
     RequireNear(camera.Position().x, 8.0F, "Automatic rotation should advance camera yaw");
 }
 
+void TestNormalTransformUnderNonUniformScale()
+{
+    using DirectX::SimpleMath::Matrix;
+    using DirectX::SimpleMath::Vector3;
+
+    Vector3 tangent{1.0F, 1.0F, 0.0F};
+    Vector3 normal{1.0F, -1.0F, 0.0F};
+    tangent.Normalize();
+    normal.Normalize();
+    const Matrix world = Matrix::CreateScale(2.0F, 1.0F, 1.0F);
+
+    Vector3 transformedTangent = Vector3::TransformNormal(tangent, world);
+    Vector3 incorrectlyTransformedNormal = Vector3::TransformNormal(normal, world);
+    Vector3 correctlyTransformedNormal = Vector3::TransformNormal(normal, world.Invert().Transpose());
+    transformedTangent.Normalize();
+    incorrectlyTransformedNormal.Normalize();
+    correctlyTransformedNormal.Normalize();
+
+    Require(std::abs(transformedTangent.Dot(correctlyTransformedNormal)) < 0.001F,
+            "Inverse-transpose normal should remain perpendicular to the transformed tangent");
+    Require(std::abs(transformedTangent.Dot(incorrectlyTransformedNormal)) > 0.1F,
+            "Using the world matrix directly should expose the non-uniform-scale normal error");
+}
+
 void TestSceneLifecycle()
 {
     lrender::Scene scene;
@@ -241,6 +265,7 @@ int main()
     {
         TestSceneLifecycle();
         TestCameraViewPresets();
+        TestNormalTransformUnderNonUniformScale();
         TestTransformUndoRedo();
         TestCreateUndoRedo();
         TestMixedModelCreateUndoRedo();

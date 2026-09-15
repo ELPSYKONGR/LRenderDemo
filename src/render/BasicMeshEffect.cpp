@@ -3,6 +3,7 @@
  */
 #include "render/BasicMeshEffect.h"
 #include "render/CommonConstantBuffers.h"
+#include "render/LightManager.h"
 #include "render/Mesh.h"
 
 #include <iterator>
@@ -66,46 +67,6 @@ bool BasicMeshEffect::IsWireframe() const noexcept
     return m_isWireframe;
 }
 
-LightingSettings& BasicMeshEffect::Lights() noexcept
-{
-    return m_lights;
-}
-
-const LightingSettings& BasicMeshEffect::Lights() const noexcept
-{
-    return m_lights;
-}
-
-void BasicMeshEffect::PrepareFrame(const EffectFrameContext& frame)
-{
-    LightConstants lightData{};
-    lightData.ambientColor = ToVector4(m_lights.ambient);
-    auto directionalDirection = m_lights.directional.direction;
-    if (directionalDirection.LengthSquared() < 0.000001F)
-    {
-        directionalDirection = {0.0F, -1.0F, 0.0F};
-    }
-    else
-    {
-        directionalDirection.Normalize();
-    }
-    lightData.directionalDirectionAndIntensity = {directionalDirection.x, directionalDirection.y,
-                                                  directionalDirection.z, m_lights.directional.intensity};
-    lightData.directionalColorAndEnabled = {m_lights.directional.color.x, m_lights.directional.color.y,
-                                            m_lights.directional.color.z, m_lights.directional.enabled ? 1.0F : 0.0F};
-    for (std::size_t index = 0; index < m_lights.points.size(); ++index)
-    {
-        const PointLight& light = m_lights.points[index];
-        lightData.pointLightData[index * 2] = {light.position.x, light.position.y, light.position.z,
-                                               light.range > 0.0001F ? light.range : 0.0001F};
-        lightData.pointLightData[index * 2 + 1] = {light.color.x, light.color.y, light.color.z,
-                                                   light.enabled ? light.intensity : 0.0F};
-    }
-    lightData.pointLightCount = static_cast<std::uint32_t>(m_lights.points.size());
-    frame.ConstantBuffers().UpdateLightBuffer(lightData);
-    frame.ConstantBuffers().BindLightBuffer();
-}
-
 void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext& draw)
 {
     ID3D11DeviceContext* context = frame.DeviceContext();
@@ -147,7 +108,7 @@ void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawCont
     buffers.BindFrameBuffer();
     buffers.BindObjectBuffer();
     buffers.BindMaterialBuffer();
-    buffers.BindLightBuffer();
+    LightManager::Instance().BindBuffer();
     ID3D11ShaderResourceView* texture = material.GetBaseColorTexture()->ShaderResourceView();
     ID3D11SamplerState* sampler = material.GetSampler()->Get();
     context->PSSetShaderResources(0, 1, &texture);

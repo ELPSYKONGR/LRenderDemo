@@ -8,6 +8,7 @@
 
 #include "commands/CreateModelCommand.h"
 #include "render/Dx11Renderer.h"
+#include "render/LightManager.h"
 #include "utils/Logger.h"
 
 #include <array>
@@ -104,34 +105,69 @@ void EditorLayer::ImportModel(Scene& scene, CommandHistory& history, Dx11Rendere
     }
 }
 
-void EditorLayer::DrawLighting(Dx11Renderer& renderer)
+void EditorLayer::DrawLighting()
 {
     ImGui::Begin("Lighting");
-    LightingSettings& settings = renderer.Effect().Lights();
-    ImGui::ColorEdit3("Ambient", &settings.ambient.x);
+    LightManager& lights = LightManager::Instance();
+    ImGui::ColorEdit3("Ambient", &lights.Ambient().x);
 
-    if (ImGui::CollapsingHeader("Directional light", ImGuiTreeNodeFlags_DefaultOpen))
+    LightId pendingRemoval = 0;
+
+    if (DirectionalLight* light = lights.Directional())
     {
-        ImGui::Checkbox("Enabled##directional", &settings.directional.enabled);
-        ImGui::DragFloat3("Direction", &settings.directional.direction.x, 0.01F, -1.0F, 1.0F);
-        ImGui::ColorEdit3("Color##directional", &settings.directional.color.x);
-        ImGui::DragFloat("Intensity##directional", &settings.directional.intensity, 0.02F, 0.0F, 20.0F);
+        if (ImGui::CollapsingHeader("Directional light", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::Checkbox("Enabled##directional", &light->enabled);
+            ImGui::DragFloat3("Direction", &light->direction.x, 0.01F, -1.0F, 1.0F);
+            ImGui::ColorEdit3("Color##directional", &light->color.x);
+            ImGui::DragFloat("Intensity##directional", &light->intensity, 0.02F, 0.0F, 20.0F);
+            if (ImGui::Button("Delete directional light"))
+            {
+                pendingRemoval = light->id;
+            }
+        }
+    }
+    else if (ImGui::Button("Add directional light"))
+    {
+        static_cast<void>(lights.AddDirectionalLight());
     }
 
-    for (std::size_t index = 0; index < settings.points.size(); ++index)
+    std::size_t index = 0;
+    for (PointLight& light : lights.PointLights())
     {
-        ImGui::PushID(static_cast<int>(index));
+        ImGui::PushID(static_cast<int>(light.id));
         const std::string label = "Point light " + std::to_string(index + 1);
         if (ImGui::CollapsingHeader(label.c_str()))
         {
-            PointLight& light = settings.points[index];
             ImGui::Checkbox("Enabled", &light.enabled);
             ImGui::DragFloat3("Position", &light.position.x, 0.05F);
             ImGui::ColorEdit3("Color", &light.color.x);
             ImGui::DragFloat("Intensity", &light.intensity, 0.02F, 0.0F, 50.0F);
             ImGui::DragFloat("Range", &light.range, 0.05F, 0.01F, 1000.0F);
+            if (ImGui::Button("Delete"))
+            {
+                pendingRemoval = light.id;
+            }
         }
         ImGui::PopID();
+        ++index;
+    }
+
+    if (lights.PointLights().size() < LightManager::MaxPointLights)
+    {
+        if (ImGui::Button("Add point light"))
+        {
+            static_cast<void>(lights.AddPointLight());
+        }
+    }
+    else
+    {
+        ImGui::TextDisabled("Maximum point lights reached (%zu)", LightManager::MaxPointLights);
+    }
+
+    if (pendingRemoval != 0)
+    {
+        static_cast<void>(lights.RemoveLight(pendingRemoval));
     }
     ImGui::End();
 }
