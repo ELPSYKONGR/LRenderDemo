@@ -43,7 +43,8 @@ class Dx11Renderer final
     void ResizeSwapChain(std::uint32_t width, std::uint32_t height);
     void ResizeViewport(std::uint32_t width, std::uint32_t height);
     void RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId);
-    void DrawOpqEntity(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId, EffectFrameContext frameContext);
+    void DrawOpqEntity(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId,
+                       const EffectFrameContext& frameContext);
     void RenderEditor(ImDrawData* drawData);
     void Present();
     [[nodiscard]] std::shared_ptr<const MeshAsset> PreloadModel(const std::filesystem::path& path);

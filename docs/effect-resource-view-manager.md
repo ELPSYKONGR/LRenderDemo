@@ -120,18 +120,18 @@ graph TD
 ```cpp
 {
     auto guard = ViewManager::Instance().CaptureState();
-    ViewManager::Instance().SetDepthMode(DepthMode::ReadOnly);
+    EffectManager::Instance().SetDepthMode(DepthMode::ReadOnly);
     effect.Draw(frame, draw);
 }
 ```
 
-`ViewManager` 还提供常用 Blend 状态和自定义 Blend 描述：
+`EffectManager` 还提供常用 Blend 状态和自定义 Blend 描述：
 
 ```cpp
-ViewManager::Instance().SetBlendMode(BlendMode::Opaque);
-ViewManager::Instance().SetBlendMode(BlendMode::AlphaBlend);
-ViewManager::Instance().SetBlendMode(BlendMode::Additive);
-ViewManager::Instance().SetBlendMode(BlendMode::Premultiplied);
+EffectManager::Instance().SetBlendMode(BlendMode::Opaque);
+EffectManager::Instance().SetBlendMode(BlendMode::AlphaBlend);
+EffectManager::Instance().SetBlendMode(BlendMode::Additive);
+EffectManager::Instance().SetBlendMode(BlendMode::Premultiplied);
 ```
 
 需要多 RenderTarget 或特殊混合因子时，直接传入 `D3D11_BLEND_DESC`，并可设置 Blend Factor
@@ -139,7 +139,7 @@ ViewManager::Instance().SetBlendMode(BlendMode::Premultiplied);
 
 ```cpp
 std::array<float, 4> blendFactor = {};
-ViewManager::Instance().SetBlendState(description, blendFactor, 0xffffffffU);
+EffectManager::Instance().SetBlendState(description, blendFactor, 0xffffffffU);
 ```
 
 Blend 状态和深度/模板状态一样，会被 `ViewStateGuard` 自动保存和恢复。
@@ -151,3 +151,9 @@ Blend 状态和深度/模板状态一样，会被 `ViewStateGuard` 自动保存�
 
 公共 `.h` 文件仍需显式包含自身声明所依赖的头文件。这样即使关闭 PCH、单独编译测试文件或未来拆出
 RHI 模块，也不会依赖偶然的包含顺序；常用头文件的预编译集合则只需要在 `stdfx.h` 中统一维护。
+## 8. EffectManager
+
+`EffectManager` 绑定当前 DX11 Device 和 ImmediateContext，负责创建 `EffectResource`、
+`EffectCubeMapResource`，以及常用 Depth/Stencil、Blend、Rasterizer 状态。具体 Effect 或 Renderer
+继续持有实际资源；`ViewManager` 只负责逻辑 View、窗口、Camera、Viewport、Scissor Rect 和
+`ViewStateGuard`。

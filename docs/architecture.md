@@ -135,3 +135,12 @@ Frame/Object/Material 三类公共缓冲由 Renderer 统一拥有。Light Buffer
 COM 资源使用 `Microsoft::WRL::ComPtr`。CPU 对象通过值语义、`std::unique_ptr` 或缓存共享所需的
 `std::shared_ptr` 管理。关闭顺序依次为：UI 后端、Effect、网格资产/纹理缓存、程序化网格/目标、
 D3D 上下文、交换链、设备、COM apartment 和窗口。
+## EffectManager
+
+`EffectManager` 是绑定当前 DX11 Device/ImmediateContext 的单例，负责创建 EffectResource 和
+EffectCubeMapResource，并缓存常用 Depth/Stencil、Blend、Rasterizer 状态。具体 Effect 或 Renderer
+继续持有实际使用的资源，避免全局字符串资源注册表隐藏生命周期。
+
+`ViewManager` 只管理逻辑 View、窗口、Camera、Viewport、Scissor Rect 和 `ViewStateGuard`。Viewport
+区域属于窗口尺寸，RasterizerState 属于 Effect 管线，因此两者保持分离。Effect 通过
+`EffectManager::SetDepthMode`、`SetBlendMode` 和 `SetRasterizerMode` 修改当前管线状态。

@@ -9,8 +9,10 @@
 #include "render/Material.h"
 
 #include <SimpleMath.h>
+#include <array>
 #include <cstdint>
 #include <d3d11.h>
+#include <wrl/client.h>
 
 namespace lrender
 {
@@ -41,8 +43,25 @@ class EffectFrameContext final
     [[nodiscard]] RenderMode GetRenderMode() const noexcept;
     void SetRenderMode(RenderMode mode) noexcept;
     void BeginFrame() const;
+    void CapturePipelineState() const;
+    void ResetPipelineState() const;
 
   private:
+    struct PipelineStateSnapshot
+    {
+        Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
+        Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
+        Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+        Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizerState;
+        Microsoft::WRL::ComPtr<ID3D11DepthStencilState> depthStencilState;
+        Microsoft::WRL::ComPtr<ID3D11BlendState> blendState;
+        D3D11_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+        std::array<float, 4> blendFactor = {};
+        UINT sampleMask = 0xffffffffU;
+        UINT stencilReference = 0;
+        bool captured = false;
+    };
+
     ID3D11DeviceContext* m_deviceContext = nullptr;
     CommonConstantBuffers* m_constantBuffers = nullptr;
     DirectX::SimpleMath::Matrix m_view;
@@ -51,6 +70,7 @@ class EffectFrameContext final
     DirectX::SimpleMath::Vector3 m_cameraPosition;
     RenderMode m_renderMode = RenderMode::DirectRendering;
     float m_aspectRatio = 0.0F;
+    mutable PipelineStateSnapshot m_pipelineState;
 };
 
 class EffectDrawContext final

@@ -1,5 +1,9 @@
 # FILE_INDEX - LRenderDemo
 
+### 本次新增的 Effect 生命周期约定
+
+`EffectResource` 支持 `MatchViewport` 和 `Fixed` 两种尺寸策略。`Dx11Renderer::ResizeViewport()` 调整动态资源并通知 Effect 的 `ResizeResources()`，固定尺寸资源不参与视口 Resize。SRV/Sampler 由各 Effect 按 `stdfx.h` 中的固定槽位宏绑定和解绑。
+
 ## 代码组织约定
 
 普通类的函数声明位于 `.h`，实现位于对应 `.cpp`。仅模板、GPU 常量布局、接口和纯数据定义保留为头文件实现。新增实现文件包括 `src/core/EntityMaterial.cpp`、`src/core/Transform.cpp` 和 `src/render/Material.cpp`。
@@ -153,3 +157,8 @@ graph TD
 | `persistence/` | 场景文件保存和加载 | `SceneSerializer` | core、nlohmann/json | 文件兼容性 |
 | `utils/` | 叶子工具模块 | `Logger` | C++ 标准库 | 仅诊断功能 |
 | `tests/` | 场景 CPU 行为和 WARP 资源导入验证 | CTest 可执行文件 | LRenderCore、LRenderAssets | 回归保障 |
+### EffectManager
+
+`src/render/EffectManager.h/.cpp` 统一创建 `EffectResource`、`EffectCubeMapResource`，缓存和绑定常用
+Depth/Stencil、Blend、Rasterizer 状态，并提供自定义 DX11 状态创建接口。ViewManager 仅负责逻辑 View、
+窗口、Camera、Viewport、Scissor Rect 和 `ViewStateGuard`。

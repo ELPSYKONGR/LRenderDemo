@@ -3,8 +3,10 @@
  */
 #include "render/BasicMeshEffect.h"
 #include "render/CommonConstantBuffers.h"
+#include "render/EffectManager.h"
 #include "render/LightManager.h"
 #include "render/Mesh.h"
+#include "stdfx.h"
 
 #include <iterator>
 #include <stdexcept>
@@ -31,7 +33,7 @@ DirectX::SimpleMath::Vector4 ToVector4(const DirectX::SimpleMath::Color& color)
 
 BasicMeshEffect::BasicMeshEffect(ID3D11Device* device, ID3D11DeviceContext* context,
                                  const std::filesystem::path& shaderDirectory)
-    : IRenderEffect(device, context), m_states(std::make_unique<DirectX::CommonStates>(Device()))
+    : IRenderEffect(device, context)
 {
     const auto vertexShader = LoadShader(shaderDirectory / L"BasicMeshVS.cso");
     const auto pixelShader = LoadShader(shaderDirectory / L"BasicMeshPS.cso");
@@ -98,11 +100,13 @@ void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawCont
     buffers.UpdateMaterialBuffer(materialData);
 
     context->IASetInputLayout(m_inputLayout.Get());
-    // ColorProcessorEffect disables depth for its fullscreen pass. Restore the
-    // scene depth test before every mesh draw so state does not leak between frames.
-    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-    context->RSSetState(m_isWireframe ? m_states->Wireframe()
-                                      : (material.IsDoubleSided() ? m_states->CullNone() : m_states->CullClockwise()));
+    EffectManager& effectManager = EffectManager::Instance();
+    effectManager.SetDepthMode(DepthMode::ReadWrite);
+    effectManager.SetRasterizerMode(
+        m_isWireframe ? RasterizerMode::WireframeCullClockwise
+                      : (material.IsDoubleSided() ? RasterizerMode::SolidCullNone
+                                                   : RasterizerMode::SolidCullClockwise));
+    effectManager.SetBlendMode(BlendMode::Opaque);
     context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
     buffers.BindFrameBuffer();
@@ -111,8 +115,8 @@ void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawCont
     LightManager::Instance().BindBuffer();
     ID3D11ShaderResourceView* texture = material.GetBaseColorTexture()->ShaderResourceView();
     ID3D11SamplerState* sampler = material.GetSampler()->Get();
-    context->PSSetShaderResources(0, 1, &texture);
-    context->PSSetSamplers(0, 1, &sampler);
+    context->PSSetShaderResources(ColorSLOT, 1, &texture);
+    context->PSSetSamplers(LinearClampSamplerSLOT, 1, &sampler);
 }
 
 void BasicMeshEffect::Draw(const EffectFrameContext& frame, const EffectDrawContext& draw)
@@ -124,6 +128,10 @@ void BasicMeshEffect::Draw(const EffectFrameContext& frame, const EffectDrawCont
         throw std::invalid_argument("BasicMeshEffect draw requires a mesh");
     }
     mesh->Draw(frame.DeviceContext());
+    ID3D11ShaderResourceView* nullResource = nullptr;
+    ID3D11SamplerState* nullSampler = nullptr;
+    frame.DeviceContext()->PSSetShaderResources(ColorSLOT, 1, &nullResource);
+    frame.DeviceContext()->PSSetSamplers(LinearClampSamplerSLOT, 1, &nullSampler);
 }
 
 } // namespace lrender

@@ -2,6 +2,8 @@
  * @file Fullscreen color processor effect implementation.
  */
 #include "render/ColorProcessorEffect.h"
+#include "render/EffectManager.h"
+#include "stdfx.h"
 
 #include <stdexcept>
 
@@ -22,7 +24,7 @@ void ThrowIfFailed(HRESULT result, const char* message)
 
 ColorProcessorEffect::ColorProcessorEffect(ID3D11Device* device, ID3D11DeviceContext* context,
                                            const std::filesystem::path& shaderDirectory)
-    : IRenderEffect(device, context), m_states(std::make_unique<DirectX::CommonStates>(Device()))
+    : IRenderEffect(device, context)
 {
     const auto vertexShader = LoadShader(shaderDirectory / L"QuadViewVS.cso");
     const auto pixelShader = LoadShader(shaderDirectory / L"ColorProcessorPS.cso");
@@ -51,10 +53,12 @@ void ColorProcessorEffect::Draw(ID3D11DeviceContext* context, ID3D11ShaderResour
         throw std::invalid_argument("Color processor requires a source texture");
     }
     SetPipeline(context);
-    context->PSSetShaderResources(0, 1, &source);
+    context->PSSetShaderResources(ColorSLOT, 1, &source);
     context->Draw(3, 0);
     ID3D11ShaderResourceView* nullResource = nullptr;
-    context->PSSetShaderResources(0, 1, &nullResource);
+    context->PSSetShaderResources(ColorSLOT, 1, &nullResource);
+    ID3D11SamplerState* nullSampler = nullptr;
+    context->PSSetSamplers(LinearClampSamplerSLOT, 1, &nullSampler);
 }
 
 void ColorProcessorEffect::SetPipeline(ID3D11DeviceContext* context)
@@ -65,11 +69,14 @@ void ColorProcessorEffect::SetPipeline(ID3D11DeviceContext* context)
     }
     context->IASetInputLayout(nullptr);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context->OMSetDepthStencilState(m_states->DepthNone(), 0);
+    EffectManager& effectManager = EffectManager::Instance();
+    effectManager.SetDepthMode(DepthMode::Disabled);
+    effectManager.SetBlendMode(BlendMode::Opaque);
+    effectManager.SetRasterizerMode(RasterizerMode::SolidCullNone);
     context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-    ID3D11SamplerState* sampler = m_states->LinearClamp();
-    context->PSSetSamplers(0, 1, &sampler);
+    ID3D11SamplerState* sampler = effectManager.GetLinearClampSampler();
+    context->PSSetSamplers(LinearClampSamplerSLOT, 1, &sampler);
 }
 
 } // namespace lrender

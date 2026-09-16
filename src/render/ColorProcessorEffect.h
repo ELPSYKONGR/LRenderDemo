@@ -5,9 +5,7 @@
 
 #include "render/IRenderEffect.h"
 
-#include <CommonStates.h>
 #include <filesystem>
-#include <memory>
 #include <wrl/client.h>
 
 namespace lrender
@@ -28,7 +26,6 @@ class ColorProcessorEffect final : public IRenderEffect
   private:
     void SetPipeline(ID3D11DeviceContext* context);
 
-    std::unique_ptr<DirectX::CommonStates> m_states;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
 };

@@ -39,23 +39,19 @@
 
 #include "render/CommonConstantBuffers.h"
 #include "render/Dx11ConstantBuffer.h"
+#include "render/EffectManager.h"
 #include "render/IRenderEffect.h"
 #include "render/EffectCubeMapResource.h"
 #include "render/viewManager.h"
+
 //
 #define FrameInfoSLOT 0
 #define ObjectInfoSLOT 1
 #define MaterialInfoSLOT 2
 #define LightInfoSLOT 3
 
-
-
-
-
 //
 #define LinearClampSamplerSLOT 0
-
-
 //
 #define ColorSLOT 0
 #define MaterialSLOT 1

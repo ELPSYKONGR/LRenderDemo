@@ -100,6 +100,7 @@ set(LRENDER_DEMO_HEADERS
     render/Dx11Renderer.h
     render/EffectCubeMapResource.h
     render/EffectContext.h
+    render/EffectManager.h
     render/EffectResource.h
     render/IRenderEffect.h
     render/LightManager.h
@@ -129,6 +130,7 @@ add_executable(LRenderDemo WIN32
     render/CommonConstantBuffers.cpp
     render/EffectCubeMapResource.cpp
     render/EffectResource.cpp
+    render/EffectManager.cpp
     render/ViewManager.cpp
     render/IRenderEffect.cpp
     render/LightManager.cpp

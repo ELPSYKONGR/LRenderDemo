@@ -25,7 +25,6 @@ class SkyCubeEffect final : public IRenderEffect
     [[nodiscard]] const EffectCubeMapResource& CubeMapResource() const noexcept;
 
   private:
-    std::unique_ptr<DirectX::CommonStates> m_states;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
     EffectCubeMapResource m_cubeMapResource;

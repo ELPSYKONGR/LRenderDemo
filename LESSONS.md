@@ -1,5 +1,12 @@
 # LESSONS - LRenderDemo
 
+### ADR-021：Effect 资源尺寸和 Pass 状态恢复分离
+
+- **决策**：EffectResource 显式区分 `MatchViewport` 与 `Fixed`；Renderer 调整视口时通知 Effect，Effect 自己调整私有动态资源。EffectFrameContext 按 Pass 捕获和恢复核心管线状态；SRV/Sampler 由 Effect 依据 `stdfx.h` 固定槽位管理。
+- **原因**：动态后处理资源必须与编辑器 Viewport 同步，而阴影图、Cubemap 等资源不能被视口 Resize 误改。SRV/Sampler 槽位数量多且由 Effect 最清楚使用范围，不适合塞入通用状态快照。
+- **边界**：快照不保存 RenderTarget、Viewport、SRV、Sampler 和 CBuffer；Effect 必须解绑自己使用的 SRV/Sampler，Renderer 负责 Pass 顺序和目标切换。
+- **状态**：已接受。
+
 ### ADR-019：灯光状态和 Light CBuffer 由 LightManager 统一管理
 
 - **决策**：`LightManager` 按 `ViewManager` 的生命周期模式作为单例存在，拥有全局 `LightingSettings`、稳定 `LightId` 和 `b3` Light CBuffer；第一阶段支持零或一盏方向光及最多四盏点光。
@@ -230,3 +237,9 @@ glTF 节点矩阵为列主序，当前 DirectX `SimpleMath` 代码采用行向�
 
 场景变换保存位移、欧拉角（度）和缩放值，以便直观编辑。矩阵组合使用 DirectXTK
 `SimpleMath`；ImGuizmo 将交互矩阵重新分解为这些字段。
+### ADR-020：EffectManager 统一 Effect 资源工厂和管线状态
+
+- **决策**：`EffectManager` 作为绑定当前 Device/ImmediateContext 的单例，负责 EffectResource/Cubemap 创建、常用 Depth/Stencil、Blend、Rasterizer 状态缓存和状态绑定；具体 Effect 或 Renderer 继续拥有实际资源。
+- **原因**：ViewManager 的逻辑 View 生命周期与 DX11 管线状态创建职责不同；拆分后新增 Effect 不再依赖 ViewManager 创建状态，状态也可以跨 Effect 复用。
+- **边界**：ViewManager 继续负责窗口、Camera、Viewport、Scissor Rect 和状态快照；ResourceCache 继续负责普通模型纹理缓存；EffectManager 不管理 Effect 实例，也不使用字符串资源注册表。
+- **状态**：已接受。

@@ -77,6 +77,20 @@ void EffectResource::Resize(ID3D11Device* device, std::uint32_t width, std::uint
     m_depthStencilView = std::move(depthStencilView);
 }
 
+void EffectResource::ResizeForViewport(ID3D11Device* device, std::uint32_t width, std::uint32_t height)
+{
+    if (m_sizeMode == EffectResourceSizeMode::Fixed)
+    {
+        return;
+    }
+    Resize(device, width, height);
+}
+
+void EffectResource::SetSizeMode(EffectResourceSizeMode mode) noexcept
+{
+    m_sizeMode = mode;
+}
+
 void EffectResource::BindAndClear(ID3D11DeviceContext* context, const float clearColor[4],
                                   const EffectResource* additionalResource) const
 {
@@ -134,6 +148,11 @@ std::uint32_t EffectResource::GetWidth() const noexcept
 std::uint32_t EffectResource::GetHeight() const noexcept
 {
     return m_height;
+}
+
+EffectResourceSizeMode EffectResource::GetSizeMode() const noexcept
+{
+    return m_sizeMode;
 }
 
 } // namespace lrender

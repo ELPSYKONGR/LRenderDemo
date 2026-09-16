@@ -1,5 +1,12 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-16 同步 Effect 资源尺寸并恢复 Pass 管线状态
+
+- `EffectResource` 新增 `MatchViewport`/`Fixed` 尺寸策略；`ResizeViewport()` 只调整动态资源，并通知 Effect 的 `ResizeResources()`。
+- `EffectFrameContext` 新增 `CapturePipelineState()` 和 `ResetPipelineState()`，按 Pass 恢复 VS、PS、InputLayout、Rasterizer、Depth/Stencil、Blend 和拓扑状态。
+- SRV/Sampler 不进入 FrameContext 快照，BasicMesh、ColorProcessor、SkyCube 按 `stdfx.h` 固定槽位自行绑定并在绘制后解绑。
+- 保留 SkyCubeEffect 的自定义深度模板状态创建和 `stdfx.h` 现有槽位宏。
+
 ## 2026-09-14 拆分全局 LightManager
 
 - 将 `LightingSettings`、灯光常量打包和 `b3` Light CBuffer 从 `BasicMeshEffect`、`CommonConstantBuffers` 迁入 `LightManager` 单例。

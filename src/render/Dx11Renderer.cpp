@@ -5,6 +5,8 @@
  * @depends render/Dx11Renderer.h, render/PrimitiveFactory.h, ImGui DX11 backend
  */
 #include "render/Dx11Renderer.h"
+#include "stdfx.h"
+#include "render/EffectManager.h"
 #include "render/LightManager.h"
 #include "render/ViewManager.h"
 
@@ -99,11 +101,12 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
 
     m_commonConstantBuffers = std::make_unique<CommonConstantBuffers>(m_device.Get(), m_context.Get());
     CreateBackBuffer();
+    EffectManager::Initialize(m_device.Get(), m_context.Get());
     ViewManager::Initialize(m_device.Get(), m_context.Get());
     LightManager::Initialize(m_device.Get(), m_context.Get());
-    m_sceneResource.Resize(m_device.Get(), 960, 640);
-    m_normalResource.Resize(m_device.Get(), 960, 640);
-    m_viewportResource.Resize(m_device.Get(), 960, 640);
+    EffectManager::Instance().CreateEffectResource(m_sceneResource, 960, 640);
+    EffectManager::Instance().CreateEffectResource(m_normalResource, 960, 640);
+    EffectManager::Instance().CreateEffectResource(m_viewportResource, 960, 640);
     m_solidMeshes = std::make_unique<SolidMeshCache>(m_device.Get());
     m_effect = std::make_unique<BasicMeshEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_skyCubeEffect = std::make_unique<SkyCubeEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
@@ -114,16 +117,17 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
 void Dx11Renderer::Shutdown() noexcept
 {
     LightManager::Shutdown();
+    m_effect.reset();
+    m_skyCubeEffect.reset();
+    m_colorProcessor.reset();
     ViewManager::Shutdown();
+    EffectManager::Shutdown();
     if (m_context)
     {
         m_context->ClearState();
         m_context->Flush();
     }
     m_commonConstantBuffers.reset();
-    m_effect.reset();
-    m_skyCubeEffect.reset();
-    m_colorProcessor.reset();
     m_resources.reset();
     m_solidMeshes.reset();
     m_viewportResource.Reset();
@@ -165,18 +169,23 @@ void Dx11Renderer::ResizeSwapChain(std::uint32_t width, std::uint32_t height)
 
 void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height)
 {
+    width = std::max(width, 1U);
+    height = std::max(height, 1U);
     ID3D11ShaderResourceView* nullResource = nullptr;
-    m_context->PSSetShaderResources(0, 1, &nullResource);
-    m_sceneResource.Resize(m_device.Get(), width, height);
-    m_normalResource.Resize(m_device.Get(), width, height);
-    m_viewportResource.Resize(m_device.Get(), width, height);
+    m_context->PSSetShaderResources(ColorSLOT, 1, &nullResource);
+    m_sceneResource.ResizeForViewport(m_device.Get(), width, height);
+    m_normalResource.ResizeForViewport(m_device.Get(), width, height);
+    m_viewportResource.ResizeForViewport(m_device.Get(), width, height);
+    m_effect->ResizeResources(width, height);
+    m_skyCubeEffect->ResizeResources(width, height);
+    m_colorProcessor->ResizeResources(width, height);
 }
 
 void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId)
 {
     // ImGui sampled this texture in the previous frame; unbind it before using the same resource as an RTV.
     ID3D11ShaderResourceView* nullResource = nullptr;
-    m_context->PSSetShaderResources(0, 1, &nullResource);
+    m_context->PSSetShaderResources(ColorSLOT, 1, &nullResource);
     constexpr float clearColor[4] = {0.055F, 0.065F, 0.075F, 1.0F};
     m_sceneResource.BindAndClear(m_context.Get(), clearColor, &m_normalResource);
     constexpr float normalClearColor[4] = {0.5F, 0.5F, 0.5F, 1.0F};
@@ -187,15 +196,19 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     frameContext.BeginFrame();
     LightManager::Instance().UpdateBuffer();
 	//opq pass
+    frameContext.CapturePipelineState();
     DrawOpqEntity(scene, camera, selectedEntityId, frameContext);
+    frameContext.ResetPipelineState();
     //sky pass
+    frameContext.CapturePipelineState();
     m_skyCubeEffect->Draw(frameContext);
+    frameContext.ResetPipelineState();
 
 
     nullResource = nullptr;
     ID3D11SamplerState* nullSampler = nullptr;
-    m_context->PSSetShaderResources(0, 1, &nullResource);
-    m_context->PSSetSamplers(0, 1, &nullSampler);
+    m_context->PSSetShaderResources(ColorSLOT, 1, &nullResource);
+    m_context->PSSetSamplers(LinearClampSamplerSLOT, 1, &nullSampler);
     m_context->RSSetState(nullptr);
 
     m_viewportResource.BindAndClear(m_context.Get(), clearColor);
@@ -204,11 +217,14 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     {
         viewportSource = m_normalResource.GetShaderResourceView();
     }
+    frameContext.CapturePipelineState();
     m_colorProcessor->Draw(m_context.Get(), viewportSource);
+    frameContext.ResetPipelineState();
 }
 
 
-void Dx11Renderer::DrawOpqEntity(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId, EffectFrameContext frameContext)
+void Dx11Renderer::DrawOpqEntity(const Scene& scene, const Camera&, std::uint32_t selectedEntityId,
+                                 const EffectFrameContext& frameContext)
 {
     std::unordered_set<EntityId> activeSolids;
 	for (const Model& sceneModel : scene.Models())

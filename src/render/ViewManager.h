@@ -1,5 +1,5 @@
 /**
- * @file View management and DX11 pipeline state protection.
+ * @file View management and DX11 pipeline state snapshot protection.
  */
 #pragma once
 
@@ -51,33 +51,6 @@ class ViewStateGuard final
     UINT m_viewportCount = 0;
 };
 
-enum class DepthMode
-{
-    Disabled,
-    ReadOnly,
-    ReadWrite
-};
-
-enum class BlendMode
-{
-    Opaque,
-    AlphaBlend,
-    Additive,
-    Premultiplied
-};
-
-struct StencilDescription
-{
-    bool enabled = false;
-    D3D11_COMPARISON_FUNC comparison = D3D11_COMPARISON_ALWAYS;
-    std::uint8_t reference = 0;
-    std::uint8_t readMask = 0xff;
-    std::uint8_t writeMask = 0xff;
-    D3D11_STENCIL_OP failOperation = D3D11_STENCIL_OP_KEEP;
-    D3D11_STENCIL_OP depthFailOperation = D3D11_STENCIL_OP_KEEP;
-    D3D11_STENCIL_OP passOperation = D3D11_STENCIL_OP_KEEP;
-};
-
 using ViewId = std::uint32_t;
 
 struct ViewInfo
@@ -115,35 +88,12 @@ class ViewManager final
     [[nodiscard]] std::unique_ptr<ViewStateGuard> CaptureState() const;
     void CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) const;
     void CreatePlaneTestEntity(Scene& scene, std::uint32_t modelId) const;
-    [[nodiscard]] ID3D11DepthStencilState* GetDepthStencilState(DepthMode mode) const noexcept;
-    [[nodiscard]] ID3D11BlendState* GetBlendState(BlendMode mode) const noexcept;
-    void SetDepthMode(DepthMode mode);
-    void SetStencil(const StencilDescription& description);
-    void SetBlendMode(BlendMode mode, const std::array<float, 4>& blendFactor = {},
-                      UINT sampleMask = 0xffffffffU);
-    void SetBlendState(const D3D11_BLEND_DESC& description, const std::array<float, 4>& blendFactor = {},
-                       UINT sampleMask = 0xffffffffU);
-    [[nodiscard]] Microsoft::WRL::ComPtr<ID3D11DepthStencilState> CreateDepthStencilState(
-        const D3D11_DEPTH_STENCIL_DESC& description) const;
-    [[nodiscard]] Microsoft::WRL::ComPtr<ID3D11BlendState> CreateBlendState(
-        const D3D11_BLEND_DESC& description) const;
 
   private:
     ViewManager(ID3D11Device* device, ID3D11DeviceContext* context);
-    void CreateCommonStates();
-    [[nodiscard]] static D3D11_DEPTH_STENCIL_DESC BuildDepthStencilDescription(DepthMode mode);
-    [[nodiscard]] static D3D11_BLEND_DESC BuildBlendDescription(BlendMode mode);
 
     static std::unique_ptr<ViewManager> m_instance;
-    ID3D11Device* m_device = nullptr;
     ID3D11DeviceContext* m_context = nullptr;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthDisabledState;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthReadOnlyState;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthReadWriteState;
-    Microsoft::WRL::ComPtr<ID3D11BlendState> m_opaqueBlendState;
-    Microsoft::WRL::ComPtr<ID3D11BlendState> m_alphaBlendState;
-    Microsoft::WRL::ComPtr<ID3D11BlendState> m_additiveBlendState;
-    Microsoft::WRL::ComPtr<ID3D11BlendState> m_premultipliedBlendState;
     std::unordered_map<ViewId, ViewInfo> m_views;
     ViewId m_nextViewId = 1;
     ViewId m_activeViewId = 0;
