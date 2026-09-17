@@ -53,6 +53,7 @@ class Dx11Renderer final
     void ClearRuntimeCaches() noexcept;
     void ClearTarget() noexcept;
     void SetViewportDebugView(ViewportDebugView view) noexcept;
+    void SetSkyCubeEnabled(bool enabled) noexcept;
 
     [[nodiscard]] ID3D11ShaderResourceView* MaterialPreview(const Entity& entity);
 
@@ -61,6 +62,7 @@ class Dx11Renderer final
     [[nodiscard]] EffectResource& ViewportResource() noexcept;
     [[nodiscard]] const EffectResource& NormalResource() const noexcept;
     [[nodiscard]] ViewportDebugView GetViewportDebugView() const noexcept;
+    [[nodiscard]] bool IsSkyCubeEnabled() const noexcept;
     [[nodiscard]] BasicMeshEffect& Effect() noexcept;
     [[nodiscard]] std::size_t CachedMeshAssetCount() const noexcept;
     [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
@@ -88,6 +90,7 @@ class Dx11Renderer final
     std::unique_ptr<ResourceCache> m_resources;
     std::unique_ptr<CommonConstantBuffers> m_commonConstantBuffers;
     ViewportDebugView m_viewportDebugView = ViewportDebugView::Lit;
+    bool m_skyCubeEnabled = true;
 };
 
 } // namespace lrender

@@ -202,10 +202,13 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     frameContext.CapturePipelineState();
     DrawOpqEntity(scene, camera, selectedEntityId, frameContext);
     frameContext.ResetPipelineState();
-    //sky pass
-    frameContext.CapturePipelineState();
-    m_skyCubeEffect->Draw(frameContext);
-    frameContext.ResetPipelineState();
+    // sky pass
+    if (m_skyCubeEnabled)
+    {
+        frameContext.CapturePipelineState();
+        m_skyCubeEffect->Draw(frameContext);
+        frameContext.ResetPipelineState();
+    }
 
 
     nullResource = nullptr;
@@ -404,6 +407,16 @@ const EffectResource& Dx11Renderer::NormalResource() const noexcept
 void Dx11Renderer::SetViewportDebugView(ViewportDebugView view) noexcept
 {
     m_viewportDebugView = view;
+}
+
+void Dx11Renderer::SetSkyCubeEnabled(bool enabled) noexcept
+{
+    m_skyCubeEnabled = enabled;
+}
+
+bool Dx11Renderer::IsSkyCubeEnabled() const noexcept
+{
+    return m_skyCubeEnabled;
 }
 
 ViewportDebugView Dx11Renderer::GetViewportDebugView() const noexcept

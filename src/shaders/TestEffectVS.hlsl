@@ -1,8 +1,23 @@
 /**
- * @file Placeholder vertex shader for the test pass.
+ * @file Test geometry vertex shader.
  */
 
-float4 VSMain(uint vertexId : SV_VertexID) : SV_POSITION
+struct VSInput
 {
-    return float4(0.0F, 0.0F, 0.0F, 1.0F);
+    float3 position : POSITION;
+    float4 color : COLOR;
+};
+
+struct VSOutput
+{
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
+};
+
+VSOutput VSMain(VSInput input)
+{
+    VSOutput output;
+    output.position = float4(input.position, 1.0F);
+    output.color = input.color;
+    return output;
 }

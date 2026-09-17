@@ -1,5 +1,14 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-17 工程版本标记为 1.0
+
+- 将 CMake 工程版本从 `0.1.0` 更新为 `1.0.0`，对外版本记为 `1.0`。
+- 新增 `VERSION.md`，规定后续每次提交同步更新工程版本、README 和变更记录。
+
+## 2026-09-17 整理编辑器控件到渲染层的调试笔记
+
+- 新增 `docs/editor-to-renderer-debug-flow.md`，记录天空盒启用开关从 ImGui 控件传递到 `RenderScene()` 的调用链、断点调试步骤，以及临时渲染状态与可保存场景设置的区别。
+
 ## 2026-09-16 新增 TestEffect 骨架
 
 - 仿照 `SSREffect` 新增 `TestEffect` 及 VS/PS 占位 Shader，并注册 CMake 构建；Renderer 管理其生命周期，但暂不执行绘制 Pass。

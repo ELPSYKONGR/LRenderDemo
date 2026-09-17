@@ -1,8 +1,8 @@
 /**
- * @file Placeholder pixel shader for the test pass.
+ * @file Test geometry pixel shader.
  */
 
-float4 PSMain() : SV_TARGET
+float4 PSMain(float4 color : COLOR) : SV_TARGET
 {
-    return float4(0.0F, 0.0F, 0.0F, 0.0F);
+    return color;
 }

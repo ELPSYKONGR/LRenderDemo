@@ -223,6 +223,11 @@ void EditorLayer::DrawViewport(Scene& scene, CommandHistory& history, Camera& ca
         renderer.SetViewportDebugView(static_cast<ViewportDebugView>(debugViewIndex));
     }
     ItemTooltip("Lit shows final shading. World Normal shows encoded world-space XYZ directions as RGB. Press F2 to toggle.");
+    bool skyCubeEnabled = renderer.IsSkyCubeEnabled();
+    if (ImGui::Checkbox("Sky Cube", &skyCubeEnabled))
+    {
+        renderer.SetSkyCubeEnabled(skyCubeEnabled);
+    }
     ImGui::Separator();
     const ImVec2 available = ImGui::GetContentRegionAvail();
     const auto width = static_cast<std::uint32_t>(std::max(available.x, 1.0F));

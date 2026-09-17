@@ -1,5 +1,13 @@
 # FILE_INDEX - LRenderDemo
 
+### 工程版本维护
+
+`VERSION.md` 记录当前工程版本和后续提交的版本递增规则。CMake 内部版本为 `1.0.0`，对外显示版本为 `1.0`。
+
+### 编辑器控件到渲染层调试流程
+
+`docs/editor-to-renderer-debug-flow.md` 以天空盒 Checkbox 为例，说明 `EditorLayer`、`Dx11Renderer::RenderScene()` 和 `SkyCubeEffect` 之间的状态传递及 Visual Studio 断点调试方法。
+
 ### 本次新增的 Effect 生命周期约定
 
 `EffectResource` 支持 `MatchViewport` 和 `Fixed` 两种尺寸策略。`Dx11Renderer::ResizeViewport()` 调整动态资源并通知 Effect 的 `ResizeResources()`，固定尺寸资源不参与视口 Resize。SRV/Sampler 由各 Effect 按 `stdfx.h` 中的固定槽位宏绑定和解绑。
