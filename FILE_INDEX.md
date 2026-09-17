@@ -24,6 +24,7 @@
 |---|---|---|
 | `src/render/LightManager.h/.cpp` | 全局灯光增删、默认灯光和 `b3` Light CBuffer 单例管理 | `LightManager` |
 | `src/render/SSREffect.h/.cpp`、`src/shaders/SSREffectVS.hlsl`、`src/shaders/SSREffectPS.hlsl` | SSR Pass 的可编译空实现骨架 | `SSREffect` |
+| `src/render/TestEffect.h/.cpp`、`src/shaders/TestEffectVS.hlsl`、`src/shaders/TestEffectPS.hlsl` | 测试 Pass 的可编译空实现骨架 | `TestEffect` |
 | `src/render/EffectResource.h/.cpp` | 单个二维颜色/深度渲染资源，封装 RTV/SRV/DSV | `EffectResource` |
 | `src/render/EffectCubeMapResource.h/.cpp` | Effect 私有 TextureCube、SRV 和可选六面 RTV | `EffectCubeMapResource` |
 | `src/render/CommonConstantBuffers.h/.cpp` | Renderer 统一拥有和更新 Frame/Object/Material 三类公共 CBuffer | `CommonConstantBuffers` |

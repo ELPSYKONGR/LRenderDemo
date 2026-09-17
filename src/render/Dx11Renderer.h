@@ -10,6 +10,7 @@
 #include "core/Scene.h"
 #include "render/BasicMeshEffect.h"
 #include "render/ColorProcessorEffect.h"
+#include "render/TestEffect.h"
 #include "render/CommonConstantBuffers.h"
 #include "render/EffectResource.h"
 #include "render/Mesh.h"
@@ -83,6 +84,7 @@ class Dx11Renderer final
     std::unique_ptr<BasicMeshEffect> m_effect;
     std::unique_ptr<SkyCubeEffect> m_skyCubeEffect;
     std::unique_ptr<ColorProcessorEffect> m_colorProcessor;
+    std::unique_ptr<TestEffect> m_testEffect;
     std::unique_ptr<ResourceCache> m_resources;
     std::unique_ptr<CommonConstantBuffers> m_commonConstantBuffers;
     ViewportDebugView m_viewportDebugView = ViewportDebugView::Lit;

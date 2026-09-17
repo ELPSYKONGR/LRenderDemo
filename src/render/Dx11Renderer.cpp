@@ -111,6 +111,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     m_effect = std::make_unique<BasicMeshEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_skyCubeEffect = std::make_unique<SkyCubeEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_colorProcessor = std::make_unique<ColorProcessorEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_testEffect = std::make_unique<TestEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_resources = std::make_unique<ResourceCache>(m_device.Get(), m_context.Get());
 }
 
@@ -119,6 +120,7 @@ void Dx11Renderer::Shutdown() noexcept
     LightManager::Shutdown();
     m_effect.reset();
     m_skyCubeEffect.reset();
+    m_testEffect.reset();
     m_colorProcessor.reset();
     ViewManager::Shutdown();
     EffectManager::Shutdown();
@@ -178,6 +180,7 @@ void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height)
     m_viewportResource.ResizeForViewport(m_device.Get(), width, height);
     m_effect->ResizeResources(width, height);
     m_skyCubeEffect->ResizeResources(width, height);
+    m_testEffect->ResizeResources(width, height);
     m_colorProcessor->ResizeResources(width, height);
 }
 

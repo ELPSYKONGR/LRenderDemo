@@ -1,5 +1,9 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-16 新增 TestEffect 骨架
+
+- 仿照 `SSREffect` 新增 `TestEffect` 及 VS/PS 占位 Shader，并注册 CMake 构建；Renderer 管理其生命周期，但暂不执行绘制 Pass。
+
 ## 2026-09-16 同步 Effect 资源尺寸并恢复 Pass 管线状态
 
 - `EffectResource` 新增 `MatchViewport`/`Fixed` 尺寸策略；`ResizeViewport()` 只调整动态资源，并通知 Effect 的 `ResizeResources()`。
