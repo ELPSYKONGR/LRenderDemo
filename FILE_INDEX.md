@@ -32,11 +32,11 @@
 |---|---|---|
 | `src/render/LightManager.h/.cpp` | 全局灯光增删、默认灯光和 `b3` Light CBuffer 单例管理 | `LightManager` |
 | `src/render/SSREffect.h/.cpp`、`src/shaders/SSREffectVS.hlsl`、`src/shaders/SSREffectPS.hlsl` | SSR Pass 的可编译空实现骨架 | `SSREffect` |
-| `src/render/TestEffect.h/.cpp`、`src/shaders/TestEffectVS.hlsl`、`src/shaders/TestEffectPS.hlsl` | 测试 Pass 的可编译空实现骨架 | `TestEffect` |
+| `src/render/TestEffect.h/.cpp`、`src/shaders/TestEffectVS.hlsl`、`src/shaders/TestEffectPS.hlsl` | 帧级测试 Pass，绘制单三角形或透明三角形组 | `TestEffect::RenderEffect()` |
 | `src/render/EffectResource.h/.cpp` | 单个二维颜色/深度渲染资源，封装 RTV/SRV/DSV | `EffectResource` |
 | `src/render/EffectCubeMapResource.h/.cpp` | Effect 私有 TextureCube、SRV 和可选六面 RTV | `EffectCubeMapResource` |
 | `src/render/CommonConstantBuffers.h/.cpp` | Renderer 统一拥有和更新 Frame/Object/Material 三类公共 CBuffer | `CommonConstantBuffers` |
-| `src/render/IRenderEffect.h/.cpp` | Effect 的 Bind/Draw/ResizeResources 边界和设备访问 | `IRenderEffect::Draw` |
+| `src/render/IRenderEffect.h/.cpp` | 帧级与逐对象 Effect 的接口、设备访问 | `IRenderEffect`、`IRenderObjectEffect` |
 | `src/render/ViewManager.h/.cpp` | 逻辑多 View、深度/模板状态设置和 DX11 状态 RAII 恢复 | `ViewManager`、`ViewStateGuard` |
 | `docs/effect-resource-view-manager.md` | Effect 资源、Draw/Pass 和 View 状态设计说明 | 中文学习文档 |
 | `docs/forward-and-deferred-rendering.md` | 独立的直接渲染与延迟渲染图形学学习笔记 | 中文学习文档 |
@@ -66,15 +66,15 @@
 | `src/commands/MaterialCommand.*` | 可逆实体材质编辑 | `Execute()`、`Undo()` | Scene、EntityMaterial |
 | `src/commands/SolidGeometryCommand.*` | 可逆 Solid 参数编辑 | `Execute()`、`Undo()` | Scene、SolidGeometry |
 | `src/render/EffectContext.*` | 从 Camera/Entity/Material 构造不可变的帧与绘制快照 | `EffectFrameContext`、`EffectDrawContext` | Camera、Scene、Material、D3D11 |
-| `src/render/IRenderEffect.h` | 逐网格 Effect 的两 Context 绑定边界 | `Bind(frame, draw)` | EffectContext |
-| `src/render/ColorProcessorEffect.*` | 全屏三角形颜色后处理 | `Draw()` | IRenderEffect、EffectResource |
-| `src/render/SkyCubeEffect.*` | 全屏 TextureCube 天空背景 | `Bind()`、`Draw()` | IRenderEffect、EffectCubeMapResource |
+| `src/render/IRenderEffect.h` | 帧级与逐对象 Effect 的独立接口 | `RenderEffect(frame)`、`Draw(frame, draw)` | EffectContext |
+| `src/render/ColorProcessorEffect.*` | 全屏三角形颜色后处理 | `SetSource()`、`RenderEffect()` | IRenderEffect、EffectResource |
+| `src/render/SkyCubeEffect.*` | 全屏 TextureCube 天空背景 | `BindPipeline()`、`RenderEffect()` | IRenderEffect、EffectCubeMapResource |
 | `src/render/EffectResource.*` | 单个离屏颜色/深度资源的 RTV/SRV/DSV | `Resize()`、`BindAndClear()`、`Reset()` | D3D11 |
 | `src/render/EffectCubeMapResource.*` | DDS/动态 Cubemap 及可选整体/单面 RTV | `LoadDDS()`、`Create()` | D3D11、DirectXTK |
 | `src/render/Dx11ConstantBuffer.h` | 16 字节对齐的类型化 DX11 常量缓冲 RAII 封装 | `Update()`、`BindVS()`、`BindPS()` | D3D11、ComPtr |
 | `src/render/CommonConstantBuffers.h` | Renderer 共享的 Frame/Object/Material C++ 常量布局及 GPU Buffer 管理 | `FrameConstants`、`ObjectConstants`、`MaterialConstants`、`CommonConstantBuffers` | SimpleMath、D3D11 |
 | `src/render/LightManager.*`、`Lighting.h` | 全局环境光、方向光、点光增删及 Light CBuffer 上传/绑定 | `AddDirectionalLight()`、`AddPointLight()`、`RemoveLight()`、`UpdateBuffer()` | Dx11ConstantBuffer、SimpleMath、D3D11 |
-| `src/render/BasicMeshEffect.*` | 组装纹理材质常量并绑定基础光照管线 | `Bind()`、`Draw()` | CommonConstantBuffers、LightManager、D3DCompiler |
+| `src/render/BasicMeshEffect.*` | 组装纹理材质常量并绑定基础光照管线 | `BindPipeline()`、`Draw()` | IRenderObjectEffect、CommonConstantBuffers、LightManager |
 | `src/shaders/common.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `FrameInfo`、`ObjectInfo`、`MaterialInfo`、`LightInfo` cbuffers | 无 |
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | common.hlsli |
 | `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | common.hlsli |

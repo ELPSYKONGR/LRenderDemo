@@ -27,8 +27,8 @@ class IRenderEffect
     IRenderEffect(const IRenderEffect&) = delete;
     IRenderEffect& operator=(const IRenderEffect&) = delete;
 
-    virtual void Bind(const EffectFrameContext& frame, const EffectDrawContext& draw) = 0;
-    virtual void Draw(const EffectFrameContext& frame, const EffectDrawContext& draw);
+    virtual void BindPipeline(const EffectFrameContext& frame) = 0;
+    virtual void RenderEffect(const EffectFrameContext& frame) = 0;
     virtual void ResizeResources(std::uint32_t width, std::uint32_t height);
 
     [[nodiscard]] virtual std::string_view Name() const noexcept = 0;
@@ -41,6 +41,31 @@ class IRenderEffect
   private:
     ID3D11Device* m_device = nullptr;
     ID3D11DeviceContext* m_context = nullptr;
+};
+
+class IRenderObjectEffect
+{
+public:
+
+    IRenderObjectEffect(ID3D11Device* device, ID3D11DeviceContext* context);
+	virtual ~IRenderObjectEffect() = default;
+
+	IRenderObjectEffect(const IRenderObjectEffect&) = delete;
+	IRenderObjectEffect& operator=(const IRenderObjectEffect&) = delete;
+
+	virtual void BindPipeline(const EffectFrameContext& frame, const EffectDrawContext& draw) = 0;
+	virtual void Draw(const EffectFrameContext& frame, const EffectDrawContext& draw) = 0;
+
+
+	[[nodiscard]] virtual std::string_view Name() const noexcept = 0;
+protected:
+	[[nodiscard]] ID3D11Device* Device() const noexcept;
+	[[nodiscard]] ID3D11DeviceContext* DeviceContext() const noexcept;
+	[[nodiscard]] static Microsoft::WRL::ComPtr<ID3DBlob> LoadShader(const std::filesystem::path& path);
+
+private:
+	ID3D11Device* m_device = nullptr;
+	ID3D11DeviceContext* m_context = nullptr;
 };
 
 } // namespace lrender

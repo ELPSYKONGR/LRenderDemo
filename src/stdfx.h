@@ -44,6 +44,19 @@
 #include "render/EffectCubeMapResource.h"
 #include "render/viewManager.h"
 
+namespace
+{
+
+	void ThrowIfFailed(HRESULT result, const char* message)
+	{
+		if (FAILED(result))
+		{
+			throw std::runtime_error(message);
+		}
+	}
+
+} // namespace
+
 //
 #define FrameInfoSLOT 0
 #define ObjectInfoSLOT 1

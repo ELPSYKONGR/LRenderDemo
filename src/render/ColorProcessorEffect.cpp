@@ -41,24 +41,36 @@ std::string_view ColorProcessorEffect::Name() const noexcept
     return "Color Processor";
 }
 
-void ColorProcessorEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext&)
-{
-    SetPipeline(frame.DeviceContext());
-}
-
-void ColorProcessorEffect::Draw(ID3D11DeviceContext* context, ID3D11ShaderResourceView* source)
+void ColorProcessorEffect::SetSource(ID3D11ShaderResourceView* source)
 {
     if (source == nullptr)
     {
         throw std::invalid_argument("Color processor requires a source texture");
     }
-    SetPipeline(context);
+    m_source = source;
+}
+
+void ColorProcessorEffect::BindPipeline(const EffectFrameContext& frame)
+{
+    SetPipeline(frame.DeviceContext());
+}
+
+void ColorProcessorEffect::RenderEffect(const EffectFrameContext& frame)
+{
+    if (!m_source)
+    {
+        throw std::invalid_argument("Color processor requires a source texture");
+    }
+    BindPipeline(frame);
+    ID3D11DeviceContext* context = frame.DeviceContext();
+    ID3D11ShaderResourceView* source = m_source.Get();
     context->PSSetShaderResources(ColorSLOT, 1, &source);
     context->Draw(3, 0);
     ID3D11ShaderResourceView* nullResource = nullptr;
     context->PSSetShaderResources(ColorSLOT, 1, &nullResource);
     ID3D11SamplerState* nullSampler = nullptr;
     context->PSSetSamplers(LinearClampSamplerSLOT, 1, &nullSampler);
+    m_source.Reset();
 }
 
 void ColorProcessorEffect::SetPipeline(ID3D11DeviceContext* context)

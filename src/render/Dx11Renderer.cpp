@@ -178,7 +178,6 @@ void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height)
     m_sceneResource.ResizeForViewport(m_device.Get(), width, height);
     m_normalResource.ResizeForViewport(m_device.Get(), width, height);
     m_viewportResource.ResizeForViewport(m_device.Get(), width, height);
-    m_effect->ResizeResources(width, height);
     m_skyCubeEffect->ResizeResources(width, height);
     m_testEffect->ResizeResources(width, height);
     m_colorProcessor->ResizeResources(width, height);
@@ -198,18 +197,19 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     frameContext.SetRenderMode(RenderMode::DirectRendering);
     frameContext.BeginFrame();
     LightManager::Instance().UpdateBuffer();
-	//opq pass
-    frameContext.CapturePipelineState();
-    DrawOpqEntity(scene, camera, selectedEntityId, frameContext);
-    frameContext.ResetPipelineState();
-    // sky pass
-    if (m_skyCubeEnabled)
-    {
-        frameContext.CapturePipelineState();
-        m_skyCubeEffect->Draw(frameContext);
-        frameContext.ResetPipelineState();
-    }
+	////opq pass
+ //   frameContext.CapturePipelineState();
+ //   DrawOpqEntity(scene, camera, selectedEntityId, frameContext);
+ //   frameContext.ResetPipelineState();
+ //   // sky pass
+ //   if (m_skyCubeEnabled)
+ //   {
+ //       frameContext.CapturePipelineState();
+ //       m_skyCubeEffect->RenderEffect(frameContext);
+ //       frameContext.ResetPipelineState();
+ //   }
 
+    m_testEffect->RenderEffect(frameContext);
 
     nullResource = nullptr;
     ID3D11SamplerState* nullSampler = nullptr;
@@ -224,7 +224,8 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
         viewportSource = m_normalResource.GetShaderResourceView();
     }
     frameContext.CapturePipelineState();
-    m_colorProcessor->Draw(m_context.Get(), viewportSource);
+    m_colorProcessor->SetSource(viewportSource);
+    m_colorProcessor->RenderEffect(frameContext);
     frameContext.ResetPipelineState();
 }
 

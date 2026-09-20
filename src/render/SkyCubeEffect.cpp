@@ -9,18 +9,7 @@
 
 namespace lrender
 {
-namespace
-{
 
-void ThrowIfFailed(HRESULT result, const char* message)
-{
-    if (FAILED(result))
-    {
-        throw std::runtime_error(message);
-    }
-}
-
-} // namespace
 
 
 
@@ -40,7 +29,7 @@ SkyCubeEffect::SkyCubeEffect(ID3D11Device* device, ID3D11DeviceContext* context,
     m_cubeMapResource = EffectManager::Instance().CreateCubeMapResource(cubeMapPath);
 }
 
-void SkyCubeEffect::Bind(const EffectFrameContext& frame)
+void SkyCubeEffect::BindPipeline(const EffectFrameContext& frame)
 {
     ID3D11DeviceContext* context = frame.DeviceContext();
     frame.ConstantBuffers().BindFrameBuffer();
@@ -50,14 +39,9 @@ void SkyCubeEffect::Bind(const EffectFrameContext& frame)
     context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
 }
 
-void SkyCubeEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext&)
+void SkyCubeEffect::RenderEffect(const EffectFrameContext& frame)
 {
-    Bind(frame);
-}
-
-void SkyCubeEffect::Draw(const EffectFrameContext& frame)
-{
-    Bind(frame);
+    BindPipeline(frame);
     //将天空盒载入 HLSL 的 TextureCube 中
     ID3D11DeviceContext* context = frame.DeviceContext();
     ID3D11ShaderResourceView* cubeMap = m_cubeMapResource.GetShaderResourceView();
@@ -81,11 +65,6 @@ void SkyCubeEffect::Draw(const EffectFrameContext& frame)
     ID3D11SamplerState* nullSample = nullptr;
     context->PSSetShaderResources(SkyTextureCubeSLOT, 1, &nullResource);
     context->PSSetSamplers(LinearClampSamplerSLOT, 1, &nullSample);
-}
-
-void SkyCubeEffect::Draw(const EffectFrameContext& frame, const EffectDrawContext&)
-{
-    Draw(frame);
 }
 
 std::string_view SkyCubeEffect::Name() const noexcept

@@ -33,7 +33,7 @@ DirectX::SimpleMath::Vector4 ToVector4(const DirectX::SimpleMath::Color& color)
 
 BasicMeshEffect::BasicMeshEffect(ID3D11Device* device, ID3D11DeviceContext* context,
                                  const std::filesystem::path& shaderDirectory)
-    : IRenderEffect(device, context)
+    : IRenderObjectEffect(device, context)
 {
     const auto vertexShader = LoadShader(shaderDirectory / L"BasicMeshVS.cso");
     const auto pixelShader = LoadShader(shaderDirectory / L"BasicMeshPS.cso");
@@ -69,7 +69,7 @@ bool BasicMeshEffect::IsWireframe() const noexcept
     return m_isWireframe;
 }
 
-void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext& draw)
+void BasicMeshEffect::BindPipeline(const EffectFrameContext& frame, const EffectDrawContext& draw)
 {
     ID3D11DeviceContext* context = frame.DeviceContext();
     const Material& material = draw.ResolvedMaterial();
@@ -121,7 +121,7 @@ void BasicMeshEffect::Bind(const EffectFrameContext& frame, const EffectDrawCont
 
 void BasicMeshEffect::Draw(const EffectFrameContext& frame, const EffectDrawContext& draw)
 {
-    Bind(frame, draw);
+    BindPipeline(frame, draw);
     const Mesh* mesh = draw.MeshGeometry();
     if (mesh == nullptr)
     {

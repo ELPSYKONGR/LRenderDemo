@@ -25,8 +25,8 @@ class TestEffect final : public IRenderEffect
                const std::filesystem::path& shaderDirectory);
     void SetGeometryMode(TestGeometryMode mode) noexcept;
     [[nodiscard]] TestGeometryMode GeometryMode() const noexcept;
-    void Bind(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
-    void Draw(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
+    void BindPipeline(const EffectFrameContext& frame) override;
+    void RenderEffect(const EffectFrameContext& frame) override;
     [[nodiscard]] std::string_view Name() const noexcept override;
   private:
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;

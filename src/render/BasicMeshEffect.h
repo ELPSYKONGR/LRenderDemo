@@ -11,12 +11,12 @@
 namespace lrender
 {
 
-class BasicMeshEffect final : public IRenderEffect
+class BasicMeshEffect final : public IRenderObjectEffect
 {
   public:
     BasicMeshEffect(ID3D11Device* device, ID3D11DeviceContext* context, const std::filesystem::path& shaderDirectory);
 
-    void Bind(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
+    void BindPipeline(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
     void Draw(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
 
     [[nodiscard]] std::string_view Name() const noexcept override;

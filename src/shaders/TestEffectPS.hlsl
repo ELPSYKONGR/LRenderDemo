@@ -2,7 +2,13 @@
  * @file Test geometry pixel shader.
  */
 
-float4 PSMain(float4 color : COLOR) : SV_TARGET
+struct PSInput
 {
-    return color;
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
+};
+
+float4 PSMain(PSInput input) : SV_TARGET
+{
+    return input.color;
 }

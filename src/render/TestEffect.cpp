@@ -73,11 +73,11 @@ TestEffect::TestEffect(ID3D11Device* device, ID3D11DeviceContext* context,
     // 测试几何使用裁剪空间坐标，便于独立验证输入布局、深度和混合状态。
     constexpr std::array<TestVertex, 3> singleTriangleVertices =
     {
-        TestVertex{{-0.65F, -0.55F, 0.20F}, {1.0F, 0.1F, 0.1F, 1.0F}},
-        TestVertex{{0.0F, 0.65F, 0.20F}, {0.1F, 1.0F, 0.1F, 1.0F}},
-        TestVertex{{0.65F, -0.55F, 0.20F}, {0.1F, 0.3F, 1.0F, 1.0F}}
+        TestVertex{{-1.0F, -1.0F, 0.F}, {1.0F, 0.1F, 0.1F, 1.0F}},
+        TestVertex{{0.0F, 0.0F, 0.F}, {0.1F, 1.0F, 0.1F, 1.0F}},
+        TestVertex{{-0.5F, 0.5F, 0.20F}, {0.1F, 0.1F, 1.0F, 1.0F}}
     };
-    constexpr std::array<std::uint32_t, 3> singleTriangleIndices = {0, 1, 2};
+    constexpr std::array<std::uint32_t, 3> singleTriangleIndices = {0, 2, 1};
 
     constexpr std::array<TestVertex, 9> transparentVertices =
     {
@@ -93,14 +93,10 @@ TestEffect::TestEffect(ID3D11Device* device, ID3D11DeviceContext* context,
     };
     constexpr std::array<std::uint32_t, 9> transparentIndices = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
-    m_singleTriangleVertexBuffer = CreateBuffer(Device(), singleTriangleVertices.data(),
-                                                sizeof(singleTriangleVertices), D3D11_BIND_VERTEX_BUFFER);
-    m_singleTriangleIndexBuffer = CreateBuffer(Device(), singleTriangleIndices.data(),
-                                                sizeof(singleTriangleIndices), D3D11_BIND_INDEX_BUFFER);
-    m_transparentVertexBuffer = CreateBuffer(Device(), transparentVertices.data(),
-                                              sizeof(transparentVertices), D3D11_BIND_VERTEX_BUFFER);
-    m_transparentIndexBuffer = CreateBuffer(Device(), transparentIndices.data(),
-                                             sizeof(transparentIndices), D3D11_BIND_INDEX_BUFFER);
+    m_singleTriangleVertexBuffer = CreateBuffer(Device(), singleTriangleVertices.data(),sizeof(singleTriangleVertices), D3D11_BIND_VERTEX_BUFFER);
+    m_singleTriangleIndexBuffer = CreateBuffer(Device(), singleTriangleIndices.data(),sizeof(singleTriangleIndices), D3D11_BIND_INDEX_BUFFER);
+    m_transparentVertexBuffer = CreateBuffer(Device(), transparentVertices.data(),sizeof(transparentVertices), D3D11_BIND_VERTEX_BUFFER);
+    m_transparentIndexBuffer = CreateBuffer(Device(), transparentIndices.data(),sizeof(transparentIndices), D3D11_BIND_INDEX_BUFFER);
     m_singleTriangleIndexCount = static_cast<std::uint32_t>(singleTriangleIndices.size());
     m_transparentIndexCount = static_cast<std::uint32_t>(transparentIndices.size());
 }
@@ -115,17 +111,23 @@ TestGeometryMode TestEffect::GeometryMode() const noexcept
     return m_geometryMode;
 }
 
-void TestEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext&)
+void TestEffect::BindPipeline(const EffectFrameContext& frame)
 {
 	ID3D11DeviceContext* context = frame.DeviceContext();
-	EffectManager& effectManager = EffectManager::Instance();
 	frame.ConstantBuffers().BindFrameBuffer();
 	context->IASetInputLayout(m_inputLayout.Get());
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
 	context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-	effectManager.SetRasterizerMode(RasterizerMode::SolidCullNone);
-	if (m_geometryMode == TestGeometryMode::TransparentTriangles)
+}
+
+void TestEffect::RenderEffect(const EffectFrameContext& frame)
+{
+    EffectManager& effectManager = EffectManager::Instance();
+	ID3D11DeviceContext* context = frame.DeviceContext();
+	const bool transparent = m_geometryMode == TestGeometryMode::TransparentTriangles;
+	BindPipeline(frame);
+	if (transparent)
 	{
 		effectManager.SetDepthMode(DepthMode::ReadOnly);
 		effectManager.SetBlendMode(BlendMode::AlphaBlend);
@@ -135,21 +137,18 @@ void TestEffect::Bind(const EffectFrameContext& frame, const EffectDrawContext&)
 		effectManager.SetDepthMode(DepthMode::ReadWrite);
 		effectManager.SetBlendMode(BlendMode::Opaque);
 	}
-}
-
-void TestEffect::Draw(const EffectFrameContext& frame, const EffectDrawContext& draw)
-{
-	Bind(frame, draw);
-	ID3D11DeviceContext* context = frame.DeviceContext();
-	const bool transparent = m_geometryMode == TestGeometryMode::TransparentTriangles;
+    effectManager.SetRasterizerMode(RasterizerMode::SolidCullClockwise);
 	ID3D11Buffer* vertexBuffer = transparent ? m_transparentVertexBuffer.Get() : m_singleTriangleVertexBuffer.Get();
 	ID3D11Buffer* indexBuffer = transparent ? m_transparentIndexBuffer.Get() : m_singleTriangleIndexBuffer.Get();
 	const UINT indexCount = transparent ? m_transparentIndexCount : m_singleTriangleIndexCount;
 	constexpr UINT stride = sizeof(TestVertex);
 	constexpr UINT offset = 0;
+
 	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 	context->DrawIndexed(indexCount, 0, 0);
+
+
 	ID3D11Buffer* nullBuffer = nullptr;
 	context->IASetVertexBuffers(0, 1, &nullBuffer, &stride, &offset);
 	context->IASetIndexBuffer(nullptr, DXGI_FORMAT_R32_UINT, 0);

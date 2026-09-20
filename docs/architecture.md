@@ -32,7 +32,7 @@ sequenceDiagram
   Mesh Entity；Solid 保存尺寸/半径/细分参数，Mesh 保存资产路径/索引，场景层不持有 GPU 资源。
 - `EditorLayer` 将用户交互转换为场景编辑和命令。
 - `CommandHistory` 负责可逆操作，且不依赖界面。
-- 每项渲染技术派生自 `IRenderEffect`，或实现为后续的渲染 Pass 类。
+- 帧级 Pass 使用 `IRenderEffect`，逐对象绘制使用 `IRenderObjectEffect`。
 
 ## 场景与资源层级
 
@@ -108,15 +108,16 @@ graph TD
 网格绘制前更新 Object 和 Material。C++ 与 HLSL 布局分别位于独立文件，VS/PS 通过同一个 `.hlsli`
 消除重复声明。
 
-`Dx11Renderer` 每帧从 Camera 构造一次 `EffectFrameContext`，每个 MeshPart 从 Entity、解析后的
-Material 和选择 ID 构造一个 `EffectDrawContext`，然后调用 `Draw(frame, draw)`。两个 Context 是
-并列的不可变快照，不继承共同父类，也不会被 Effect 跨调用保存。`Bind(frame, draw)` 仍作为低层
-管线绑定接口保留；高层 `Draw` 可以在 Effect 内部按顺序执行多个 Pass，并调用 Mesh 的绘制入口。
+`Dx11Renderer` 每帧从 Camera 构造一次 `EffectFrameContext`；帧级 Effect 通过
+`BindPipeline(frame)` 和 `RenderEffect(frame)` 执行天空、测试及后处理 Pass。每个 MeshPart 则从
+Entity、解析后的 Material 和选择 ID 构造 `EffectDrawContext`，逐对象 Effect 通过
+`BindPipeline(frame, draw)` 和 `Draw(frame, draw)` 绘制网格。两个 Context 是并列的快照，
+不继承共同父类。后处理输入纹理由 Renderer 在调用 `RenderEffect` 前显式设置。
 
 `IRenderEffect` 不再持有通用资源注册表。具体 Effect 通过显式成员管理资源：二维颜色/深度目标使用
 `EffectResource`，Cubemap 使用 `EffectCubeMapResource`，普通共享纹理继续由 `ResourceCache` 管理。
 多 Pass Effect 可以直接持有多个具名成员，例如 `m_blurResource` 和 `m_bloomResource`，在同一个
-`Draw` 中完成 RTV/SRV 切换。这种所有权可以直接在调试器中观察，也避免依赖字符串查找。
+`RenderEffect` 中完成 RTV/SRV 切换。这种所有权可以直接在调试器中观察，也避免依赖字符串查找。
 
 Frame/Object/Material 三类公共缓冲由 Renderer 统一拥有。Light Buffer 与全局灯光设置由
 `LightManager` 单例管理：Renderer 每帧上传一次，需要光照的 Effect 显式绑定 `b3`。Buffer 对象只

@@ -14,13 +14,12 @@ namespace lrender
 class ColorProcessorEffect final : public IRenderEffect
 {
   public:
-    using IRenderEffect::Draw;
-
     ColorProcessorEffect(ID3D11Device* device, ID3D11DeviceContext* context,
                          const std::filesystem::path& shaderDirectory);
 
-    void Bind(const EffectFrameContext& frame, const EffectDrawContext& draw) override;
-    void Draw(ID3D11DeviceContext* context, ID3D11ShaderResourceView* source);
+    void SetSource(ID3D11ShaderResourceView* source);
+    void BindPipeline(const EffectFrameContext& frame) override;
+    void RenderEffect(const EffectFrameContext& frame) override;
     [[nodiscard]] std::string_view Name() const noexcept override;
 
   private:
@@ -28,6 +27,7 @@ class ColorProcessorEffect final : public IRenderEffect
 
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_source;
 };
 
 } // namespace lrender

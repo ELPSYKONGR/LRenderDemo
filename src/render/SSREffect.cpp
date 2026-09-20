@@ -13,22 +13,13 @@ SSREffect::SSREffect(ID3D11Device* device, ID3D11DeviceContext* context,
 {
 }
 
-void SSREffect::Bind(const EffectFrameContext&)
+void SSREffect::BindPipeline(const EffectFrameContext&)
 {
 }
 
-void SSREffect::Bind(const EffectFrameContext& frame, const EffectDrawContext&)
+void SSREffect::RenderEffect(const EffectFrameContext& frame)
 {
-    Bind(frame);
-}
-
-void SSREffect::Draw(const EffectFrameContext&)
-{
-}
-
-void SSREffect::Draw(const EffectFrameContext& frame, const EffectDrawContext&)
-{
-    Draw(frame);
+    BindPipeline(frame);
 }
 
 std::string_view SSREffect::Name() const noexcept
