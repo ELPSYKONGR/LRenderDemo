@@ -1,10 +1,11 @@
 # CHANGELOG - LRenderDemo
 
-## 2026-09-20 版本 2.0：拆分帧级与逐对象 Effect 接口
+## 2026-09-20 版本 1.1：拆分帧级与逐对象 Effect 接口
 
 - 按新的 `IRenderEffect` / `IRenderObjectEffect` 接口迁移已有 Effect、基类实现和 Renderer 调用点。
 - 全屏后处理通过 `SetSource()` 接收输入纹理，再执行帧级 `RenderEffect()`；VS2022 Debug 构建和 5 项测试通过。
-- 因 Effect 公共接口发生不兼容变化，工程版本由 `1.0.0` 提升至 `2.0.0`。
+- 本次包含 Effect 功能扩展，工程版本由 `1.0.0` 提升至 `1.1.0`。
+- 更正版本策略：修复与兼容性调整递增补丁号，新增 Effect/功能递增次版本号；内部接口重构不自动提升主版本。
 
 ## 2026-09-17 工程版本标记为 1.0
 
