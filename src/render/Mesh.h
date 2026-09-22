@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "core/BoundingBox.h"
+
 #include <DirectXMath.h>
 #include <cstdint>
 #include <d3d11.h>
@@ -29,11 +31,13 @@ class Mesh final
 
     void Draw(ID3D11DeviceContext* context) const;
     [[nodiscard]] std::uint32_t IndexCount() const noexcept;
+    [[nodiscard]] const BoundingBox& LocalBoundingBox() const noexcept;
 
   private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
     std::uint32_t m_indexCount = 0;
+    BoundingBox m_localBoundingBox;
 };
 
 } // namespace lrender

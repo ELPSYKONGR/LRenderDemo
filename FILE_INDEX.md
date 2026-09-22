@@ -12,6 +12,10 @@
 
 `EffectResource` 支持 `MatchViewport` 和 `Fixed` 两种尺寸策略。`Dx11Renderer::ResizeViewport()` 调整动态资源并通知 Effect 的 `ResizeResources()`，固定尺寸资源不参与视口 Resize。SRV/Sampler 由各 Effect 按 `stdfx.h` 中的固定槽位宏绑定和解绑。
 
+### Cornell Box 学习场景
+
+`ViewManager::CreateCornellBoxTestScene()` 使用场景实体创建地面、顶部、后墙、左右墙、中央球体和顶部灯板；`Application::Initialize()` 通过 `LightManager` 清空默认灯光并创建顶部点光源。`Dx11Renderer::RenderScene()` 默认绘制实体和天空盒，保留 `TestEffect` 作为可扩展的独立测试 Effect。
+
 ## 代码组织约定
 
 普通类的函数声明位于 `.h`，实现位于对应 `.cpp`。仅模板、GPU 常量布局、接口和纯数据定义保留为头文件实现。新增实现文件包括 `src/core/EntityMaterial.cpp`、`src/core/Transform.cpp` 和 `src/render/Material.cpp`。
@@ -30,20 +34,22 @@
 
 | 路径 | 用途 | 关键 API |
 |---|---|---|
-| `src/render/LightManager.h/.cpp` | 全局灯光增删、默认灯光和 `b3` Light CBuffer 单例管理 | `LightManager` |
+| `src/render/LightManager.h/.cpp` | 全局灯光增删、默认灯光、测试灯光清理和 `b3` Light CBuffer 单例管理 | `LightManager`、`ClearLights()` |
 | `src/render/SSREffect.h/.cpp`、`src/shaders/SSREffectVS.hlsl`、`src/shaders/SSREffectPS.hlsl` | SSR Pass 的可编译空实现骨架 | `SSREffect` |
 | `src/render/TestEffect.h/.cpp`、`src/shaders/TestEffectVS.hlsl`、`src/shaders/TestEffectPS.hlsl` | 帧级测试 Pass，绘制单三角形或透明三角形组 | `TestEffect::RenderEffect()` |
 | `src/render/EffectResource.h/.cpp` | 单个二维颜色/深度渲染资源，封装 RTV/SRV/DSV | `EffectResource` |
 | `src/render/EffectCubeMapResource.h/.cpp` | Effect 私有 TextureCube、SRV 和可选六面 RTV | `EffectCubeMapResource` |
 | `src/render/CommonConstantBuffers.h/.cpp` | Renderer 统一拥有和更新 Frame/Object/Material 三类公共 CBuffer | `CommonConstantBuffers` |
 | `src/render/IRenderEffect.h/.cpp` | 帧级与逐对象 Effect 的接口、设备访问 | `IRenderEffect`、`IRenderObjectEffect` |
-| `src/render/ViewManager.h/.cpp` | 逻辑多 View、深度/模板状态设置和 DX11 状态 RAII 恢复 | `ViewManager`、`ViewStateGuard` |
+| `src/render/ViewManager.h/.cpp` | 逻辑多 View、测试场景创建、深度/模板状态设置和 DX11 状态 RAII 恢复 | `ViewManager`、`ViewStateGuard`、`CreateCornellBoxTestScene()` |
 | `docs/effect-resource-view-manager.md` | Effect 资源、Draw/Pass 和 View 状态设计说明 | 中文学习文档 |
 | `docs/forward-and-deferred-rendering.md` | 独立的直接渲染与延迟渲染图形学学习笔记 | 中文学习文档 |
+| `docs/normal-mapping-a.md` | 法线贴图公开课讲义：原理、TBN、收益、局限与调试 | 中文学习文档 |
+| `docs/normal-mapping-b.md` | 法线贴图 LRenderDemo 工程实践：文件映射、实现顺序、测试与验收 | 中文学习文档 |
 
 本次框架补充：`src/render/CommonConstantBuffers.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer 和统一 Buffer 管理；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 与 `SkyVS/SkyPS` 实现 TextureCube 天空背景。详细设计见 `docs/render-framework-common-shader.md`。
 
-> 最后更新：2026-09-14 | 维护者：Codex
+> 最后更新：2026-09-22 | 维护者：Codex
 
 ## 源文件
 
@@ -52,11 +58,12 @@
 | `src/app/Main.cpp` | GUI 入口和致命错误边界 | `wWinMain()` | Application、Logger |
 | `src/app/Application.*` | 子系统生命周期和帧循环 | `Run()`、`Initialize()` | platform、editor、render、core |
 | `src/platform/Window.*` | Win32 窗口和消息泵 | `Create()`、`PumpMessages()` | Win32、ImGui 后端 |
+| `src/core/BoundingBox.*` | API 无关的轴对齐包围盒及点/盒/变换扩展 | `BoundingBox`、`ExtendBox()`、`Center()`、`Radius()` | SimpleMath |
 | `src/core/Transform.h` | 可编辑的变换值 | `ToMatrix()`、`NearlyEquals()` | SimpleMath |
 | `src/core/EntityMaterial.h` | 与图形 API 无关的实体材质参数 | `EntityMaterial`、`SurfaceDisplayMode` | SimpleMath、filesystem |
 | `src/core/SolidGeometry.*` | Cube/Sphere/Plane 参数、校验和类型查询 | `SolidGeometry`、`SolidParameters` | SimpleMath、variant |
-| `src/core/Scene.*` | `Scene -> Model -> Entity` 层级及 Solid/Mesh 几何描述；Entity 基础/覆盖材质 | `CreateModel()`、`CreateEntity()`、`CreateMeshEntity()`、`EffectiveMaterial()` | Transform、EntityMaterial |
-| `src/core/Camera.*` | 支持环绕、标准视角和自动旋转的编辑器相机 | `SetView()`、`RotateAroundTarget()` | SimpleMath |
+| `src/core/Scene.*` | `Scene -> Model -> Entity` 层级、Solid/Mesh 几何描述和分层包围盒 | `CreateModel()`、`CreateEntity()`、`CreateMeshEntity()`、`CalculateBoundingBoxes()`、`EffectiveMaterial()` | Transform、EntityMaterial、BoundingBox |
+| `src/core/Camera.*` | 支持环绕、标准视角、自动旋转和按范围自动取景的编辑器相机 | `SetView()`、`RotateAroundTarget()`、`CalcFitView()` | SimpleMath、BoundingBox |
 | `src/core/ViewPort.*` | API 无关的视口尺寸、编号和相机状态 | `SetSize()`、`GetCamera()` | Camera |
 | `src/commands/ICommand.h` | 可逆操作接口 | `Execute()`、`Undo()` | 无 |
 | `src/commands/CommandHistory.*` | 有界撤销/重做栈 | `Execute()`、`PushApplied()` | ICommand |
@@ -78,7 +85,7 @@
 | `src/shaders/common.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `FrameInfo`、`ObjectInfo`、`MaterialInfo`、`LightInfo` cbuffers | 无 |
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | common.hlsli |
 | `src/shaders/BasicMeshPS.hlsl` | BaseColor 采样、方向光/点光与高光 | `PSMain()` | common.hlsli |
-| `src/render/Mesh.*` | 带 UV 的 D3D11 顶点/32 位索引缓冲区 | `Draw()` | D3D11、DirectXMath |
+| `src/render/Mesh.*` | 带 UV 的 D3D11 顶点/32 位索引缓冲区并记录局部包围盒 | `Draw()`、`LocalBoundingBox()` | D3D11、DirectXMath、BoundingBox |
 | `src/render/PrimitiveFactory.*`、`SolidMeshCache.*` | 按 Solid 参数生成并按 Entity 更新运行时 Mesh | `Create()`、`Resolve()` | SolidGeometry、Mesh、D3D11 |
 | `src/render/Texture2D.*` | WIC/DDS 文件、内存与生成纹理 | `LoadFile()`、`LoadMemory()` | DirectXTK、D3D11 |
 | `src/render/SamplerState.*` | Sampler 描述与 D3D11 状态所有权 | `SamplerState()` | D3D11 |
@@ -88,7 +95,7 @@
 | `src/render/GltfLoader.*`、`ObjLoader.*`、`MeshImportUtils.*` | glTF/GLB 与 OBJ/MTL 静态网格导入 | `Import()` | cgltf、tinyobjloader、ResourceCache |
 | `src/render/ResourceCache.*` | 按规范化路径缓存网格资产/纹理/Sampler | `LoadMeshAsset()`、`LoadTexture()` | ModelLoader、Texture2D |
 | `src/render/Dx11Renderer.*` | 设备、交换链、材质解析、场景遍历和视口调试资源选择 | `RenderScene()`、`SetViewportDebugView()`、`MaterialPreview()` | Effect、Mesh、ResourceCache |
-| `src/editor/EditorLayer.*`、`EditorHierarchy.cpp`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | Model/Entity 层级、资源、视角、材质和光照控制 | `Draw()`、`DrawHierarchy()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
+| `src/editor/EditorLayer.*`、`EditorHierarchy.cpp`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | Model/Entity 层级、资源、视角、材质和光照控制；Camera 面板提供实体/场景/自动居中取景 | `Draw()`、`DrawHierarchy()`、`DrawCameraControls()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
 | `src/editor/EditorSolid.cpp`、`EditorScene.cpp` | 参数化创建/编辑与场景文件工作流 | `DrawSolidGeometryEditor()`、`SaveScene()` | SolidGeometry、SceneSerializer、原生对话框 |
 | `src/persistence/SceneSerializer.*` | 版本化 `.lscene` JSON 原子保存和事务加载 | `Save()`、`Load()` | LRenderCore、nlohmann/json |
 | `src/utils/Logger.*` | 按日期写入文件日志 | `Initialize()`、`Info()`、`Error()` | C++ filesystem |

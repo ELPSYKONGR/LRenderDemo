@@ -6,6 +6,7 @@ set(LRENDER_CORE_HEADERS
     commands/MaterialCommand.h
     commands/SolidGeometryCommand.h
     commands/TransformCommand.h
+    core/BoundingBox.h
     core/Camera.h
     core/EntityMaterial.h
     core/Scene.h
@@ -16,6 +17,7 @@ set(LRENDER_CORE_HEADERS
 
 add_library(LRenderCore STATIC
     ${LRENDER_CORE_HEADERS}
+    core/BoundingBox.cpp
     core/Camera.cpp
     core/EntityMaterial.cpp
     core/Scene.cpp

@@ -197,19 +197,17 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     frameContext.SetRenderMode(RenderMode::DirectRendering);
     frameContext.BeginFrame();
     LightManager::Instance().UpdateBuffer();
-	////opq pass
- //   frameContext.CapturePipelineState();
- //   DrawOpqEntity(scene, camera, selectedEntityId, frameContext);
- //   frameContext.ResetPipelineState();
- //   // sky pass
- //   if (m_skyCubeEnabled)
- //   {
- //       frameContext.CapturePipelineState();
- //       m_skyCubeEffect->RenderEffect(frameContext);
- //       frameContext.ResetPipelineState();
- //   }
 
-    m_testEffect->RenderEffect(frameContext);
+    frameContext.CapturePipelineState();
+    DrawOpqEntity(scene, camera, selectedEntityId, frameContext);
+    frameContext.ResetPipelineState();
+
+    if (m_skyCubeEnabled)
+    {
+        frameContext.CapturePipelineState();
+        m_skyCubeEffect->RenderEffect(frameContext);
+        frameContext.ResetPipelineState();
+    }
 
     nullResource = nullptr;
     ID3D11SamplerState* nullSampler = nullptr;

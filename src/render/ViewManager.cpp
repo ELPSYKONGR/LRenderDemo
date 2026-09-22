@@ -13,6 +13,26 @@
 namespace lrender
 {
 
+namespace
+{
+
+void ConfigureUntexturedMaterial(Entity& entity, const DirectX::SimpleMath::Color& color,
+                                 float specularStrength = 0.12F, float shininess = 24.0F)
+{
+    EntityMaterial& material = entity.EntityMaterialData();
+    material.baseColor = color;
+    material.diffuseStrength = 1.0F;
+    material.specularColor = {1.0F, 1.0F, 1.0F, 1.0F};
+    material.specularStrength = specularStrength;
+    material.shininess = shininess;
+    material.displayMode = SurfaceDisplayMode::LitUntextured;
+    material.useSourceTexture = false;
+    material.baseColorTexturePath.clear();
+    material.doubleSided = true;
+}
+
+} // namespace
+
 std::unique_ptr<ViewManager> ViewManager::m_instance;
 
 ViewStateGuard::ViewStateGuard(ID3D11DeviceContext* context) : m_context(context)
@@ -200,6 +220,12 @@ std::unique_ptr<ViewStateGuard> ViewManager::CaptureState() const
     return std::make_unique<ViewStateGuard>(m_context);
 }
 
+bool ViewManager::FitView(Camera& camera, const BoundingBox& boundingBox, float aspectRatio,
+                          float margin) const noexcept
+{
+    return camera.CalcFitView(boundingBox, aspectRatio, margin);
+}
+
 void ViewManager::CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) const
 {
     constexpr std::uint32_t gridSize = 3;
@@ -253,6 +279,65 @@ void ViewManager::CreatePlaneTestEntity(Scene& scene, std::uint32_t modelId) con
     material.useSourceTexture = false;
     material.baseColorTexturePath.clear();
     material.doubleSided = false;
+}
+
+void ViewManager::CreateCornellBoxTestScene(Scene& scene, std::uint32_t modelId) const
+{
+    constexpr DirectX::SimpleMath::Color floorColor{0.54F, 0.50F, 0.45F, 1.0F};
+    constexpr DirectX::SimpleMath::Color ceilingColor{0.42F, 0.40F, 0.37F, 1.0F};
+    constexpr DirectX::SimpleMath::Color backColor{0.36F, 0.35F, 0.33F, 1.0F};
+    constexpr DirectX::SimpleMath::Color leftColor{0.58F, 0.035F, 0.025F, 1.0F};
+    constexpr DirectX::SimpleMath::Color rightColor{0.025F, 0.42F, 0.07F, 1.0F};
+    constexpr DirectX::SimpleMath::Color sphereColor{0.82F, 0.80F, 0.75F, 1.0F};
+    constexpr DirectX::SimpleMath::Color lightColor{1.0F, 0.98F, 0.90F, 1.0F};
+    constexpr float roomWidth = 6.0F;
+    constexpr float roomHeight = 4.0F;
+    constexpr float roomDepth = 6.0F;
+
+    PlaneParameters floorParameters;
+    floorParameters.size = {roomWidth, roomDepth};
+    Entity& floor = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(floorParameters), "CornellFloor");
+    ConfigureUntexturedMaterial(floor, floorColor, 0.08F, 16.0F);
+
+    Entity& ceiling = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(floorParameters), "CornellCeiling");
+    ceiling.transform.position = {0.0F, roomHeight, 0.0F};
+    ceiling.transform.rotationDegrees.x = 180.0F;
+    ConfigureUntexturedMaterial(ceiling, ceilingColor, 0.08F, 16.0F);
+
+    PlaneParameters wallParameters;
+    wallParameters.size = {roomWidth, roomHeight};
+    Entity& backWall = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(wallParameters), "CornellBackWall");
+    backWall.transform.position = {0.0F, roomHeight * 0.5F, -roomDepth * 0.5F};
+    backWall.transform.rotationDegrees.x = 90.0F;
+    ConfigureUntexturedMaterial(backWall, backColor, 0.08F, 16.0F);
+
+    Entity& leftWall = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(wallParameters), "CornellLeftWall");
+    leftWall.transform.position = {-roomWidth * 0.5F, roomHeight * 0.5F, 0.0F};
+    leftWall.transform.rotationDegrees.z = -90.0F;
+    ConfigureUntexturedMaterial(leftWall, leftColor, 0.08F, 16.0F);
+
+    Entity& rightWall = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(wallParameters), "CornellRightWall");
+    rightWall.transform.position = {roomWidth * 0.5F, roomHeight * 0.5F, 0.0F};
+    rightWall.transform.rotationDegrees.z = 90.0F;
+    ConfigureUntexturedMaterial(rightWall, rightColor, 0.08F, 16.0F);
+
+    Entity& sphere = scene.CreateSolidEntity(
+        modelId,
+        SolidGeometry::Sphere({1.0F, 48, 32}),
+        "CornellSphere");
+    sphere.transform.position = {0.0F, 1.0F, -0.25F};
+    ConfigureUntexturedMaterial(sphere, sphereColor, 0.35F, 64.0F);
+    sphere.EntityMaterialData().doubleSided = false;
+
+    PlaneParameters lightPanelParameters;
+    lightPanelParameters.size = {1.8F, 0.9F};
+    Entity& lightPanel = scene.CreateSolidEntity(
+        modelId,
+        SolidGeometry::Plane(lightPanelParameters),
+        "CornellLightPanel");
+    lightPanel.transform.position = {0.0F, roomHeight - 0.01F, 0.0F};
+    lightPanel.transform.rotationDegrees.x = 180.0F;
+    ConfigureUntexturedMaterial(lightPanel, lightColor, 0.0F, 8.0F);
 }
 
 ViewId ViewManager::ActiveViewId() const noexcept

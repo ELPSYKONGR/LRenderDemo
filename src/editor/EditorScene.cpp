@@ -70,11 +70,11 @@ std::filesystem::path SelectSceneFile(HWND owner, bool save, const std::filesyst
     return {};
 }
 
-void PreloadSceneResources(const Scene& scene, Dx11Renderer& renderer)
+void PreloadSceneResources(Scene& scene, Dx11Renderer& renderer)
 {
-    for (const Model& model : scene.Models())
+    for (Model& model : scene.Models())
     {
-        for (const Entity& entity : model.entities)
+        for (Entity& entity : model.entities)
         {
             if (const MeshGeometry* mesh = entity.Mesh())
             {
@@ -84,6 +84,7 @@ void PreloadSceneResources(const Scene& scene, Dx11Renderer& renderer)
                     throw std::runtime_error("Scene mesh entity index is outside its referenced asset: " +
                                              PathUtf8(mesh->assetPath));
                 }
+                entity.SetLocalBoundingBox(asset->entities[mesh->assetEntityIndex].localBoundingBox);
             }
             const EntityMaterial& material = entity.EffectiveMaterial();
             if (!material.useSourceTexture && !material.baseColorTexturePath.empty())
@@ -92,6 +93,7 @@ void PreloadSceneResources(const Scene& scene, Dx11Renderer& renderer)
             }
         }
     }
+    scene.CalculateBoundingBoxes();
 }
 
 } // namespace

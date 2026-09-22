@@ -147,6 +147,13 @@ PointLight* LightManager::FindPointLight(LightId id) noexcept
     return iterator == m_lights.points.end() ? nullptr : &*iterator;
 }
 
+void LightManager::ClearLights() noexcept
+{
+    m_lights.directional.reset();
+    m_lights.points.clear();
+    m_nextLightId = 1;
+}
+
 void LightManager::ResetDefaults()
 {
     m_lights = {};

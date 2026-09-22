@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/BoundingBox.h"
 #include "core/EntityMaterial.h"
 #include "core/SolidGeometry.h"
 #include "core/Transform.h"
@@ -54,11 +55,17 @@ struct Entity
     [[nodiscard]] SolidGeometry* Solid() noexcept;
     [[nodiscard]] const SolidGeometry* Solid() const noexcept;
     [[nodiscard]] const MeshGeometry* Mesh() const noexcept;
+    [[nodiscard]] const BoundingBox& LocalBoundingBoxData() const noexcept;
+    [[nodiscard]] const BoundingBox& BoundingBoxData() const noexcept;
+    void SetLocalBoundingBox(BoundingBox boundingBox);
+    void CalculateBoundingBox() noexcept;
 
   private:
     EntityMaterial m_entityMaterial = EntityMaterial();
     EntityMaterial m_overrideEntityMaterial = EntityMaterial();
     bool m_hasOverrideEntityMaterial = false;
+    BoundingBox m_localBoundingBox;
+    BoundingBox m_boundingBox;
 };
 
 struct Model
@@ -66,6 +73,12 @@ struct Model
     ModelId id = 0;
     std::string name;
     std::vector<Entity> entities;
+
+    [[nodiscard]] const BoundingBox& BoundingBoxData() const noexcept;
+    void CalculateBoundingBoxes() noexcept;
+
+  private:
+    BoundingBox m_boundingBox;
 };
 
 class Scene final
@@ -73,11 +86,12 @@ class Scene final
   public:
     Model& CreateModel(std::string name);
     Model& CreateMeshModel(std::filesystem::path assetPath, std::string name,
-                           std::span<const std::string> assetEntityNames);
+                           std::span<const std::string> assetEntityNames,
+                           std::span<const BoundingBox> assetEntityBounds = {});
     Entity& CreateEntity(ModelId modelId, PrimitiveType primitive, std::string name);
     Entity& CreateSolidEntity(ModelId modelId, SolidGeometry geometry, std::string name);
     Entity& CreateMeshEntity(ModelId modelId, std::filesystem::path assetPath, std::uint32_t assetEntityIndex,
-                             std::string name);
+                             std::string name, BoundingBox localBoundingBox = {});
 
     Model& AddModel(Model model);
     Entity& AddEntity(ModelId modelId, Entity entity);
@@ -90,8 +104,11 @@ class Scene final
     [[nodiscard]] const Entity* FindEntity(EntityId id) const;
     [[nodiscard]] Model* FindEntityModel(EntityId id);
     [[nodiscard]] const Model* FindEntityModel(EntityId id) const;
+    [[nodiscard]] std::vector<Model>& Models() noexcept;
     [[nodiscard]] const std::vector<Model>& Models() const noexcept;
     [[nodiscard]] std::size_t EntityCount() const noexcept;
+    [[nodiscard]] const BoundingBox& BoundingBoxData() const noexcept;
+    void CalculateBoundingBoxes() noexcept;
 
   private:
     static void ValidateEntity(const Entity& entity);
@@ -99,6 +116,7 @@ class Scene final
     std::vector<Model> m_models;
     ModelId m_nextModelId = 1;
     EntityId m_nextEntityId = 1;
+    BoundingBox m_boundingBox;
 };
 
 } // namespace lrender

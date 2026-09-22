@@ -10,6 +10,7 @@
 #include "commands/MaterialCommand.h"
 #include "commands/SolidGeometryCommand.h"
 #include "commands/TransformCommand.h"
+#include "core/BoundingBox.h"
 #include "core/Camera.h"
 #include "core/Scene.h"
 
@@ -128,6 +129,44 @@ void TestSceneLifecycle()
     Require(scene.FindEntity(id) != nullptr, "Created entity should be findable");
     Require(scene.RemoveEntity(id).has_value(), "Remove should return a snapshot");
     Require(scene.FindEntity(id) == nullptr, "Removed entity should be absent");
+}
+
+void TestBoundingBoxesAndFitView()
+{
+    using DirectX::SimpleMath::Vector3;
+
+    lrender::BoundingBox box;
+    box.ExtendPoint({-1.0F, -2.0F, -3.0F});
+    box.ExtendPoint({2.0F, 4.0F, 6.0F});
+    Require(box.IsValid(), "Bounding box should become valid after extending points");
+    RequireNear(box.Center().x, 0.5F, "Bounding box center X is incorrect");
+    RequireNear(box.Size().y, 6.0F, "Bounding box size Y is incorrect");
+
+    lrender::BoundingBox child(Vector3{-2.0F, -1.0F, -1.0F}, Vector3{0.0F, 1.0F, 1.0F});
+    box.Reset();
+    box.ExtendBox(child, DirectX::SimpleMath::Matrix::CreateTranslation(4.0F, 0.0F, 0.0F));
+    RequireNear(box.Min().x, 2.0F, "Transformed bounding box minimum is incorrect");
+    RequireNear(box.Max().x, 4.0F, "Transformed bounding box maximum is incorrect");
+
+    lrender::Scene scene;
+    const auto modelId = scene.CreateModel("Bounds model").id;
+    auto& entity = scene.CreateSolidEntity(
+        modelId,
+        lrender::SolidGeometry::Cube({{2.0F, 4.0F, 6.0F}}),
+        "Bounds cube");
+    entity.transform.position = {3.0F, 2.0F, 1.0F};
+    scene.CalculateBoundingBoxes();
+    Require(scene.BoundingBoxData().IsValid(), "Scene bounding box should be valid");
+    RequireNear(entity.BoundingBoxData().Center().x, 3.0F, "Entity bounding box center is incorrect");
+    RequireNear(scene.FindModel(modelId)->BoundingBoxData().Size().y, 4.0F,
+                "Model bounding box should include entity geometry");
+
+    lrender::Camera camera;
+    camera.SetView(lrender::CameraViewPreset::Front);
+    Require(camera.CalcFitView(scene.BoundingBoxData(), 16.0F / 9.0F), "Camera should fit a valid scene box");
+    RequireNear(camera.Position().x, 3.0F, "Fit view should center camera on bounding box X");
+    RequireNear(camera.Position().y, 2.0F, "Fit view should center camera on bounding box Y");
+    Require(camera.Position().z > 1.0F, "Fit view should place camera in front of the bounding box");
 }
 
 void TestTransformUndoRedo()
@@ -264,6 +303,7 @@ int main()
     try
     {
         TestSceneLifecycle();
+        TestBoundingBoxesAndFitView();
         TestCameraViewPresets();
         TestNormalTransformUnderNonUniformScale();
         TestTransformUndoRedo();

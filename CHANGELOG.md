@@ -1,11 +1,33 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-22 版本 1.2：包围盒计算、自动取景与居中显示
+
+- 新增 `BoundingBox`，支持点、包围盒及变换后的包围盒扩展。
+- `Entity`、`Model`、`Scene` 分层维护范围，并统一通过 `CalculateBoundingBoxes()` 计算更新。
+- `Camera::CalcFitView()` 和 `ViewManager::FitView()` 根据实体或场景范围自动居中并调整距离，使对象充满视口。
+- 为 Solid、OBJ 和 glTF Mesh 初始化局部包围盒；变换、几何参数和场景导入后会同步更新范围。
+- 编辑器新增聚焦选中实体和聚焦整个场景的操作，快捷键为 `F` 和 `Home`。
+- Camera 面板新增 `Center View` 控件：有选中实体时聚焦实体，否则聚焦整个场景。
+- 本次新增编辑器视图能力，工程版本由 `1.1.0` 提升至 `1.2.0`。
+
+## 2026-09-22 Cornell Box 学习场景
+
+- `ViewManager` 新增 Cornell Box 风格测试场景，使用平面实体创建地面、顶部、后墙、左右墙、中央球体和顶部灯板。
+- `Application` 通过 `LightManager` 清理默认灯光并创建一个位于顶部灯板位置的暖色点光源。
+- `Dx11Renderer` 恢复默认场景实体绘制和天空盒绘制通路，场景不再只显示 `TestEffect` 三角形。
+- 当前渲染器尚未实现阴影贴图和自发光材质，因此该场景用于验证几何、材质颜色和点光源位置，不承诺复现参考图的投影阴影。
+
 ## 2026-09-20 版本 1.1：拆分帧级与逐对象 Effect 接口
 
 - 按新的 `IRenderEffect` / `IRenderObjectEffect` 接口迁移已有 Effect、基类实现和 Renderer 调用点。
 - 全屏后处理通过 `SetSource()` 接收输入纹理，再执行帧级 `RenderEffect()`；VS2022 Debug 构建和 5 项测试通过。
 - 本次包含 Effect 功能扩展，工程版本由 `1.0.0` 提升至 `1.1.0`。
 - 更正版本策略：修复与兼容性调整递增补丁号，新增 Effect/功能递增次版本号；内部接口重构不自动提升主版本。
+
+## 2026-09-18 新增法线贴图双版本学习讲义
+
+- 新增 `docs/normal-mapping-a.md`，从切线空间、TBN、法线解码、收益和局限讲解法线贴图原理。
+- 新增 `docs/normal-mapping-b.md`，映射当前 LRenderDemo 的 Mesh、Material、导入器、BasicMesh Shader、Debug View、故障注入和验收标准。
 
 ## 2026-09-17 工程版本标记为 1.0
 

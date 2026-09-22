@@ -18,6 +18,10 @@ Mesh::Mesh(ID3D11Device* device, std::span<const MeshVertex> vertices, std::span
     {
         throw std::invalid_argument("Mesh requires a device and non-empty geometry");
     }
+    for (const MeshVertex& vertex : vertices)
+    {
+        m_localBoundingBox.ExtendPoint({vertex.position.x, vertex.position.y, vertex.position.z});
+    }
     if (vertices.size_bytes() > std::numeric_limits<UINT>::max() ||
         indices.size_bytes() > std::numeric_limits<UINT>::max())
     {
@@ -64,6 +68,11 @@ void Mesh::Draw(ID3D11DeviceContext* context) const
 std::uint32_t Mesh::IndexCount() const noexcept
 {
     return m_indexCount;
+}
+
+const BoundingBox& Mesh::LocalBoundingBox() const noexcept
+{
+    return m_localBoundingBox;
 }
 
 } // namespace lrender

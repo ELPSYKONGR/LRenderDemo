@@ -88,6 +88,29 @@ void Camera::RotateAroundTarget(float deltaDegrees) noexcept
     m_yaw = std::remainder(m_yaw + DirectX::XMConvertToRadians(deltaDegrees), DirectX::XM_2PI);
 }
 
+bool Camera::CalcFitView(const BoundingBox& boundingBox, float aspectRatio, float margin) noexcept
+{
+    if (!boundingBox.IsValid() || !std::isfinite(aspectRatio) || aspectRatio <= 0.0F ||
+        !std::isfinite(margin) || margin < 1.0F)
+    {
+        return false;
+    }
+
+    constexpr float verticalFieldOfView = DirectX::XMConvertToRadians(60.0F);
+    constexpr float minimumDistance = 0.5F;
+    constexpr float maximumDistance = 100.0F;
+    const float verticalHalfFieldOfView = verticalFieldOfView * 0.5F;
+    const float horizontalHalfFieldOfView =
+        std::atan(std::tan(verticalHalfFieldOfView) * std::max(aspectRatio, 0.01F));
+    const float halfFieldOfView = std::min(verticalHalfFieldOfView, horizontalHalfFieldOfView);
+    const float radius = std::max(boundingBox.Radius(), 0.001F);
+    const float distance = radius / std::tan(halfFieldOfView) * margin;
+
+    m_target = boundingBox.Center();
+    m_distance = std::clamp(std::max(distance, radius + minimumDistance), minimumDistance, maximumDistance);
+    return true;
+}
+
 DirectX::SimpleMath::Vector3 Camera::Position() const
 {
     const float horizontal = m_distance * std::cos(m_pitch);

@@ -58,6 +58,7 @@ class LightManager final
     [[nodiscard]] DirectionalLight* FindDirectionalLight(LightId id) noexcept;
     [[nodiscard]] PointLight* FindPointLight(LightId id) noexcept;
 
+    void ClearLights() noexcept;
     void ResetDefaults();
     void UpdateBuffer() const;
     void BindBuffer() const;

@@ -86,8 +86,11 @@ class ViewManager final
     [[nodiscard]] std::size_t ViewCount() const noexcept;
 
     [[nodiscard]] std::unique_ptr<ViewStateGuard> CaptureState() const;
+    [[nodiscard]] bool FitView(Camera& camera, const BoundingBox& boundingBox, float aspectRatio,
+                               float margin = 1.15F) const noexcept;
     void CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) const;
     void CreatePlaneTestEntity(Scene& scene, std::uint32_t modelId) const;
+    void CreateCornellBoxTestScene(Scene& scene, std::uint32_t modelId) const;
 
   private:
     ViewManager(ID3D11Device* device, ID3D11DeviceContext* context);

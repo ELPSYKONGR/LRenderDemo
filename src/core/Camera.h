@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "core/BoundingBox.h"
+
 #include <SimpleMath.h>
 
 namespace lrender
@@ -31,6 +33,8 @@ class Camera final
     void Zoom(float wheelDelta);
     void SetView(CameraViewPreset preset) noexcept;
     void RotateAroundTarget(float deltaDegrees) noexcept;
+    [[nodiscard]] bool CalcFitView(const BoundingBox& boundingBox, float aspectRatio,
+                                   float margin = 1.15F) noexcept;
 
     [[nodiscard]] DirectX::SimpleMath::Matrix ViewMatrix() const;
     [[nodiscard]] DirectX::SimpleMath::Matrix ProjectionMatrix(float aspectRatio) const;

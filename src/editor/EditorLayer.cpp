@@ -58,7 +58,7 @@ void EditorLayer::Draw(Scene& scene, CommandHistory& history, Camera& camera, Dx
     }
     DrawMainMenu(scene, history, renderer);
     DrawToolbar(history, renderer);
-    DrawCameraControls(camera);
+    DrawCameraControls(scene, camera, renderer);
     DrawLighting();
     DrawResources(renderer);
     DrawHierarchy(scene);

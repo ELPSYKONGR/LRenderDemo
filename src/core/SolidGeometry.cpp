@@ -70,6 +70,32 @@ PrimitiveType SolidGeometry::Type() const noexcept
         m_parameters);
 }
 
+BoundingBox SolidGeometry::LocalBoundingBox() const noexcept
+{
+    return std::visit(
+        [](const auto& parameters)
+        {
+            using Parameters = std::decay_t<decltype(parameters)>;
+            if constexpr (std::is_same_v<Parameters, CubeParameters>)
+            {
+                const DirectX::SimpleMath::Vector3 half = parameters.size * 0.5F;
+                return BoundingBox(-half, half);
+            }
+            else if constexpr (std::is_same_v<Parameters, SphereParameters>)
+            {
+                const DirectX::SimpleMath::Vector3 extent{parameters.radius, parameters.radius, parameters.radius};
+                return BoundingBox(-extent, extent);
+            }
+            else
+            {
+                const DirectX::SimpleMath::Vector3 half{parameters.size.x * 0.5F, 0.0F,
+                                                        parameters.size.y * 0.5F};
+                return BoundingBox({-half.x, -half.y, -half.z}, {half.x, half.y, half.z});
+            }
+        },
+        m_parameters);
+}
+
 const SolidParameters& SolidGeometry::Parameters() const noexcept
 {
     return m_parameters;

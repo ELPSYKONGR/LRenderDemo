@@ -76,16 +76,19 @@ void EditorLayer::ImportModel(Scene& scene, CommandHistory& history, Dx11Rendere
         }
         const auto asset = renderer.PreloadModel(path);
         std::vector<std::string> entityNames;
+        std::vector<BoundingBox> entityBounds;
         entityNames.reserve(asset->entities.size());
+        entityBounds.reserve(asset->entities.size());
         for (const MeshAssetEntity& entity : asset->entities)
         {
             entityNames.push_back(entity.name);
+            entityBounds.push_back(entity.localBoundingBox);
         }
         for (const std::string& warning : asset->warnings)
         {
             Logger::Instance().Info("assets", "Mesh import warning: " + warning);
         }
-        Model& model = scene.CreateMeshModel(path, PathUtf8(path.stem()), entityNames);
+        Model& model = scene.CreateMeshModel(path, PathUtf8(path.stem()), entityNames, entityBounds);
         m_selectedModelId = model.id;
         m_selectedEntityId = model.entities.front().id;
         history.PushApplied(std::make_unique<CreateModelCommand>(scene, model));

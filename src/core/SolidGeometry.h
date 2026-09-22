@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "core/BoundingBox.h"
+
 #include <SimpleMath.h>
 
 #include <cstdint>
@@ -54,6 +56,7 @@ class SolidGeometry final
 
     [[nodiscard]] PrimitiveType Type() const noexcept;
     [[nodiscard]] const SolidParameters& Parameters() const noexcept;
+    [[nodiscard]] BoundingBox LocalBoundingBox() const noexcept;
     [[nodiscard]] bool NearlyEquals(const SolidGeometry& other, float epsilon = 0.0001F) const noexcept;
 
   private:

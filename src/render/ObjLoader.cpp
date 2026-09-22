@@ -184,6 +184,7 @@ MeshAssetEntity LoadShape(const tinyobj::shape_t& shape, std::size_t shapeIndex,
         }
         entity.parts.push_back({std::make_unique<Mesh>(resources.Device(), builder.vertices, builder.indices),
                                 LoadMaterial(builder.materialId, materials, modelPath, resources)});
+        entity.localBoundingBox.ExtendBox(entity.parts.back().mesh->LocalBoundingBox());
     }
     return entity;
 }

@@ -330,6 +330,7 @@ std::shared_ptr<MeshAsset> GltfLoader::Import(const std::filesystem::path& path,
         for (cgltf_size primitiveIndex = 0; primitiveIndex < node.mesh->primitives_count; ++primitiveIndex)
         {
             entity.parts.push_back(LoadPrimitive(*data, node, node.mesh->primitives[primitiveIndex], path, resources));
+            entity.localBoundingBox.ExtendBox(entity.parts.back().mesh->LocalBoundingBox());
         }
         if (!entity.parts.empty())
         {

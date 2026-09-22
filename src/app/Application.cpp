@@ -7,6 +7,7 @@
 #include "app/Application.h"
 
 #include "platform/RuntimePaths.h"
+#include "render/LightManager.h"
 #include "render/ViewManager.h"
 #include "utils/Logger.h"
 
@@ -27,6 +28,23 @@ namespace
 std::string ImGuiIniPath()
 {
     return (RuntimePaths::ExecutableDirectory() / "imgui.ini").string();
+}
+
+void ConfigureCornellBoxLight()
+{
+    LightManager& lights = LightManager::Instance();
+    lights.ClearLights();
+    lights.Ambient() = {0.035F, 0.035F, 0.035F, 1.0F};
+
+    PointLight light;
+    light.position = {0.0F, 3.55F, 0.0F};
+    light.color = {1.0F, 0.92F, 0.78F, 1.0F};
+    light.intensity = 4.0F;
+    light.range = 8.0F;
+    if (!lights.AddPointLight(light).has_value())
+    {
+        throw std::runtime_error("Failed to create Cornell-box test light");
+    }
 }
 
 } // namespace
@@ -111,8 +129,8 @@ void Application::Initialize()
 
     Model& defaultModel = m_scene.CreateModel("Default Model");
     const ModelId defaultModelId = defaultModel.id;
-    ViewManager::Instance().CreateSphereTestEntity(m_scene, defaultModelId);
-    ViewManager::Instance().CreatePlaneTestEntity(m_scene, defaultModelId);
+    ViewManager::Instance().CreateCornellBoxTestScene(m_scene, defaultModelId);
+    ConfigureCornellBoxLight();
 
     //auto& cube = m_scene.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
     //cube.transform.position.x = -0.8F;

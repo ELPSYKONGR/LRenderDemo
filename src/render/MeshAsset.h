@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/BoundingBox.h"
 #include "render/Material.h"
 #include "render/Mesh.h"
 
@@ -26,6 +27,7 @@ struct MeshAssetEntity
 {
     std::string name;
     std::vector<MeshPart> parts;
+    BoundingBox localBoundingBox;
 };
 
 class MeshAsset final

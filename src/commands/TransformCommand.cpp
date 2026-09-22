@@ -35,6 +35,7 @@ void TransformCommand::Apply(const Transform& value)
         throw std::runtime_error("Transform command target no longer exists");
     }
     entity->transform = value;
+    m_scene.CalculateBoundingBoxes();
 }
 
 std::string_view TransformCommand::Name() const noexcept

@@ -35,6 +35,8 @@ void SolidGeometryCommand::Apply(const SolidGeometry& geometry)
         throw std::runtime_error("Solid geometry command target is unavailable");
     }
     entity->geometry = geometry;
+    entity->SetLocalBoundingBox(geometry.LocalBoundingBox());
+    m_scene.CalculateBoundingBoxes();
 }
 
 std::string_view SolidGeometryCommand::Name() const noexcept

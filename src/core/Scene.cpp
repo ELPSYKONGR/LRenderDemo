@@ -90,6 +90,43 @@ const MeshGeometry* Entity::Mesh() const noexcept
     return std::get_if<MeshGeometry>(&geometry);
 }
 
+const BoundingBox& Entity::LocalBoundingBoxData() const noexcept
+{
+    return m_localBoundingBox;
+}
+
+const BoundingBox& Entity::BoundingBoxData() const noexcept
+{
+    return m_boundingBox;
+}
+
+void Entity::SetLocalBoundingBox(BoundingBox boundingBox)
+{
+    m_localBoundingBox = std::move(boundingBox);
+    CalculateBoundingBox();
+}
+
+void Entity::CalculateBoundingBox() noexcept
+{
+    m_boundingBox.Reset();
+    m_boundingBox.ExtendBox(m_localBoundingBox, transform.ToMatrix());
+}
+
+const BoundingBox& Model::BoundingBoxData() const noexcept
+{
+    return m_boundingBox;
+}
+
+void Model::CalculateBoundingBoxes() noexcept
+{
+    m_boundingBox.Reset();
+    for (Entity& entity : entities)
+    {
+        entity.CalculateBoundingBox();
+        m_boundingBox.ExtendBox(entity.BoundingBoxData());
+    }
+}
+
 Model& Scene::CreateModel(std::string name)
 {
     if (name.empty())
@@ -104,11 +141,16 @@ Model& Scene::CreateModel(std::string name)
 }
 
 Model& Scene::CreateMeshModel(std::filesystem::path assetPath, std::string name,
-                              std::span<const std::string> assetEntityNames)
+                              std::span<const std::string> assetEntityNames,
+                              std::span<const BoundingBox> assetEntityBounds)
 {
     if (assetPath.empty() || assetEntityNames.empty())
     {
         throw std::invalid_argument("Mesh model requires an asset path and at least one entity");
+    }
+    if (!assetEntityBounds.empty() && assetEntityBounds.size() != assetEntityNames.size())
+    {
+        throw std::invalid_argument("Mesh model bounds do not match entity names");
     }
     if (assetEntityNames.size() > std::numeric_limits<std::uint32_t>::max() ||
         std::ranges::any_of(assetEntityNames, [](const std::string& value)
@@ -121,7 +163,9 @@ Model& Scene::CreateMeshModel(std::filesystem::path assetPath, std::string name,
     const ModelId modelId = CreateModel(std::move(name)).id;
     for (std::size_t index = 0; index < assetEntityNames.size(); ++index)
     {
-        CreateMeshEntity(modelId, assetPath, static_cast<std::uint32_t>(index), assetEntityNames[index]);
+        const BoundingBox localBoundingBox = assetEntityBounds.empty() ? BoundingBox{} : assetEntityBounds[index];
+        CreateMeshEntity(modelId, assetPath, static_cast<std::uint32_t>(index), assetEntityNames[index],
+                         localBoundingBox);
     }
     return *FindModel(modelId);
 }
@@ -147,17 +191,19 @@ Entity& Scene::CreateSolidEntity(ModelId modelId, SolidGeometry geometry, std::s
     Entity entity;
     entity.id = m_nextEntityId++;
     entity.name = std::move(name);
+    entity.SetLocalBoundingBox(geometry.LocalBoundingBox());
     entity.geometry = std::move(geometry);
     return AddEntity(modelId, std::move(entity));
 }
 
 Entity& Scene::CreateMeshEntity(ModelId modelId, std::filesystem::path assetPath, std::uint32_t assetEntityIndex,
-                                std::string name)
+                                std::string name, BoundingBox localBoundingBox)
 {
     Entity entity;
     entity.id = m_nextEntityId++;
     entity.name = std::move(name);
     entity.EntityMaterialData().useSourceTexture = true;
+    entity.SetLocalBoundingBox(std::move(localBoundingBox));
     entity.geometry = MeshGeometry{std::move(assetPath), assetEntityIndex};
     return AddEntity(modelId, std::move(entity));
 }
@@ -169,8 +215,12 @@ Model& Scene::AddModel(Model model)
         throw std::invalid_argument("Model snapshot is invalid or already exists");
     }
     std::unordered_set<EntityId> entityIds;
-    for (const Entity& entity : model.entities)
+    for (Entity& entity : model.entities)
     {
+        if (entity.IsSolid())
+        {
+            entity.SetLocalBoundingBox(entity.Solid()->LocalBoundingBox());
+        }
         ValidateEntity(entity);
         if (!entityIds.insert(entity.id).second || FindEntity(entity.id) != nullptr)
         {
@@ -183,6 +233,7 @@ Model& Scene::AddModel(Model model)
         m_nextEntityId = std::max(m_nextEntityId, entity.id + 1);
     }
     m_models.push_back(std::move(model));
+    CalculateBoundingBoxes();
     return m_models.back();
 }
 
@@ -200,6 +251,7 @@ Entity& Scene::AddEntity(ModelId modelId, Entity entity)
     }
     m_nextEntityId = std::max(m_nextEntityId, entity.id + 1);
     model->entities.push_back(std::move(entity));
+    CalculateBoundingBoxes();
     return model->entities.back();
 }
 
@@ -216,6 +268,7 @@ std::optional<Model> Scene::RemoveModel(ModelId id)
     }
     Model removed = std::move(*iterator);
     m_models.erase(iterator);
+    CalculateBoundingBoxes();
     return removed;
 }
 
@@ -233,6 +286,7 @@ std::optional<Entity> Scene::RemoveEntity(EntityId id)
         });
     Entity removed = std::move(*iterator);
     model->entities.erase(iterator);
+    CalculateBoundingBoxes();
     return removed;
 }
 
@@ -331,6 +385,26 @@ std::size_t Scene::EntityCount() const noexcept
 const std::vector<Model>& Scene::Models() const noexcept
 {
     return m_models;
+}
+
+std::vector<Model>& Scene::Models() noexcept
+{
+    return m_models;
+}
+
+const BoundingBox& Scene::BoundingBoxData() const noexcept
+{
+    return m_boundingBox;
+}
+
+void Scene::CalculateBoundingBoxes() noexcept
+{
+    m_boundingBox.Reset();
+    for (Model& model : m_models)
+    {
+        model.CalculateBoundingBoxes();
+        m_boundingBox.ExtendBox(model.BoundingBoxData());
+    }
 }
 
 void Scene::ValidateEntity(const Entity& entity)
