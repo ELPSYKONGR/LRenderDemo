@@ -61,9 +61,9 @@ void ColorProcessorEffect::RenderEffect(const EffectFrameContext& frame)
     {
         throw std::invalid_argument("Color processor requires a source texture");
     }
-    BindPipeline(frame);
     ID3D11DeviceContext* context = frame.DeviceContext();
     ID3D11ShaderResourceView* source = m_source.Get();
+    BindPipeline(frame);
     context->PSSetShaderResources(ColorSLOT, 1, &source);
     context->Draw(3, 0);
     ID3D11ShaderResourceView* nullResource = nullptr;

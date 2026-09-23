@@ -202,12 +202,12 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     DrawOpqEntity(scene, camera, selectedEntityId, frameContext);
     frameContext.ResetPipelineState();
 
-    if (m_skyCubeEnabled)
-    {
-        frameContext.CapturePipelineState();
-        m_skyCubeEffect->RenderEffect(frameContext);
-        frameContext.ResetPipelineState();
-    }
+    //if (m_skyCubeEnabled)
+    //{
+    //    frameContext.CapturePipelineState();
+    //    m_skyCubeEffect->RenderEffect(frameContext);
+    //    frameContext.ResetPipelineState();
+    //}
 
     nullResource = nullptr;
     ID3D11SamplerState* nullSampler = nullptr;

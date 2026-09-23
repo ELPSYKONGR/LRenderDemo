@@ -310,7 +310,7 @@ void ViewManager::CreateCornellBoxTestScene(Scene& scene, std::uint32_t modelId)
     backWall.transform.position = {0.0F, roomHeight * 0.5F, -roomDepth * 0.5F};
     backWall.transform.rotationDegrees.x = 90.0F;
     ConfigureUntexturedMaterial(backWall, backColor, 0.08F, 16.0F);
-
+    wallParameters.size = {roomHeight, roomWidth};
     Entity& leftWall = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(wallParameters), "CornellLeftWall");
     leftWall.transform.position = {-roomWidth * 0.5F, roomHeight * 0.5F, 0.0F};
     leftWall.transform.rotationDegrees.z = -90.0F;
