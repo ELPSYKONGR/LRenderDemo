@@ -293,7 +293,71 @@ Entity DeserializeEntity(const Json& value, const std::filesystem::path& sceneDi
     return entity;
 }
 
-Json SerializeScene(const Scene& scene, const std::filesystem::path& sceneDirectory)
+Json SerializeLighting(const LightingSettings& lighting)
+{
+    Json directional = nullptr;
+    if (lighting.directional)
+    {
+        const DirectionalLight& light = *lighting.directional;
+        directional = {{"enabled", light.enabled},
+                       {"direction", Vector(light.direction)},
+                       {"color", Vector(light.color)},
+                       {"intensity", light.intensity}};
+    }
+
+    Json points = Json::array();
+    for (const PointLight& light : lighting.points)
+    {
+        points.push_back({{"enabled", light.enabled},
+                          {"position", Vector(light.position)},
+                          {"color", Vector(light.color)},
+                          {"intensity", light.intensity},
+                          {"range", light.range}});
+    }
+    return {{"ambient", Vector(lighting.ambient)},
+            {"ambientIntensity", lighting.ambientIntensity},
+            {"directional", std::move(directional)},
+            {"points", std::move(points)}};
+}
+
+LightingSettings DeserializeLighting(const Json& value)
+{
+    LightingSettings lighting;
+    const auto ambient = ReadVector<4>(value.at("ambient"), "lighting.ambient");
+    lighting.ambient = {ambient[0], ambient[1], ambient[2], ambient[3]};
+    lighting.ambientIntensity = value.value("ambientIntensity", 1.0F);
+
+    const Json& directional = value.at("directional");
+    if (!directional.is_null())
+    {
+        const auto direction = ReadVector<3>(directional.at("direction"), "lighting.directional.direction");
+        const auto color = ReadVector<4>(directional.at("color"), "lighting.directional.color");
+        DirectionalLight light;
+        light.enabled = directional.at("enabled").get<bool>();
+        light.direction = {direction[0], direction[1], direction[2]};
+        light.color = {color[0], color[1], color[2], color[3]};
+        light.intensity = directional.at("intensity").get<float>();
+        lighting.directional = light;
+    }
+
+    lighting.points.clear();
+    for (const Json& point : value.at("points"))
+    {
+        const auto position = ReadVector<3>(point.at("position"), "lighting.point.position");
+        const auto color = ReadVector<4>(point.at("color"), "lighting.point.color");
+        PointLight light;
+        light.enabled = point.at("enabled").get<bool>();
+        light.position = {position[0], position[1], position[2]};
+        light.color = {color[0], color[1], color[2], color[3]};
+        light.intensity = point.at("intensity").get<float>();
+        light.range = point.at("range").get<float>();
+        lighting.points.push_back(light);
+    }
+    return lighting;
+}
+
+Json SerializeScene(const Scene& scene, const LightingSettings* lighting,
+                    const std::filesystem::path& sceneDirectory)
 {
     Json models = Json::array();
     for (const Model& model : scene.Models())
@@ -312,12 +376,15 @@ Json SerializeScene(const Scene& scene, const std::filesystem::path& sceneDirect
         }
         models.push_back({{"id", model.id}, {"name", model.name}, {"entities", entities}});
     }
-    return {{"format", "LRenderScene"}, {"version", 1}, {"models", models}};
+    Json root = {{"format", "LRenderScene"}, {"version", 1}, {"models", models}};
+    if (lighting != nullptr)
+    {
+        root["lighting"] = SerializeLighting(*lighting);
+    }
+    return root;
 }
 
-} // namespace
-
-void SceneSerializer::Save(const Scene& scene, const std::filesystem::path& path)
+void SaveSceneFile(const Scene& scene, const LightingSettings* lighting, const std::filesystem::path& path)
 {
     if (path.empty())
     {
@@ -338,7 +405,7 @@ void SceneSerializer::Save(const Scene& scene, const std::filesystem::path& path
         {
             throw std::runtime_error("Failed to open temporary scene file for writing");
         }
-        output << SerializeScene(scene, directory).dump(2) << '\n';
+        output << SerializeScene(scene, lighting, directory).dump(2) << '\n';
         output.close();
         if (!output)
         {
@@ -359,7 +426,26 @@ void SceneSerializer::Save(const Scene& scene, const std::filesystem::path& path
     }
 }
 
+} // namespace
+
+void SceneSerializer::Save(const Scene& scene, const std::filesystem::path& path)
+{
+    SaveSceneFile(scene, nullptr, path);
+}
+
+void SceneSerializer::Save(const Scene& scene, const LightingSettings& lighting,
+                           const std::filesystem::path& path)
+{
+    SaveSceneFile(scene, &lighting, path);
+}
+
 Scene SceneSerializer::Load(const std::filesystem::path& path)
+{
+    SceneDocument document = LoadDocument(path);
+    return std::move(document.scene);
+}
+
+SceneDocument SceneSerializer::LoadDocument(const std::filesystem::path& path)
 {
     if (!std::filesystem::is_regular_file(path))
     {
@@ -383,7 +469,11 @@ Scene SceneSerializer::Load(const std::filesystem::path& path)
             throw std::runtime_error("Unsupported LRender scene version: " + std::to_string(version));
         }
 
-        Scene scene;
+        SceneDocument document;
+        if (const auto lighting = root.find("lighting"); lighting != root.end())
+        {
+            document.lighting = DeserializeLighting(*lighting);
+        }
         const std::filesystem::path directory = std::filesystem::absolute(path).lexically_normal().parent_path();
         for (const Json& modelValue : root.at("models"))
         {
@@ -394,9 +484,9 @@ Scene SceneSerializer::Load(const std::filesystem::path& path)
             {
                 model.entities.push_back(DeserializeEntity(entityValue, directory));
             }
-            scene.AddModel(std::move(model));
+            document.scene.AddModel(std::move(model));
         }
-        return scene;
+        return document;
     }
     catch (const std::exception& error)
     {

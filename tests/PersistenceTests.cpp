@@ -49,8 +49,17 @@ void TestSceneRoundTrip()
     const lrender::EntityId meshId = mesh.id;
     const std::filesystem::path expectedMeshPath = std::filesystem::absolute(mesh.Mesh()->assetPath).lexically_normal();
 
-    lrender::SceneSerializer::Save(source, scenePath);
-    const lrender::Scene loaded = lrender::SceneSerializer::Load(scenePath);
+    lrender::LightingSettings sourceLighting;
+    sourceLighting.ambient = {0.1F, 0.2F, 0.3F, 1.0F};
+    sourceLighting.ambientIntensity = 0.65F;
+    sourceLighting.directional = lrender::DirectionalLight{
+        0, false, {-0.25F, -0.9F, 0.1F}, {0.8F, 0.7F, 0.6F, 1.0F}, 2.25F};
+    sourceLighting.points.push_back(
+        lrender::PointLight{0, true, {1.0F, 2.0F, 3.0F}, {0.3F, 0.5F, 0.7F, 1.0F}, 4.0F, 9.0F});
+
+    lrender::SceneSerializer::Save(source, sourceLighting, scenePath);
+    const lrender::SceneDocument document = lrender::SceneSerializer::LoadDocument(scenePath);
+    const lrender::Scene& loaded = document.scene;
     Require(loaded.Models().size() == 1, "Scene model count should survive round trip");
     Require(loaded.Models()[0].entities.size() == 2, "Scene entity count should survive round trip");
     const lrender::Entity* loadedSphere = loaded.FindEntity(sphereId);
@@ -64,6 +73,21 @@ void TestSceneRoundTrip()
     const lrender::Entity* loadedMesh = loaded.FindEntity(meshId);
     Require(loadedMesh != nullptr && loadedMesh->IsMesh(), "Mesh reference should survive round trip");
     Require(loadedMesh->Mesh()->assetPath == expectedMeshPath, "Mesh path should resolve relative to the scene file");
+
+    Require(document.lighting.has_value(), "Lighting settings should survive scene round trip");
+    const lrender::LightingSettings& loadedLighting = *document.lighting;
+    RequireNear(loadedLighting.ambient.x, 0.1F, "Ambient color should survive round trip");
+    RequireNear(loadedLighting.ambientIntensity, 0.65F, "Ambient intensity should survive round trip");
+    Require(loadedLighting.directional.has_value(), "Directional light should survive round trip");
+    Require(!loadedLighting.directional->enabled, "Directional enabled state should survive round trip");
+    RequireNear(loadedLighting.directional->intensity, 2.25F,
+                "Directional intensity should survive round trip");
+    Require(loadedLighting.points.size() == 1, "Point-light count should survive round trip");
+    RequireNear(loadedLighting.points[0].range, 9.0F, "Point-light range should survive round trip");
+
+    lrender::SceneSerializer::Save(source, scenePath);
+    Require(!lrender::SceneSerializer::LoadDocument(scenePath).lighting.has_value(),
+            "Legacy scene save should remain valid without lighting settings");
 
     std::error_code ignored;
     std::filesystem::remove(scenePath, ignored);

@@ -2,7 +2,7 @@
 
 ### 工程版本维护
 
-`VERSION.md` 记录当前工程版本和后续提交的版本递增规则。CMake 内部版本为 `1.0.0`，对外显示版本为 `1.0`。
+`VERSION.md` 记录当前工程版本和后续提交的版本递增规则。CMake 内部版本为 `1.3.0`，对外显示版本为 `1.3`。
 
 ### 编辑器控件到渲染层调试流程
 
@@ -34,7 +34,7 @@
 
 | 路径 | 用途 | 关键 API |
 |---|---|---|
-| `src/render/LightManager.h/.cpp` | 全局灯光增删、默认灯光、测试灯光清理和 `b3` Light CBuffer 单例管理 | `LightManager`、`ClearLights()` |
+| `src/render/LightManager.h/.cpp` | 全局灯光增删、设置整体恢复、环境光强度和 `b3` Light CBuffer 管理 | `LightManager`、`SetSettings()` |
 | `src/render/SSREffect.h/.cpp`、`src/shaders/SSREffectVS.hlsl`、`src/shaders/SSREffectPS.hlsl` | SSR Pass 的可编译空实现骨架 | `SSREffect` |
 | `src/render/TestEffect.h/.cpp`、`src/shaders/TestEffectVS.hlsl`、`src/shaders/TestEffectPS.hlsl` | 帧级测试 Pass，绘制单三角形或透明三角形组 | `TestEffect::RenderEffect()` |
 | `src/render/EffectResource.h/.cpp` | 单个二维颜色/深度渲染资源，封装 RTV/SRV/DSV | `EffectResource` |
@@ -80,7 +80,7 @@
 | `src/render/EffectCubeMapResource.*` | DDS/动态 Cubemap 及可选整体/单面 RTV | `LoadDDS()`、`Create()` | D3D11、DirectXTK |
 | `src/render/Dx11ConstantBuffer.h` | 16 字节对齐的类型化 DX11 常量缓冲 RAII 封装 | `Update()`、`BindVS()`、`BindPS()` | D3D11、ComPtr |
 | `src/render/CommonConstantBuffers.h` | Renderer 共享的 Frame/Object/Material C++ 常量布局及 GPU Buffer 管理 | `FrameConstants`、`ObjectConstants`、`MaterialConstants`、`CommonConstantBuffers` | SimpleMath、D3D11 |
-| `src/render/LightManager.*`、`Lighting.h` | 全局环境光、方向光、点光增删及 Light CBuffer 上传/绑定 | `AddDirectionalLight()`、`AddPointLight()`、`RemoveLight()`、`UpdateBuffer()` | Dx11ConstantBuffer、SimpleMath、D3D11 |
+| `src/render/LightManager.*`、`Lighting.h` | 环境光强度、方向光、点光增删、设置恢复及 Light CBuffer 上传 | `SetSettings()`、`AmbientIntensity()`、`UpdateBuffer()` | Dx11ConstantBuffer、SimpleMath、D3D11 |
 | `src/render/BasicMeshEffect.*` | 组装纹理材质常量并绑定基础光照管线 | `BindPipeline()`、`Draw()` | IRenderObjectEffect、CommonConstantBuffers、LightManager |
 | `src/shaders/common.hlsli` | VS/PS 共用的 `b0` HLSL 常量布局 | `FrameInfo`、`ObjectInfo`、`MaterialInfo`、`LightInfo` cbuffers | 无 |
 | `src/shaders/BasicMeshVS.hlsl` | 基础网格顶点变换和法线变换 | `VSMain()` | common.hlsli |
@@ -97,7 +97,7 @@
 | `src/render/Dx11Renderer.*` | 设备、交换链、材质解析、场景遍历和视口调试资源选择 | `RenderScene()`、`SetViewportDebugView()`、`MaterialPreview()` | Effect、Mesh、ResourceCache |
 | `src/editor/EditorLayer.*`、`EditorHierarchy.cpp`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | Model/Entity 层级、资源、视角、材质和光照控制；Camera 面板提供实体/场景/自动居中取景 | `Draw()`、`DrawHierarchy()`、`DrawCameraControls()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
 | `src/editor/EditorSolid.cpp`、`EditorScene.cpp` | 参数化创建/编辑与场景文件工作流 | `DrawSolidGeometryEditor()`、`SaveScene()` | SolidGeometry、SceneSerializer、原生对话框 |
-| `src/persistence/SceneSerializer.*` | 版本化 `.lscene` JSON 原子保存和事务加载 | `Save()`、`Load()` | LRenderCore、nlohmann/json |
+| `src/persistence/SceneSerializer.*` | 场景与可选灯光设置的 `.lscene` JSON 原子保存和事务加载 | `Save()`、`LoadDocument()` | Scene、LightingSettings、nlohmann/json |
 | `src/utils/Logger.*` | 按日期写入文件日志 | `Initialize()`、`Info()`、`Error()` | C++ filesystem |
 | `tests/CoreTests.cpp` | CPU 行为回归测试 | 场景/命令测试用例 | LRenderCore |
 | `tests/ImportTests.cpp`、`tests/assets/obj/` | WARP 支持的 OBJ/MTL 与资源缓存回归测试 | `LRenderImportTests` | LRenderAssets、D3D11 WARP |

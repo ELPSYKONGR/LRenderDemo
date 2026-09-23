@@ -4,6 +4,7 @@
 #include "render/LightManager.h"
 
 #include <d3d11.h>
+#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
@@ -35,6 +36,15 @@ void TestLightLifecycleAndBuffer()
     Require(lights.Directional() != nullptr, "Default directional light is missing");
     Require(lights.PointLights().size() == 3, "Default point light count is incorrect");
 
+    lrender::LightingSettings restored = lights.Settings();
+    restored.ambientIntensity = 0.5F;
+    lights.SetSettings(restored);
+    Require(std::abs(lights.AmbientIntensity() - 0.5F) < 0.001F,
+            "Ambient intensity replacement failed");
+    Require(lights.Directional() != nullptr && lights.Directional()->id != 0,
+            "Restored directional light should receive a runtime id");
+    Require(lights.PointLights()[0].id != 0, "Restored point lights should receive runtime ids");
+
     const lrender::LightId directionalId = lights.Directional()->id;
     Require(lights.RemoveLight(directionalId), "Directional light removal failed");
     Require(lights.Directional() == nullptr, "Directional light should be absent after removal");
@@ -51,6 +61,7 @@ void TestLightLifecycleAndBuffer()
     Require(replacementPoint.has_value(), "Point light recreation failed");
     Require(*replacementPoint != *fourthPoint, "Recreated point light should receive a new id");
     lights.FindPointLight(*replacementPoint)->enabled = false;
+    lights.Ambient() = {0.4F, 0.2F, 0.1F, 1.0F};
 
     lights.UpdateBuffer();
     lights.BindBuffer();
@@ -75,6 +86,8 @@ void TestLightLifecycleAndBuffer()
     lrender::LightConstants uploaded{};
     std::memcpy(&uploaded, mapped.pData, sizeof(uploaded));
     context->Unmap(stagingBuffer.Get(), 0);
+    Require(std::abs(uploaded.ambientColor.x - 0.2F) < 0.001F,
+            "Ambient intensity should scale the uploaded ambient color");
     Require(uploaded.pointLightCount == 3, "Disabled point lights should not occupy GPU light slots");
 
     lrender::LightManager::Shutdown();

@@ -65,6 +65,40 @@ const DirectX::SimpleMath::Color& LightManager::Ambient() const noexcept
     return m_lights.ambient;
 }
 
+float& LightManager::AmbientIntensity() noexcept
+{
+    return m_lights.ambientIntensity;
+}
+
+float LightManager::AmbientIntensity() const noexcept
+{
+    return m_lights.ambientIntensity;
+}
+
+const LightingSettings& LightManager::Settings() const noexcept
+{
+    return m_lights;
+}
+
+void LightManager::SetSettings(LightingSettings settings)
+{
+    if (settings.points.size() > MaxPointLights)
+    {
+        throw std::invalid_argument("Lighting settings exceed the point-light limit");
+    }
+
+    m_lights = std::move(settings);
+    m_nextLightId = 1;
+    if (m_lights.directional)
+    {
+        m_lights.directional->id = NextId();
+    }
+    for (PointLight& light : m_lights.points)
+    {
+        light.id = NextId();
+    }
+}
+
 DirectionalLight* LightManager::Directional() noexcept
 {
     return m_lights.directional ? &*m_lights.directional : nullptr;
@@ -190,6 +224,10 @@ LightConstants LightManager::BuildConstants() const
 {
     LightConstants data{};
     data.ambientColor = ToVector4(m_lights.ambient);
+    const float ambientIntensity = std::max(m_lights.ambientIntensity, 0.0F);
+    data.ambientColor.x *= ambientIntensity;
+    data.ambientColor.y *= ambientIntensity;
+    data.ambientColor.z *= ambientIntensity;
     if (const DirectionalLight* light = Directional())
     {
         auto direction = light->direction;

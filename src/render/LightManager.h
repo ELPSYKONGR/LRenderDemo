@@ -47,6 +47,10 @@ class LightManager final
 
     [[nodiscard]] DirectX::SimpleMath::Color& Ambient() noexcept;
     [[nodiscard]] const DirectX::SimpleMath::Color& Ambient() const noexcept;
+    [[nodiscard]] float& AmbientIntensity() noexcept;
+    [[nodiscard]] float AmbientIntensity() const noexcept;
+    [[nodiscard]] const LightingSettings& Settings() const noexcept;
+    void SetSettings(LightingSettings settings);
     [[nodiscard]] DirectionalLight* Directional() noexcept;
     [[nodiscard]] const DirectionalLight* Directional() const noexcept;
     [[nodiscard]] std::span<PointLight> PointLights() noexcept;

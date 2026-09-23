@@ -113,6 +113,7 @@ void EditorLayer::DrawLighting()
     ImGui::Begin("Lighting");
     LightManager& lights = LightManager::Instance();
     ImGui::ColorEdit3("Ambient", &lights.Ambient().x);
+    ImGui::DragFloat("Ambient Intensity", &lights.AmbientIntensity(), 0.01F, 0.0F, 20.0F);
 
     LightId pendingRemoval = 0;
 

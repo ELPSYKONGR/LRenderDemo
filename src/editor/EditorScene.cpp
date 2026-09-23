@@ -8,6 +8,7 @@
 
 #include "persistence/SceneSerializer.h"
 #include "render/Dx11Renderer.h"
+#include "render/LightManager.h"
 #include "utils/Logger.h"
 
 #include <array>
@@ -183,7 +184,7 @@ bool EditorLayer::SaveScene(const Scene& scene, CommandHistory& history, Dx11Ren
                 return false;
             }
         }
-        SceneSerializer::Save(scene, path);
+        SceneSerializer::Save(scene, LightManager::Instance().Settings(), path);
         m_currentScenePath = std::filesystem::absolute(path).lexically_normal();
         history.MarkSaved();
         Logger::Instance().Info("scene", "Saved scene: " + PathUtf8(m_currentScenePath));
@@ -208,9 +209,17 @@ bool EditorLayer::SaveScene(const Scene& scene, CommandHistory& history, Dx11Ren
 void EditorLayer::OpenScene(Scene& scene, CommandHistory& history, Dx11Renderer& renderer,
                             const std::filesystem::path& path)
 {
-    Scene loaded = SceneSerializer::Load(path);
-    PreloadSceneResources(loaded, renderer);
-    scene = std::move(loaded);
+    SceneDocument document = SceneSerializer::LoadDocument(path);
+    PreloadSceneResources(document.scene, renderer);
+    scene = std::move(document.scene);
+    if (document.lighting)
+    {
+        LightManager::Instance().SetSettings(std::move(*document.lighting));
+    }
+    else
+    {
+        LightManager::Instance().ResetDefaults();
+    }
     renderer.ClearRuntimeCaches();
     history.Clear();
     m_currentScenePath = std::filesystem::absolute(path).lexically_normal();
@@ -245,6 +254,7 @@ void EditorLayer::ExecuteSceneAction(Scene& scene, CommandHistory& history, Dx11
         if (action == kNewSceneAction)
         {
             scene = Scene{};
+            LightManager::Instance().ResetDefaults();
             history.Clear();
             renderer.ClearRuntimeCaches();
             m_currentScenePath.clear();

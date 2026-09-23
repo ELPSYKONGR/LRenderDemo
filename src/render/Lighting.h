@@ -38,7 +38,8 @@ struct PointLight
 
 struct LightingSettings
 {
-    DirectX::SimpleMath::Color ambient = {0.12F, 0.14F, 0.18F, 1.0F};
+    DirectX::SimpleMath::Color ambient = {0.2F, 0.2F, 0.2F, 1.0F};
+    float ambientIntensity = 1.0F;
     std::optional<DirectionalLight> directional;
     std::vector<PointLight> points;
 };

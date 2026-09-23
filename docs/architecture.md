@@ -125,6 +125,9 @@ Frame/Object/Material 三类公共缓冲由 Renderer 统一拥有。Light Buffer
 严格绑定当前 Device/ImmediateContext；后续出现 DeferredContext 或多设备时，应为各 Context/Device
 建立独立实例边界。
 
+场景保存时，`SceneSerializer` 将 `LightManager` 的 `LightingSettings` 写入 `.lscene` 的可选
+`lighting` 节点；打开场景后由编辑器整体恢复灯光设置。旧场景没有该节点时重置为默认灯光。
+
 ## RHI 迁移边界
 
 仅学习 DX11 时，不应引入通用 RHI。将原生对象限制在 `src/render/` 中，避免它们泄漏到
