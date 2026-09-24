@@ -28,10 +28,10 @@ EffectFrameContext::EffectFrameContext(ID3D11DeviceContext* deviceContext, Commo
     }
 }
 
-EffectDrawContext::EffectDrawContext(const Entity& entity, Material material, std::uint32_t selectedEntityId,
+EffectDrawContext::EffectDrawContext(const Entity& entity, MaterialDrawData material, std::uint32_t selectedEntityId,
                                      const Mesh* mesh)
     : m_world(entity.transform.ToMatrix()), m_material(std::move(material)),
-      m_tint(entity.EffectiveMaterial().baseColor), m_isSelected(entity.id == selectedEntityId), m_mesh(mesh)
+      m_tint(m_material.material.GetBaseColor()), m_isSelected(entity.id == selectedEntityId), m_mesh(mesh)
 {
 }
 
@@ -156,7 +156,7 @@ const DirectX::SimpleMath::Matrix& EffectDrawContext::World() const noexcept
     return m_world;
 }
 
-const Material& EffectDrawContext::ResolvedMaterial() const noexcept
+const MaterialDrawData& EffectDrawContext::PreparedMaterial() const noexcept
 {
     return m_material;
 }

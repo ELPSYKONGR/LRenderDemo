@@ -72,17 +72,21 @@ bool BasicMeshEffect::IsWireframe() const noexcept
 void BasicMeshEffect::BindPipeline(const EffectFrameContext& frame, const EffectDrawContext& draw)
 {
     ID3D11DeviceContext* context = frame.DeviceContext();
-    const Material& material = draw.ResolvedMaterial();
-    if (material.GetBaseColorTexture() == nullptr || material.GetSampler() == nullptr)
+    const MaterialDrawData& preparedMaterial = draw.PreparedMaterial();
+    const Material& material = preparedMaterial.material;
+    if (preparedMaterial.baseColorTexture == nullptr || preparedMaterial.sampler == nullptr)
     {
         throw std::invalid_argument("BasicMeshEffect requires a texture and sampler material");
     }
 
     constexpr DirectX::SimpleMath::Color selectionColor{1.0F, 0.84F, 0.0F, 1.0F};
-    const DirectX::SimpleMath::Color selectedTint =
-        draw.IsSelected() ? DirectX::SimpleMath::Color::Lerp(draw.Tint(), selectionColor, 0.28F) : draw.Tint();
-    const DirectX::SimpleMath::Color finalColor =
-        material.UsesBaseColorTexture() ? DirectX::SimpleMath::Color(1.0F, 1.0F, 1.0F, 1.0F) : selectedTint;
+    const DirectX::SimpleMath::Color selectedTint = draw.IsSelected()
+                                                        ? DirectX::SimpleMath::Color::Lerp(
+                                                              draw.Tint(), selectionColor, 0.28F)
+                                                        : draw.Tint();
+    const DirectX::SimpleMath::Color finalColor = material.UsesBaseColorTexture()
+                                                     ? DirectX::SimpleMath::Color(1.0F, 1.0F, 1.0F, 1.0F)
+                                                     : selectedTint;
 
     ObjectConstants objectData{};
     objectData.world = draw.World();
@@ -113,8 +117,8 @@ void BasicMeshEffect::BindPipeline(const EffectFrameContext& frame, const Effect
     buffers.BindObjectBuffer();
     buffers.BindMaterialBuffer();
     LightManager::Instance().BindBuffer();
-    ID3D11ShaderResourceView* texture = material.GetBaseColorTexture()->ShaderResourceView();
-    ID3D11SamplerState* sampler = material.GetSampler()->Get();
+    ID3D11ShaderResourceView* texture = preparedMaterial.baseColorTexture->ShaderResourceView();
+    ID3D11SamplerState* sampler = preparedMaterial.sampler->Get();
     context->PSSetShaderResources(ColorSLOT, 1, &texture);
     context->PSSetSamplers(LinearClampSamplerSLOT, 1, &sampler);
 }

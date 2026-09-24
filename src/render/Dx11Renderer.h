@@ -70,8 +70,6 @@ class Dx11Renderer final
 
   private:
     void CreateBackBuffer();
-    [[nodiscard]] Material ResolveMaterial(const Material& source, const EntityMaterial& settings);
-
     HWND m_windowHandle = nullptr;
     std::uint32_t m_swapChainWidth = 0;
     std::uint32_t m_swapChainHeight = 0;

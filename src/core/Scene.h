@@ -2,12 +2,12 @@
  * @file Scene-owned models containing solid and imported-mesh entities.
  * @author Codex
  * @created 2026-08-20
- * @depends core/EntityMaterial.h, core/Transform.h
+ * @depends core/Material.h, core/Transform.h
  */
 #pragma once
 
 #include "core/BoundingBox.h"
-#include "core/EntityMaterial.h"
+#include "core/Material.h"
 #include "core/SolidGeometry.h"
 #include "core/Transform.h"
 
@@ -42,12 +42,12 @@ struct Entity
     Transform transform;
     EntityGeometry geometry;
 
-    [[nodiscard]] const EntityMaterial& EntityMaterialData() const noexcept;
-    [[nodiscard]] EntityMaterial& EntityMaterialData() noexcept;
-    [[nodiscard]] const EntityMaterial& EffectiveMaterial() const noexcept;
-    [[nodiscard]] EntityMaterial& EditableMaterial() noexcept;
+    [[nodiscard]] const Material& EntityMaterialData() const noexcept;
+    [[nodiscard]] Material& EntityMaterialData() noexcept;
+    [[nodiscard]] const Material& EffectiveMaterial() const noexcept;
+    [[nodiscard]] Material& EditableMaterial() noexcept;
     [[nodiscard]] bool HasMaterialOverride() const noexcept;
-    void SetOverrideMaterial(EntityMaterial material);
+    void SetOverrideMaterial(Material material);
     void ClearMaterialOverride() noexcept;
     [[nodiscard]] bool IsMesh() const noexcept;
     [[nodiscard]] bool IsSolid() const noexcept;
@@ -61,8 +61,8 @@ struct Entity
     void CalculateBoundingBox() noexcept;
 
   private:
-    EntityMaterial m_entityMaterial = EntityMaterial();
-    EntityMaterial m_overrideEntityMaterial = EntityMaterial();
+    Material m_entityMaterial = Material();
+    Material m_overrideEntityMaterial = Material();
     bool m_hasOverrideEntityMaterial = false;
     BoundingBox m_localBoundingBox;
     BoundingBox m_boundingBox;

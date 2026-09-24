@@ -240,8 +240,7 @@ LightConstants LightManager::BuildConstants() const
             direction.Normalize();
         }
         data.directionalDirectionAndIntensity = {direction.x, direction.y, direction.z, light->intensity};
-        data.directionalColorAndEnabled = {light->color.x, light->color.y, light->color.z,
-                                           light->enabled ? 1.0F : 0.0F};
+        data.directionalColorAndEnabled = {light->color.x, light->color.y, light->color.z, light->enabled ? 1.0F : 0.0F};
     }
 
     std::size_t outputIndex = 0;
@@ -251,8 +250,7 @@ LightConstants LightManager::BuildConstants() const
         {
             continue;
         }
-        data.pointLightData[outputIndex * 2] = {light.position.x, light.position.y, light.position.z,
-                                                std::max(light.range, 0.0001F)};
+        data.pointLightData[outputIndex * 2] = {light.position.x, light.position.y, light.position.z, std::max(light.range, 0.0001F)};
         data.pointLightData[outputIndex * 2 + 1] = {light.color.x, light.color.y, light.color.z, light.intensity};
         ++outputIndex;
     }

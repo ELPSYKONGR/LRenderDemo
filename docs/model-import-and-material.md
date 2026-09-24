@@ -17,19 +17,19 @@ graph LR
     Obj --> Asset
     Asset --> AssetEntity[MeshAssetEntity]
     AssetEntity --> Part[MeshPart: Mesh + Material]
-    Cache --> Texture[Texture2D 和 SamplerState]
-    Part --> Effect[BasicMeshEffect]
-    Texture --> Effect
+    Part --> Manager[MaterialManager]
+    Manager --> Texture[Texture2D 和 SamplerState]
+    Manager --> Effect[BasicMeshEffect]
     Effect --> Shader[BasicMesh VS/PS]
 ```
 
 - `Scene` 管理 `Model`，`Model` 管理可混合的 Solid/Mesh `Entity`；它们不持有 DX11 对象。
 - Solid Entity 保存 Cube/Sphere/Plane 类型；Mesh Entity 保存资产路径和 `assetEntityIndex`。
-- `ResourceCache` 用规范化且忽略大小写的路径缓存网格资产和外部纹理，用稳定键缓存 GLB 内嵌纹理。
+- `ResourceCache` 用规范化且忽略大小写的路径缓存网格资产；`MaterialManager` 缓存外部纹理、GLB 内嵌纹理和 SamplerState。
 - `ModelLoader` 按扩展名把文件交给 `GltfLoader` 或 `ObjLoader`。两者统一输出 `MeshAsset`。
 - glTF Mesh Node 或 OBJ Shape 形成 `MeshAssetEntity`；其 primitive 或材质分组形成 `MeshPart`。
-- `EntityMaterial` 保存实体可编辑参数；渲染层 `Material` 保存 BaseColor 因子、纹理、Sampler 和 GPU
-  绘制参数。渲染器逐部件复制源材质后应用实体参数，不修改缓存。
+- Core 层只有一个 `Material` 类。MeshPart 保存导入源材质，Entity 保存基础材质和可选覆盖材质；
+  `MaterialManager` 解析为临时 `MaterialDrawData`，不会修改缓存中的源材质。
 - `BasicMeshEffect` 绑定矩阵、材质、方向光和点光；HLSL 完成纹理采样和光照。
 
 ## 2. 使用方式
@@ -59,7 +59,7 @@ graph LR
 | Position、Normal、UV | 支持 | glTF/OBJ 缺失法线时按三角面累计重建；glTF 支持材质指定的 UV 集索引 |
 | glTF 节点变换 | 支持 | 烘焙世界变换，并统一完成右手系到左手系转换 |
 | OBJ 坐标与 UV 转换 | 支持 | 翻转 Z、反转三角绕序，并翻转 UV 的 V 方向 |
-| BaseColor 与 Sampler | 支持 | BaseColor 因子、sRGB 纹理、Wrap/Clamp/Mirror 和点/线性过滤 |
+| BaseColor 与 Sampler | 支持 | BaseColor 因子、sRGB 纹理、U/V 独立寻址和点/线性过滤 |
 | 实体材质编辑 | 支持 | 漫反射、高光、双面、三种显示模式和完整撤销/重做 |
 | 多光源 | 支持 | 一盏方向光、最多四盏点光、Lambert 与 Blinn-Phong |
 | data URI 图片 | 暂不支持 | 当前只支持外部图片或 GLB BufferView 图片 |
@@ -76,7 +76,8 @@ graph LR
 
 `MeshVertex` 的布局是 Position、Normal、TexCoord。`PrimitiveFactory` 为立方体逐面生成 UV，为球体
 按经纬度生成 UV；`BasicMeshVS.hlsl` 原样传递 UV，`BasicMeshPS.hlsl` 从 `t0/s0` 采样。
-程序化几何默认使用运行时生成的 2x2 棋盘纹理，因此不依赖本地图片也能验证 UV。
+程序化几何默认使用 `LitUntextured`；需要验证 UV 时，可由 `MaterialManager::CheckerMaterial()` 取得运行时
+生成的 2x2 棋盘材质，不依赖本地图片。
 
 WIC 图片按 sRGB 创建并自动生成 mipmap；DDS 走 DirectXTK DDS loader。纹理和 Sampler 都由 RAII
 对象持有，COM 所有权使用 `ComPtr`。

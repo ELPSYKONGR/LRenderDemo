@@ -25,8 +25,7 @@ void EditorLayer::DrawHierarchy(Scene& scene)
     for (const Model& model : scene.Models())
     {
         ImGui::PushID(static_cast<int>(model.id));
-        ImGuiTreeNodeFlags flags =
-            ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
         if (model.id == m_selectedModelId && m_selectedEntityId == 0)
         {
             flags |= ImGuiTreeNodeFlags_Selected;
@@ -67,7 +66,7 @@ void EditorLayer::CreateSolid(Scene& scene, CommandHistory& history, SolidGeomet
     if (primitive == PrimitiveType::Plane)
     {
         entity.transform.position.y = -0.5F;
-        entity.EntityMaterialData().baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
+        entity.EntityMaterialData().SetBaseColor({0.55F, 0.58F, 0.62F, 1.0F});
     }
     m_selectedModelId = model->id;
     m_selectedEntityId = entity.id;

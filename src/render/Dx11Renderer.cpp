@@ -8,6 +8,7 @@
 #include "stdfx.h"
 #include "render/EffectManager.h"
 #include "render/LightManager.h"
+#include "render/MaterialManager.h"
 #include "render/ViewManager.h"
 
 #include <backends/imgui_impl_dx11.h>
@@ -18,39 +19,6 @@
 
 namespace lrender
 {
-namespace
-{
-
-D3D11_FILTER NativeFilter(MaterialFilter filter)
-{
-    switch (filter)
-    {
-    case MaterialFilter::Point:
-        return D3D11_FILTER_MIN_MAG_MIP_POINT;
-    case MaterialFilter::Linear:
-        return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    case MaterialFilter::Anisotropic:
-        return D3D11_FILTER_ANISOTROPIC;
-    }
-    throw std::invalid_argument("Unsupported material texture filter");
-}
-
-D3D11_TEXTURE_ADDRESS_MODE NativeAddressMode(MaterialAddressMode mode)
-{
-    switch (mode)
-    {
-    case MaterialAddressMode::Wrap:
-        return D3D11_TEXTURE_ADDRESS_WRAP;
-    case MaterialAddressMode::Clamp:
-        return D3D11_TEXTURE_ADDRESS_CLAMP;
-    case MaterialAddressMode::Mirror:
-        return D3D11_TEXTURE_ADDRESS_MIRROR;
-    }
-    throw std::invalid_argument("Unsupported material texture address mode");
-}
-
-} // namespace
-
 void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint32_t height)
 {
     if (windowHandle == nullptr)
@@ -78,11 +46,11 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
 #endif
     constexpr std::array featureLevels{D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
     D3D_FEATURE_LEVEL createdFeatureLevel{};
-    HRESULT result =
-        D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, featureLevels.data(),
-                                      static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION, &swapChainDescription,
-                                      m_swapChain.ReleaseAndGetAddressOf(), m_device.ReleaseAndGetAddressOf(),
-                                      &createdFeatureLevel, m_context.ReleaseAndGetAddressOf());
+    HRESULT result = D3D11CreateDeviceAndSwapChain(
+        nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, featureLevels.data(),
+        static_cast<UINT>(featureLevels.size()), D3D11_SDK_VERSION, &swapChainDescription,
+        m_swapChain.ReleaseAndGetAddressOf(), m_device.ReleaseAndGetAddressOf(), &createdFeatureLevel,
+        m_context.ReleaseAndGetAddressOf());
 #if defined(_DEBUG)
     if (FAILED(result))
     {
@@ -104,6 +72,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     EffectManager::Initialize(m_device.Get(), m_context.Get());
     ViewManager::Initialize(m_device.Get(), m_context.Get());
     LightManager::Initialize(m_device.Get(), m_context.Get());
+    MaterialManager::Initialize(m_device.Get(), m_context.Get());
     EffectManager::Instance().CreateEffectResource(m_sceneResource, 960, 640);
     EffectManager::Instance().CreateEffectResource(m_normalResource, 960, 640);
     EffectManager::Instance().CreateEffectResource(m_viewportResource, 960, 640);
@@ -112,7 +81,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     m_skyCubeEffect = std::make_unique<SkyCubeEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_colorProcessor = std::make_unique<ColorProcessorEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_testEffect = std::make_unique<TestEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
-    m_resources = std::make_unique<ResourceCache>(m_device.Get(), m_context.Get());
+    m_resources = std::make_unique<ResourceCache>(m_device.Get());
 }
 
 void Dx11Renderer::Shutdown() noexcept
@@ -129,8 +98,9 @@ void Dx11Renderer::Shutdown() noexcept
         m_context->ClearState();
         m_context->Flush();
     }
-    m_commonConstantBuffers.reset();
     m_resources.reset();
+    MaterialManager::Shutdown();
+    m_commonConstantBuffers.reset();
     m_solidMeshes.reset();
     m_viewportResource.Reset();
     m_normalResource.Reset();
@@ -232,40 +202,43 @@ void Dx11Renderer::DrawOpqEntity(const Scene& scene, const Camera&, std::uint32_
                                  const EffectFrameContext& frameContext)
 {
     std::unordered_set<EntityId> activeSolids;
-	for (const Model& sceneModel : scene.Models())
-	{
-		for (const Entity& entity : sceneModel.entities)
-		{
-			if (const MeshGeometry* meshGeometry = entity.Mesh())
-			{
-				const auto asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
-				if (meshGeometry->assetEntityIndex >= asset->entities.size())
-				{
-					throw std::runtime_error("Mesh entity index is outside the cached asset");
-				}
-				for (const MeshPart& part : asset->entities[meshGeometry->assetEntityIndex].parts)
-				{
-					EffectDrawContext drawContext(entity, ResolveMaterial(part.material, entity.EffectiveMaterial()),
-						selectedEntityId, part.mesh.get());
-					m_effect->Draw(frameContext, drawContext);
-				}
-				continue;
-			}
+    for (const Model& sceneModel : scene.Models())
+    {
+        for (const Entity& entity : sceneModel.entities)
+        {
+            if (const MeshGeometry* meshGeometry = entity.Mesh())
+            {
+                const auto asset = m_resources->LoadMeshAsset(meshGeometry->assetPath);
+                if (meshGeometry->assetEntityIndex >= asset->entities.size())
+                {
+                    throw std::runtime_error("Mesh entity index is outside the cached asset");
+                }
+                for (const MeshPart& part : asset->entities[meshGeometry->assetEntityIndex].parts)
+                {
+                    const Material* overrideMaterial = entity.HasMaterialOverride() ? &entity.EffectiveMaterial() : nullptr;
+                    EffectDrawContext drawContext(entity,
+                        MaterialManager::Instance().PrepareMaterial(part.material, overrideMaterial), selectedEntityId,
+                        part.mesh.get());
+                    m_effect->Draw(frameContext, drawContext);
+                }
+                continue;
+            }
 
-			const SolidGeometry* solid = entity.Solid();
-			if (solid == nullptr || m_solidMeshes == nullptr)
-			{
-				throw std::runtime_error("Solid geometry cache is not initialized");
-			}
-			activeSolids.insert(entity.id);
-			const Mesh& mesh = m_solidMeshes->Resolve(entity.id, *solid);
-			const EffectDrawContext drawContext(
-				entity, ResolveMaterial(m_resources->DefaultMaterial(), entity.EffectiveMaterial()), selectedEntityId,
-				&mesh);
-			m_effect->Draw(frameContext, drawContext);
-		}
-	}
-	m_solidMeshes->Prune(activeSolids);
+            const SolidGeometry* solid = entity.Solid();
+            if (solid == nullptr || m_solidMeshes == nullptr)
+            {
+                throw std::runtime_error("Solid geometry cache is not initialized");
+            }
+            activeSolids.insert(entity.id);
+            const Mesh& mesh = m_solidMeshes->Resolve(entity.id, *solid);
+            const Material* overrideMaterial = entity.HasMaterialOverride() ? &entity.EffectiveMaterial() : nullptr;
+            const EffectDrawContext drawContext(entity,
+                MaterialManager::Instance().PrepareMaterial(entity.EntityMaterialData(), overrideMaterial),
+                selectedEntityId, &mesh);
+            m_effect->Draw(frameContext, drawContext);
+        }
+    }
+    m_solidMeshes->Prune(activeSolids);
 }
 
 std::shared_ptr<const MeshAsset> Dx11Renderer::PreloadModel(const std::filesystem::path& path)
@@ -283,7 +256,7 @@ void Dx11Renderer::PreloadTexture(const std::filesystem::path& path)
     {
         throw std::logic_error("Renderer resource cache is not initialized");
     }
-    static_cast<void>(m_resources->LoadTexture(path));
+    static_cast<void>(MaterialManager::Instance().LoadTexture(path));
 }
 
 void Dx11Renderer::ClearRuntimeCaches() noexcept
@@ -315,44 +288,12 @@ ID3D11ShaderResourceView* Dx11Renderer::MaterialPreview(const Entity& entity)
     Material defaultMaterial;
     if (source == nullptr)
     {
-        defaultMaterial = m_resources->DefaultMaterial();
+        defaultMaterial = entity.EntityMaterialData();
         source = &defaultMaterial;
     }
-    const Material resolved = ResolveMaterial(*source, entity.EffectiveMaterial());
-    return resolved.GetBaseColorTexture() ? resolved.GetBaseColorTexture()->ShaderResourceView() : nullptr;
-}
-
-Material Dx11Renderer::ResolveMaterial(const Material& source, const EntityMaterial& settings)
-{
-    Material resolved = source;
-    const bool useTexture =
-        settings.displayMode != SurfaceDisplayMode::LitUntextured &&
-        (settings.useSourceTexture ? source.UsesBaseColorTexture() : !settings.baseColorTexturePath.empty());
-    resolved.SetDiffuseStrength(settings.diffuseStrength);
-    resolved.SetSpecularColor(settings.specularColor);
-    resolved.SetSpecularStrength(settings.specularStrength);
-    resolved.SetShininess(settings.shininess);
-    resolved.SetDoubleSided(settings.doubleSided);
-    // The display mode is the single source of truth for texture usage. If no
-    // texture was selected, normalize the mode so a fallback white texture is
-    // never treated as an actual base-color texture.
-    resolved.SetDisplayMode(useTexture ? settings.displayMode : SurfaceDisplayMode::LitUntextured);
-
-    SamplerDescription samplerDescription;
-    samplerDescription.filter = NativeFilter(settings.filter);
-    samplerDescription.addressU = NativeAddressMode(settings.addressMode);
-    samplerDescription.addressV = samplerDescription.addressU;
-    resolved.SetSampler(m_resources->GetSampler(samplerDescription));
-
-    if (!useTexture)
-    {
-        resolved.SetBaseColorTexture(m_resources->DefaultMaterial().GetBaseColorTexture());
-    }
-    else if (!settings.useSourceTexture && !settings.baseColorTexturePath.empty())
-    {
-        resolved.SetBaseColorTexture(m_resources->LoadTexture(settings.baseColorTexturePath));
-    }
-    return resolved;
+    const Material* overrideMaterial = entity.HasMaterialOverride() ? &entity.EffectiveMaterial() : nullptr;
+    const MaterialDrawData prepared = MaterialManager::Instance().PrepareMaterial(*source, overrideMaterial);
+    return prepared.baseColorTexture != nullptr ? prepared.baseColorTexture->ShaderResourceView() : nullptr;
 }
 
 std::size_t Dx11Renderer::CachedMeshAssetCount() const noexcept
@@ -362,7 +303,7 @@ std::size_t Dx11Renderer::CachedMeshAssetCount() const noexcept
 
 std::size_t Dx11Renderer::CachedTextureCount() const noexcept
 {
-    return m_resources ? m_resources->TextureCount() : 0;
+    return m_resources ? MaterialManager::Instance().TextureCount() : 0;
 }
 
 void Dx11Renderer::RenderEditor(ImDrawData* drawData)

@@ -41,6 +41,7 @@
 #include "render/Dx11ConstantBuffer.h"
 #include "render/EffectManager.h"
 #include "render/IRenderEffect.h"
+#include "render/MaterialManager.h"
 #include "render/EffectCubeMapResource.h"
 #include "render/viewManager.h"
 

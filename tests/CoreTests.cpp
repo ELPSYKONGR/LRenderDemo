@@ -150,10 +150,7 @@ void TestBoundingBoxesAndFitView()
 
     lrender::Scene scene;
     const auto modelId = scene.CreateModel("Bounds model").id;
-    auto& entity = scene.CreateSolidEntity(
-        modelId,
-        lrender::SolidGeometry::Cube({{2.0F, 4.0F, 6.0F}}),
-        "Bounds cube");
+    auto& entity = scene.CreateSolidEntity(modelId, lrender::SolidGeometry::Cube({{2.0F, 4.0F, 6.0F}}), "Bounds cube");
     entity.transform.position = {3.0F, 2.0F, 1.0F};
     scene.CalculateBoundingBoxes();
     Require(scene.BoundingBoxData().IsValid(), "Scene bounding box should be valid");
@@ -199,8 +196,7 @@ void TestCreateUndoRedo()
     Require(history.Redo(), "Creation should be redoable");
     const auto* restored = scene.FindEntity(entity.id);
     Require(restored != nullptr, "Redo should restore created entity");
-    Require(restored->GetPrimitiveType() == lrender::PrimitiveType::Plane,
-            "Redo should preserve the plane primitive type");
+    Require(restored->GetPrimitiveType() == lrender::PrimitiveType::Plane, "Redo should preserve the plane primitive type");
 }
 
 void TestMixedModelCreateUndoRedo()
@@ -232,12 +228,12 @@ void TestMaterialUndoRedo()
     lrender::CommandHistory history;
     const auto modelId = scene.CreateModel("Model").id;
     auto& entity = scene.CreateEntity(modelId, lrender::PrimitiveType::Cube, "Material cube");
-    const lrender::EntityMaterial before = entity.EffectiveMaterial();
-    lrender::EntityMaterial after = before;
-    after.baseColor = {0.2F, 0.4F, 0.8F, 1.0F};
-    after.specularStrength = 0.8F;
-    after.baseColorTexturePath = "assets/textures/test.png";
-    after.useSourceTexture = false;
+    const lrender::Material before = entity.EffectiveMaterial();
+    lrender::Material after = before;
+    after.SetBaseColor({0.2F, 0.4F, 0.8F, 1.0F});
+    after.SetSpecularStrength(0.8F);
+    after.SetBaseColorTexturePath("assets/textures/test.png");
+    after.SetTextureSource(lrender::MaterialTextureSource::Custom);
 
     history.Execute(std::make_unique<lrender::MaterialCommand>(scene, entity.id, before, after));
     Require(scene.FindEntity(entity.id)->EffectiveMaterial().NearlyEquals(after),
@@ -267,8 +263,7 @@ void TestParameterizedSolidUndoAndSavedState()
     lrender::Scene scene;
     lrender::CommandHistory history;
     const auto modelId = scene.CreateModel("Model").id;
-    auto& entity =
-        scene.CreateSolidEntity(modelId, lrender::SolidGeometry::Sphere({1.25F, 48, 24}), "Parameterized sphere");
+    auto& entity = scene.CreateSolidEntity(modelId, lrender::SolidGeometry::Sphere({1.25F, 48, 24}), "Parameterized sphere");
     const auto* parameters = std::get_if<lrender::SphereParameters>(&entity.Solid()->Parameters());
     Require(parameters != nullptr, "Solid entity should retain sphere parameters");
     RequireNear(parameters->radius, 1.25F, "Sphere radius should be retained");

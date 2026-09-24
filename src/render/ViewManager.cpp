@@ -19,16 +19,16 @@ namespace
 void ConfigureUntexturedMaterial(Entity& entity, const DirectX::SimpleMath::Color& color,
                                  float specularStrength = 0.12F, float shininess = 24.0F)
 {
-    EntityMaterial& material = entity.EntityMaterialData();
-    material.baseColor = color;
-    material.diffuseStrength = 1.0F;
-    material.specularColor = {1.0F, 1.0F, 1.0F, 1.0F};
-    material.specularStrength = specularStrength;
-    material.shininess = shininess;
-    material.displayMode = SurfaceDisplayMode::LitUntextured;
-    material.useSourceTexture = false;
-    material.baseColorTexturePath.clear();
-    material.doubleSided = true;
+    Material& material = entity.EntityMaterialData();
+    material.SetBaseColor(color);
+    material.SetDiffuseStrength(1.0F);
+    material.SetSpecularColor({1.0F, 1.0F, 1.0F, 1.0F});
+    material.SetSpecularStrength(specularStrength);
+    material.SetShininess(shininess);
+    material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
+    material.SetTextureSource(MaterialTextureSource::Custom);
+    material.ClearBaseColorTexture();
+    material.SetDoubleSided(true);
 }
 
 } // namespace
@@ -241,20 +241,20 @@ void ViewManager::CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) co
         {
             for (std::uint32_t column = 0; column < gridSize; ++column)
             {
-                const std::string name =
-                    "SphereTest_" + std::to_string(row + 1) + "_" + std::to_string(column + 1);
+                const std::string name = "SphereTest_" + std::to_string(row + 1) + "_" + std::to_string(column + 1);
                 Entity& entity = scene.CreateEntity(modelId, PrimitiveType::Sphere, name);
                 entity.transform.position = {
-                    static_cast<float>(static_cast<int>(column) - center) * spacing
-                    ,static_cast<float>(static_cast<int>(row) - center) * spacing,
+                    static_cast<float>(static_cast<int>(column) - center) * spacing,
+                    static_cast<float>(static_cast<int>(row) - center) * spacing,
                     static_cast<float>(static_cast<int>(z) - center) * spacing};
 
-                EntityMaterial& material = entity.EntityMaterialData();
-                material.baseColor = {colorDistribution(generator), colorDistribution(generator),colorDistribution(generator), 1.0F};
-                material.displayMode = SurfaceDisplayMode::LitUntextured;
-                material.useSourceTexture = false;
-                material.baseColorTexturePath.clear();
-                material.doubleSided = false;
+                Material& material = entity.EntityMaterialData();
+                material.SetBaseColor(
+                    {colorDistribution(generator), colorDistribution(generator), colorDistribution(generator), 1.0F});
+                material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
+                material.SetTextureSource(MaterialTextureSource::Custom);
+                material.ClearBaseColorTexture();
+                material.SetDoubleSided(false);
             }
         }
     }
@@ -271,14 +271,14 @@ void ViewManager::CreatePlaneTestEntity(Scene& scene, std::uint32_t modelId) con
     Entity& entity = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(parameters), "SSRTestPlane");
     entity.transform.position = {0.0F, sphereGridBottom, rearOffset};
 
-    EntityMaterial& material = entity.EntityMaterialData();
-    material.baseColor = {1.F, 1.F, 1.F, 1.0F};
-    material.specularStrength = 1.0F;
-    material.shininess = 128.0F;
-    material.displayMode = SurfaceDisplayMode::LitUntextured;
-    material.useSourceTexture = false;
-    material.baseColorTexturePath.clear();
-    material.doubleSided = false;
+    Material& material = entity.EntityMaterialData();
+    material.SetBaseColor({1.0F, 1.0F, 1.0F, 1.0F});
+    material.SetSpecularStrength(1.0F);
+    material.SetShininess(128.0F);
+    material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
+    material.SetTextureSource(MaterialTextureSource::Custom);
+    material.ClearBaseColorTexture();
+    material.SetDoubleSided(false);
 }
 
 void ViewManager::CreateCornellBoxTestScene(Scene& scene, std::uint32_t modelId) const
@@ -321,20 +321,14 @@ void ViewManager::CreateCornellBoxTestScene(Scene& scene, std::uint32_t modelId)
     rightWall.transform.rotationDegrees.z = 90.0F;
     ConfigureUntexturedMaterial(rightWall, rightColor, 0.08F, 16.0F);
 
-    Entity& sphere = scene.CreateSolidEntity(
-        modelId,
-        SolidGeometry::Sphere({1.0F, 48, 32}),
-        "CornellSphere");
+    Entity& sphere = scene.CreateSolidEntity(modelId, SolidGeometry::Sphere({1.0F, 48, 32}), "CornellSphere");
     sphere.transform.position = {0.0F, 1.0F, -0.25F};
     ConfigureUntexturedMaterial(sphere, sphereColor, 0.35F, 64.0F);
-    sphere.EntityMaterialData().doubleSided = false;
+    sphere.EntityMaterialData().SetDoubleSided(false);
 
     PlaneParameters lightPanelParameters;
     lightPanelParameters.size = {1.8F, 0.9F};
-    Entity& lightPanel = scene.CreateSolidEntity(
-        modelId,
-        SolidGeometry::Plane(lightPanelParameters),
-        "CornellLightPanel");
+    Entity& lightPanel = scene.CreateSolidEntity(modelId, SolidGeometry::Plane(lightPanelParameters), "CornellLightPanel");
     lightPanel.transform.position = {0.0F, roomHeight - 0.01F, 0.0F};
     lightPanel.transform.rotationDegrees.x = 180.0F;
     ConfigureUntexturedMaterial(lightPanel, lightColor, 0.0F, 8.0F);

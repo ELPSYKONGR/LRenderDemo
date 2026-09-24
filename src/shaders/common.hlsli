@@ -47,7 +47,12 @@ bool IfDelayedRenderMode()
     return C_FrameParameters.x > 0.5F && C_FrameParameters.x < 1.5F;
 }
 
-bool UseTexColor()
+bool UseBaseColorTexture()
+{
+    return C_MaterialParameters.w < 1.5F;
+}
+
+bool UseTextureOnly()
 {
     return C_MaterialParameters.w > 0.5F && C_MaterialParameters.w < 1.5F;
 }
@@ -56,12 +61,9 @@ float3 EvaluateLight(
     float3 normal, float3 viewDirection, float3 lightDirection,
     float3 lightColor, float intensity, float3 baseColor)
 {
-    const float diffuse =
-        saturate(dot(normal, lightDirection)) * C_MaterialParameters.z;
+    const float diffuse = saturate(dot(normal, lightDirection)) * C_MaterialParameters.z;
     const float3 halfDirection = normalize(lightDirection + viewDirection);
-    const float specular =
-        pow(saturate(dot(normal, halfDirection)), C_MaterialParameters.y) *
-        C_MaterialParameters.x;
+    const float specular = pow(saturate(dot(normal, halfDirection)), C_MaterialParameters.y) * C_MaterialParameters.x;
     return (baseColor * diffuse + C_SpecularColor.rgb * specular) * lightColor * intensity;
 }
 
@@ -73,7 +75,7 @@ float4 CalcBlinnPhongLightColor(
     float alpha)
 {
     float3 result = surfaceColor * C_AmbientColor.rgb;
-    if (UseTexColor())
+    if (UseTextureOnly())
     {
         result = saturate(surfaceColor);
     }
@@ -97,8 +99,7 @@ float4 CalcBlinnPhongLightColor(
             const float4 colorAndIntensity = C_PointLightData[lightIndex * 2 + 1];
             const float3 offset = positionAndRange.xyz - worldPosition;
             const float distanceToLight = length(offset);
-            const float attenuation =
-                pow(saturate(1.0F - distanceToLight / positionAndRange.w), 2.0F);
+            const float attenuation = pow(saturate(1.0F - distanceToLight / positionAndRange.w), 2.0F);
             if (colorAndIntensity.w > 0.0F && attenuation > 0.0F)
             {
                 result += EvaluateLight(

@@ -5,6 +5,7 @@
  * @depends persistence/SceneSerializer.h, nlohmann/json, Win32
  */
 #include "persistence/SceneSerializer.h"
+#include "render/MaterialManager.h"
 
 #include <nlohmann/json.hpp>
 #include <windows.h>
@@ -50,8 +51,8 @@ std::string StoreResourcePath(const std::filesystem::path& value, const std::fil
     {
         return {};
     }
-    const std::filesystem::path absolute =
-        value.is_absolute() ? value.lexically_normal() : std::filesystem::absolute(value).lexically_normal();
+    const std::filesystem::path absolute = value.is_absolute() ? value.lexically_normal()
+                                                               : std::filesystem::absolute(value).lexically_normal();
     const std::filesystem::path relative = absolute.lexically_relative(sceneDirectory);
     return PathUtf8(relative.empty() ? absolute : relative);
 }
@@ -83,83 +84,6 @@ template <std::size_t Size> std::array<float, Size> ReadVector(const Json& value
     return result;
 }
 
-const char* DisplayModeName(SurfaceDisplayMode value)
-{
-    switch (value)
-    {
-    case SurfaceDisplayMode::LitTextured:
-        return "lit-textured";
-    case SurfaceDisplayMode::TextureOnly:
-        return "texture-only";
-    case SurfaceDisplayMode::LitUntextured:
-        return "lit-untextured";
-    }
-    throw std::invalid_argument("Unknown surface display mode");
-}
-
-const char* FilterName(MaterialFilter value)
-{
-    switch (value)
-    {
-    case MaterialFilter::Point:
-        return "point";
-    case MaterialFilter::Linear:
-        return "linear";
-    case MaterialFilter::Anisotropic:
-        return "anisotropic";
-    }
-    throw std::invalid_argument("Unknown material filter");
-}
-
-const char* AddressName(MaterialAddressMode value)
-{
-    switch (value)
-    {
-    case MaterialAddressMode::Wrap:
-        return "wrap";
-    case MaterialAddressMode::Clamp:
-        return "clamp";
-    case MaterialAddressMode::Mirror:
-        return "mirror";
-    }
-    throw std::invalid_argument("Unknown material address mode");
-}
-
-template <typename Enum> Enum ReadEnum(const std::string& value);
-
-template <> SurfaceDisplayMode ReadEnum(const std::string& value)
-{
-    if (value == "lit-textured")
-        return SurfaceDisplayMode::LitTextured;
-    if (value == "texture-only")
-        return SurfaceDisplayMode::TextureOnly;
-    if (value == "lit-untextured")
-        return SurfaceDisplayMode::LitUntextured;
-    throw std::runtime_error("Unknown surface display mode: " + value);
-}
-
-template <> MaterialFilter ReadEnum(const std::string& value)
-{
-    if (value == "point")
-        return MaterialFilter::Point;
-    if (value == "linear")
-        return MaterialFilter::Linear;
-    if (value == "anisotropic")
-        return MaterialFilter::Anisotropic;
-    throw std::runtime_error("Unknown material filter: " + value);
-}
-
-template <> MaterialAddressMode ReadEnum(const std::string& value)
-{
-    if (value == "wrap")
-        return MaterialAddressMode::Wrap;
-    if (value == "clamp")
-        return MaterialAddressMode::Clamp;
-    if (value == "mirror")
-        return MaterialAddressMode::Mirror;
-    throw std::runtime_error("Unknown material address mode: " + value);
-}
-
 Json SerializeGeometry(const Entity& entity, const std::filesystem::path& sceneDirectory)
 {
     if (const MeshGeometry* mesh = entity.Mesh())
@@ -188,28 +112,16 @@ Json SerializeGeometry(const Entity& entity, const std::filesystem::path& sceneD
             else
             {
                 type = "plane";
-                parameters = {{"size", Vector(value.size)},
-                              {"subdivisionsX", value.subdivisionsX},
-                              {"subdivisionsZ", value.subdivisionsZ}};
+                parameters = {{"size", Vector(value.size)}, {"subdivisionsX", value.subdivisionsX}, {"subdivisionsZ", value.subdivisionsZ}};
             }
         },
         solid.Parameters());
     return {{"kind", "solid"}, {"type", type}, {"parameters", std::move(parameters)}};
 }
 
-Json SerializeMaterial(const EntityMaterial& material, const std::filesystem::path& sceneDirectory)
+Json SerializeMaterial(const Material& material, const std::filesystem::path& sceneDirectory)
 {
-    return {{"baseColor", Vector(material.baseColor)},
-            {"diffuseStrength", material.diffuseStrength},
-            {"specularColor", Vector(material.specularColor)},
-            {"specularStrength", material.specularStrength},
-            {"shininess", material.shininess},
-            {"doubleSided", material.doubleSided},
-            {"displayMode", DisplayModeName(material.displayMode)},
-            {"useSourceTexture", material.useSourceTexture},
-            {"baseColorTexturePath", StoreResourcePath(material.baseColorTexturePath, sceneDirectory)},
-            {"filter", FilterName(material.filter)},
-            {"addressMode", AddressName(material.addressMode)}};
+    return Json::parse(MaterialManager::SerializeMaterial(material, sceneDirectory));
 }
 
 SolidGeometry DeserializeSolid(const Json& geometry)
@@ -237,27 +149,9 @@ SolidGeometry DeserializeSolid(const Json& geometry)
     throw std::runtime_error("Unknown solid type: " + type);
 }
 
-EntityMaterial DeserializeMaterial(const Json& value, const std::filesystem::path& sceneDirectory)
+Material DeserializeMaterial(const Json& value, const std::filesystem::path& sceneDirectory)
 {
-    EntityMaterial material;
-    const auto base = ReadVector<4>(value.at("baseColor"), "material.baseColor");
-    const auto specular = ReadVector<4>(value.at("specularColor"), "material.specularColor");
-    material.baseColor = {base[0], base[1], base[2], base[3]};
-    material.diffuseStrength = value.at("diffuseStrength").get<float>();
-    material.specularColor = {specular[0], specular[1], specular[2], specular[3]};
-    material.specularStrength = value.at("specularStrength").get<float>();
-    material.shininess = value.at("shininess").get<float>();
-    material.doubleSided = value.at("doubleSided").get<bool>();
-    material.displayMode = ReadEnum<SurfaceDisplayMode>(value.at("displayMode").get<std::string>());
-    material.useSourceTexture = value.at("useSourceTexture").get<bool>();
-    const auto texture = Utf8Path(value.at("baseColorTexturePath").get<std::string>());
-    if (!texture.empty())
-    {
-        material.baseColorTexturePath = ResolveResourcePath(texture, sceneDirectory);
-    }
-    material.filter = ReadEnum<MaterialFilter>(value.at("filter").get<std::string>());
-    material.addressMode = ReadEnum<MaterialAddressMode>(value.at("addressMode").get<std::string>());
-    return material;
+    return MaterialManager::DeserializeMaterial(value.dump(), sceneDirectory);
 }
 
 Entity DeserializeEntity(const Json& value, const std::filesystem::path& sceneDirectory)
@@ -272,7 +166,7 @@ Entity DeserializeEntity(const Json& value, const std::filesystem::path& sceneDi
     entity.transform.position = {position[0], position[1], position[2]};
     entity.transform.rotationDegrees = {rotation[0], rotation[1], rotation[2]};
     entity.transform.scale = {scale[0], scale[1], scale[2]};
-    entity.EntityMaterialData() = DeserializeMaterial(value.at("material"), sceneDirectory);
+    const Material savedMaterial = DeserializeMaterial(value.at("material"), sceneDirectory);
 
     const Json& geometry = value.at("geometry");
     const std::string kind = geometry.at("kind").get<std::string>();
@@ -282,13 +176,25 @@ Entity DeserializeEntity(const Json& value, const std::filesystem::path& sceneDi
     }
     else if (kind == "mesh")
     {
-        entity.geometry =
-            MeshGeometry{ResolveResourcePath(Utf8Path(geometry.at("assetPath").get<std::string>()), sceneDirectory),
-                         geometry.at("assetEntityIndex").get<std::uint32_t>()};
+        entity.geometry = MeshGeometry{
+            ResolveResourcePath(Utf8Path(geometry.at("assetPath").get<std::string>()), sceneDirectory),
+            geometry.at("assetEntityIndex").get<std::uint32_t>()};
     }
     else
     {
         throw std::runtime_error("Unknown entity geometry kind: " + kind);
+    }
+    if (!value.contains("materialOverride") && kind == "mesh")
+    {
+        entity.SetOverrideMaterial(savedMaterial);
+    }
+    else
+    {
+        entity.EntityMaterialData() = savedMaterial;
+        if (value.contains("materialOverride") && !value.at("materialOverride").is_null())
+        {
+            entity.SetOverrideMaterial(DeserializeMaterial(value.at("materialOverride"), sceneDirectory));
+        }
     }
     return entity;
 }
@@ -365,6 +271,11 @@ Json SerializeScene(const Scene& scene, const LightingSettings* lighting,
         Json entities = Json::array();
         for (const Entity& entity : model.entities)
         {
+            Json materialOverride = nullptr;
+            if (entity.HasMaterialOverride())
+            {
+                materialOverride = SerializeMaterial(entity.EffectiveMaterial(), sceneDirectory);
+            }
             entities.push_back({{"id", entity.id},
                                 {"name", entity.name},
                                 {"geometry", SerializeGeometry(entity, sceneDirectory)},
@@ -372,7 +283,8 @@ Json SerializeScene(const Scene& scene, const LightingSettings* lighting,
                                  {{"position", Vector(entity.transform.position)},
                                   {"rotationDegrees", Vector(entity.transform.rotationDegrees)},
                                   {"scale", Vector(entity.transform.scale)}}},
-                                {"material", SerializeMaterial(entity.EffectiveMaterial(), sceneDirectory)}});
+                                {"material", SerializeMaterial(entity.EntityMaterialData(), sceneDirectory)},
+                                {"materialOverride", std::move(materialOverride)}});
         }
         models.push_back({{"id", model.id}, {"name", model.name}, {"entities", entities}});
     }
@@ -411,8 +323,8 @@ void SaveSceneFile(const Scene& scene, const LightingSettings* lighting, const s
         {
             throw std::runtime_error("Failed while writing temporary scene file");
         }
-        if (MoveFileExW(temporary.c_str(), absolutePath.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) ==
-            FALSE)
+        if (MoveFileExW(temporary.c_str(), absolutePath.c_str(),
+                        MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == FALSE)
         {
             throw std::system_error(static_cast<int>(GetLastError()), std::system_category(),
                                     "Failed to replace scene file");

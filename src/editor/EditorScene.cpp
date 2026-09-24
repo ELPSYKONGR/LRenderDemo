@@ -43,8 +43,7 @@ std::filesystem::path SelectSceneFile(HWND owner, bool save, const std::filesyst
         const std::wstring current = currentPath.wstring();
         wcsncpy_s(pathBuffer.data(), pathBuffer.size(), current.c_str(), _TRUNCATE);
     }
-    const std::filesystem::path initialDirectory =
-        currentPath.empty() ? std::filesystem::current_path() : currentPath.parent_path();
+    const std::filesystem::path initialDirectory = currentPath.empty() ? std::filesystem::current_path() : currentPath.parent_path();
 
     OPENFILENAMEW dialog{};
     dialog.lStructSize = sizeof(dialog);
@@ -55,8 +54,7 @@ std::filesystem::path SelectSceneFile(HWND owner, bool save, const std::filesyst
     const std::wstring initialDirectoryText = initialDirectory.wstring();
     dialog.lpstrInitialDir = initialDirectoryText.c_str();
     dialog.lpstrDefExt = L"lscene";
-    dialog.Flags =
-        OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | (save ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
+    dialog.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | (save ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
 
     const BOOL result = save ? GetSaveFileNameW(&dialog) : GetOpenFileNameW(&dialog);
     if (result != FALSE)
@@ -87,10 +85,11 @@ void PreloadSceneResources(Scene& scene, Dx11Renderer& renderer)
                 }
                 entity.SetLocalBoundingBox(asset->entities[mesh->assetEntityIndex].localBoundingBox);
             }
-            const EntityMaterial& material = entity.EffectiveMaterial();
-            if (!material.useSourceTexture && !material.baseColorTexturePath.empty())
+            const Material& material = entity.EffectiveMaterial();
+            if (material.GetTextureSource() == MaterialTextureSource::Custom &&
+                !material.GetBaseColorTexturePath().empty())
             {
-                renderer.PreloadTexture(material.baseColorTexturePath);
+                renderer.PreloadTexture(material.GetBaseColorTexturePath());
             }
         }
     }

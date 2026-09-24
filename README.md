@@ -4,7 +4,7 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 编辑器、场景、命令、渲染器和 Effect 之间的边界清晰，使学习者无需引入完整游戏引擎，便可独立
 实现、验证和比较不同渲染技术。
 
-当前工程版本：**1.3.1**。工程内部使用语义化版本 `1.3.1`，定义位于根目录的 `CMakeLists.txt`。
+当前工程版本：**1.3.2**。工程内部使用语义化版本 `1.3.2`，定义位于根目录的 `CMakeLists.txt`。
 后续每次提交都必须更新版本号，并在 `CHANGELOG.md` 中记录本次变更。
 
 ## 当前里程碑
@@ -128,8 +128,8 @@ DX11 状态和逐文件改动示例见 `docs/examples/skybox-pass.md`。
 4. `src/render/EffectContext.cpp`、`src/render/Dx11ConstantBuffer.h`、
    `src/render/BasicMeshConstants.h` 与 `src/render/BasicMeshEffect.cpp`：Frame/Draw 快照、常量缓冲
    RAII、C++/HLSL 布局契约、参数组装和渲染状态。
-5. `src/render/ModelLoader.cpp`、`src/render/GltfLoader.cpp`、`src/render/ObjLoader.cpp` 与
-   `src/render/ResourceCache.cpp`：格式分发、网格资产导入及纹理/Sampler 缓存。
+5. `src/render/ModelLoader.cpp`、`src/render/GltfLoader.cpp`、`src/render/ObjLoader.cpp`、
+   `src/render/ResourceCache.cpp` 与 `src/render/MaterialManager.cpp`：格式分发、网格资产导入及材质资源缓存。
 6. `src/editor/EditorLayer.cpp`、`src/editor/EditorAssets.cpp`、`src/editor/EditorMaterial.cpp`：
    编辑器交互、导入、材质和光照控制。
 7. `src/commands/`：独立于界面的可逆操作。

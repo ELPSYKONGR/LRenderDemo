@@ -39,9 +39,7 @@ void EditorLayer::BeginSolidCreation(PrimitiveType primitive, const Scene& scene
     m_cubeCreateParameters = {};
     m_sphereCreateParameters = {};
     m_planeCreateParameters = {};
-    const char* baseName = primitive == PrimitiveType::Cube     ? "Cube"
-                           : primitive == PrimitiveType::Sphere ? "Sphere"
-                                                                : "Plane";
+    const char* baseName = primitive == PrimitiveType::Cube ? "Cube" : primitive == PrimitiveType::Sphere ? "Sphere" : "Plane";
     std::snprintf(m_solidCreateName.data(), m_solidCreateName.size(), "%s %zu", baseName, scene.EntityCount() + 1U);
     m_solidCreateError.clear();
     m_openSolidCreatePopup = true;

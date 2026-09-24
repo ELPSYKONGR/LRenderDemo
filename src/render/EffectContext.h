@@ -2,11 +2,11 @@
  * @file Validated frame and draw snapshots consumed by mesh effects.
  * @author Codex
  * @created 2026-08-26
- * @depends core/Camera.h, core/Scene.h, render/Material.h, D3D11
+ * @depends core/Camera.h, core/Scene.h, render/MaterialManager.h, D3D11
  */
 #pragma once
 
-#include "render/Material.h"
+#include "render/MaterialManager.h"
 
 #include <SimpleMath.h>
 #include <array>
@@ -76,18 +76,18 @@ class EffectFrameContext final
 class EffectDrawContext final
 {
   public:
-    EffectDrawContext(const Entity& entity, Material material, std::uint32_t selectedEntityId,
+    EffectDrawContext(const Entity& entity, MaterialDrawData material, std::uint32_t selectedEntityId,
                       const Mesh* mesh = nullptr);
 
     [[nodiscard]] const DirectX::SimpleMath::Matrix& World() const noexcept;
-    [[nodiscard]] const Material& ResolvedMaterial() const noexcept;
+    [[nodiscard]] const MaterialDrawData& PreparedMaterial() const noexcept;
     [[nodiscard]] const DirectX::SimpleMath::Color& Tint() const noexcept;
     [[nodiscard]] bool IsSelected() const noexcept;
     [[nodiscard]] const Mesh* MeshGeometry() const noexcept;
 
   private:
     DirectX::SimpleMath::Matrix m_world;
-    Material m_material;
+    MaterialDrawData m_material;
     DirectX::SimpleMath::Color m_tint;
     bool m_isSelected = false;
     const Mesh* m_mesh = nullptr;

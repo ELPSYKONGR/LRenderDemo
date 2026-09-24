@@ -8,7 +8,7 @@ set(LRENDER_CORE_HEADERS
     commands/TransformCommand.h
     core/BoundingBox.h
     core/Camera.h
-    core/EntityMaterial.h
+    core/Material.h
     core/Scene.h
     core/SolidGeometry.h
     core/Transform.h
@@ -19,7 +19,7 @@ add_library(LRenderCore STATIC
     ${LRENDER_CORE_HEADERS}
     core/BoundingBox.cpp
     core/Camera.cpp
-    core/EntityMaterial.cpp
+    core/Material.cpp
     core/Scene.cpp
     core/SolidGeometry.cpp
     core/Transform.cpp
@@ -51,14 +51,14 @@ source_group(
     PREFIX "Header Files"
     FILES ${LRENDER_PERSISTENCE_HEADERS})
 target_include_directories(LRenderPersistence PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(LRenderPersistence PUBLIC LRenderCore PRIVATE nlohmann_json)
+target_link_libraries(LRenderPersistence PUBLIC LRenderCore PRIVATE LRenderAssets nlohmann_json)
 lrender_set_warnings(LRenderPersistence)
 lrender_enable_stdfx(LRenderPersistence)
 
 set(LRENDER_ASSET_HEADERS
+    render/MaterialManager.h
     render/GltfLoader.h
     render/IModelImporter.h
-    render/Material.h
     render/Mesh.h
     render/MeshAsset.h
     render/MeshImportUtils.h
@@ -71,11 +71,12 @@ set(LRENDER_ASSET_HEADERS
 add_library(LRenderAssets STATIC
     ${LRENDER_ASSET_HEADERS}
     render/GltfLoader.cpp
+    render/MaterialManager.cpp
+    render/MaterialManagerSerialization.cpp
     render/Mesh.cpp
     render/MeshImportUtils.cpp
     render/ModelLoader.cpp
     render/ObjLoader.cpp
-    render/Material.cpp
     render/ResourceCache.cpp
     render/SamplerState.cpp
     render/Texture2D.cpp)
@@ -86,7 +87,7 @@ source_group(
 target_include_directories(LRenderAssets PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(LRenderAssets
     PUBLIC LRenderCore DirectXTK d3d11
-    PRIVATE cgltf tinyobjloader)
+    PRIVATE cgltf tinyobjloader nlohmann_json)
 lrender_set_warnings(LRenderAssets)
 lrender_enable_stdfx(LRenderAssets)
 

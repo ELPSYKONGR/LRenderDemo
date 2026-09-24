@@ -2,7 +2,7 @@
 
 ### 工程版本维护
 
-`VERSION.md` 记录当前工程版本和后续提交的版本递增规则。CMake 内部版本为 `1.3.0`，对外显示版本为 `1.3`。
+`VERSION.md` 记录当前工程版本和后续提交的版本递增规则。CMake 内部版本为 `1.3.2`，对外显示版本为 `1.3.2`。
 
 ### 编辑器控件到渲染层调试流程
 
@@ -18,7 +18,7 @@
 
 ## 代码组织约定
 
-普通类的函数声明位于 `.h`，实现位于对应 `.cpp`。仅模板、GPU 常量布局、接口和纯数据定义保留为头文件实现。新增实现文件包括 `src/core/EntityMaterial.cpp`、`src/core/Transform.cpp` 和 `src/render/Material.cpp`。
+普通类的函数声明位于 `.h`，实现位于对应 `.cpp`。仅模板、GPU 常量布局、接口和纯数据定义保留为头文件实现。材质语义统一位于 `src/core/Material.*`，GPU 资源解析位于 `src/render/MaterialManager*`。
 
 > `src/platform/RuntimePaths.*` 只负责 exe 同级的 ImGui 配置路径；CMake 构建后将 `assets` 拷贝到 exe 同级目录，资源仍使用相对路径。
 
@@ -49,7 +49,7 @@
 
 本次框架补充：`src/render/CommonConstantBuffers.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer 和统一 Buffer 管理；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 与 `SkyVS/SkyPS` 实现 TextureCube 天空背景。详细设计见 `docs/render-framework-common-shader.md`。
 
-> 最后更新：2026-09-22 | 维护者：Codex
+> 最后更新：2026-09-24 | 维护者：Codex
 
 ## 源文件
 
@@ -60,9 +60,9 @@
 | `src/platform/Window.*` | Win32 窗口和消息泵 | `Create()`、`PumpMessages()` | Win32、ImGui 后端 |
 | `src/core/BoundingBox.*` | API 无关的轴对齐包围盒及点/盒/变换扩展 | `BoundingBox`、`ExtendBox()`、`Center()`、`Radius()` | SimpleMath |
 | `src/core/Transform.h` | 可编辑的变换值 | `ToMatrix()`、`NearlyEquals()` | SimpleMath |
-| `src/core/EntityMaterial.h` | 与图形 API 无关的实体材质参数 | `EntityMaterial`、`SurfaceDisplayMode` | SimpleMath、filesystem |
+| `src/core/Material.*` | 唯一的图形 API 无关材质定义、纹理引用与比较接口 | `Material`、`SurfaceDisplayMode`、`MaterialTextureSource` | SimpleMath、filesystem |
 | `src/core/SolidGeometry.*` | Cube/Sphere/Plane 参数、校验和类型查询 | `SolidGeometry`、`SolidParameters` | SimpleMath、variant |
-| `src/core/Scene.*` | `Scene -> Model -> Entity` 层级、Solid/Mesh 几何描述和分层包围盒 | `CreateModel()`、`CreateEntity()`、`CreateMeshEntity()`、`CalculateBoundingBoxes()`、`EffectiveMaterial()` | Transform、EntityMaterial、BoundingBox |
+| `src/core/Scene.*` | `Scene -> Model -> Entity` 层级、Solid/Mesh 几何描述、基础/覆盖材质和分层包围盒 | `CreateModel()`、`CreateEntity()`、`CreateMeshEntity()`、`CalculateBoundingBoxes()`、`EffectiveMaterial()` | Transform、Material、BoundingBox |
 | `src/core/Camera.*` | 支持环绕、标准视角、自动旋转和按范围自动取景的编辑器相机 | `SetView()`、`RotateAroundTarget()`、`CalcFitView()` | SimpleMath、BoundingBox |
 | `src/core/ViewPort.*` | API 无关的视口尺寸、编号和相机状态 | `SetSize()`、`GetCamera()` | Camera |
 | `src/commands/ICommand.h` | 可逆操作接口 | `Execute()`、`Undo()` | 无 |
@@ -70,7 +70,7 @@
 | `src/commands/TransformCommand.*` | 可逆变换编辑 | `Execute()`、`Undo()` | Scene |
 | `src/commands/CreateEntityCommand.*` | 可逆实体创建 | `Execute()`、`Undo()` | Scene |
 | `src/commands/CreateModelCommand.*` | 可逆模型整体创建 | `Execute()`、`Undo()` | Scene |
-| `src/commands/MaterialCommand.*` | 可逆实体材质编辑 | `Execute()`、`Undo()` | Scene、EntityMaterial |
+| `src/commands/MaterialCommand.*` | 可逆实体材质编辑 | `Execute()`、`Undo()` | Scene、Material |
 | `src/commands/SolidGeometryCommand.*` | 可逆 Solid 参数编辑 | `Execute()`、`Undo()` | Scene、SolidGeometry |
 | `src/render/EffectContext.*` | 从 Camera/Entity/Material 构造不可变的帧与绘制快照 | `EffectFrameContext`、`EffectDrawContext` | Camera、Scene、Material、D3D11 |
 | `src/render/IRenderEffect.h` | 帧级与逐对象 Effect 的独立接口 | `RenderEffect(frame)`、`Draw(frame, draw)` | EffectContext |
@@ -89,12 +89,13 @@
 | `src/render/PrimitiveFactory.*`、`SolidMeshCache.*` | 按 Solid 参数生成并按 Entity 更新运行时 Mesh | `Create()`、`Resolve()` | SolidGeometry、Mesh、D3D11 |
 | `src/render/Texture2D.*` | WIC/DDS 文件、内存与生成纹理 | `LoadFile()`、`LoadMemory()` | DirectXTK、D3D11 |
 | `src/render/SamplerState.*` | Sampler 描述与 D3D11 状态所有权 | `SamplerState()` | D3D11 |
-| `src/render/Material.h`、`Lighting.h` | 基础材质和可编辑多光源数据 | `Material`、`LightingSettings` | Texture2D、SimpleMath |
+| `src/render/MaterialManager*` | 单例材质资源缓存、源/覆盖解析、GPU 绘制数据和 JSON 转换 | `PrepareMaterial()`、`SerializeMaterial()`、`DeserializeMaterial()` | Material、Texture2D、SamplerState |
+| `src/render/Lighting.h` | 可编辑多光源数据 | `LightingSettings` | SimpleMath |
 | `src/render/MeshAsset.h` | 导入资产的 Entity/Part、GPU Mesh 与材质边界 | `MeshAsset`、`MeshAssetEntity`、`MeshPart` | Mesh、Material |
 | `src/render/IModelImporter.h`、`ModelLoader.*` | 按扩展名分发模型格式导入器 | `IModelImporter::Import()`、`ModelLoader::Load()` | GltfLoader、ObjLoader |
 | `src/render/GltfLoader.*`、`ObjLoader.*`、`MeshImportUtils.*` | glTF/GLB 与 OBJ/MTL 静态网格导入 | `Import()` | cgltf、tinyobjloader、ResourceCache |
-| `src/render/ResourceCache.*` | 按规范化路径缓存网格资产/纹理/Sampler | `LoadMeshAsset()`、`LoadTexture()` | ModelLoader、Texture2D |
-| `src/render/Dx11Renderer.*` | 设备、交换链、材质解析、场景遍历和视口调试资源选择 | `RenderScene()`、`SetViewportDebugView()`、`MaterialPreview()` | Effect、Mesh、ResourceCache |
+| `src/render/ResourceCache.*` | 按规范化路径缓存 MeshAsset | `LoadMeshAsset()`、`MeshAssetCount()` | ModelLoader、MeshAsset |
+| `src/render/Dx11Renderer.*` | 设备、交换链、场景遍历和视口调试资源选择 | `RenderScene()`、`SetViewportDebugView()`、`MaterialPreview()` | Effect、Mesh、ResourceCache、MaterialManager |
 | `src/editor/EditorLayer.*`、`EditorHierarchy.cpp`、`EditorAssets.cpp`、`EditorCamera.cpp`、`EditorMaterial.cpp` | Model/Entity 层级、资源、视角、材质和光照控制；Camera 面板提供实体/场景/自动居中取景 | `Draw()`、`DrawHierarchy()`、`DrawCameraControls()`、`DrawMaterialEditor()` | Scene、Commands、Renderer、ImGui |
 | `src/editor/EditorSolid.cpp`、`EditorScene.cpp` | 参数化创建/编辑与场景文件工作流 | `DrawSolidGeometryEditor()`、`SaveScene()` | SolidGeometry、SceneSerializer、原生对话框 |
 | `src/persistence/SceneSerializer.*` | 场景与可选灯光设置的 `.lscene` JSON 原子保存和事务加载 | `Save()`、`LoadDocument()` | Scene、LightingSettings、nlohmann/json |

@@ -2,12 +2,12 @@
  * @file Cached imported mesh asset with entity and material-part boundaries.
  * @author Codex
  * @created 2026-08-25
- * @depends render/Mesh.h, render/Material.h
+ * @depends render/Mesh.h, core/Material.h
  */
 #pragma once
 
 #include "core/BoundingBox.h"
-#include "render/Material.h"
+#include "core/Material.h"
 #include "render/Mesh.h"
 
 #include <memory>

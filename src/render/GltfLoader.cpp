@@ -6,6 +6,7 @@
  */
 #include "render/GltfLoader.h"
 
+#include "render/MaterialManager.h"
 #include "render/MeshImportUtils.h"
 #include "render/ResourceCache.h"
 
@@ -95,34 +96,34 @@ Matrix NodeWorldMatrix(const cgltf_node& node)
             values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15]};
 }
 
-D3D11_TEXTURE_ADDRESS_MODE AddressMode(cgltf_wrap_mode mode)
+MaterialAddressMode AddressMode(cgltf_wrap_mode mode)
 {
     switch (mode)
     {
     case cgltf_wrap_mode_clamp_to_edge:
-        return D3D11_TEXTURE_ADDRESS_CLAMP;
+        return MaterialAddressMode::Clamp;
     case cgltf_wrap_mode_mirrored_repeat:
-        return D3D11_TEXTURE_ADDRESS_MIRROR;
+        return MaterialAddressMode::Mirror;
     default:
-        return D3D11_TEXTURE_ADDRESS_WRAP;
+        return MaterialAddressMode::Wrap;
     }
 }
 
-D3D11_FILTER FilterMode(const cgltf_sampler* sampler)
+MaterialFilter FilterMode(const cgltf_sampler* sampler)
 {
     if (sampler == nullptr)
     {
-        return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        return MaterialFilter::Linear;
     }
     const bool nearestMag = sampler->mag_filter == cgltf_filter_type_nearest;
     const bool nearestMin = sampler->min_filter == cgltf_filter_type_nearest ||
                             sampler->min_filter == cgltf_filter_type_nearest_mipmap_nearest ||
                             sampler->min_filter == cgltf_filter_type_nearest_mipmap_linear;
-    return nearestMag && nearestMin ? D3D11_FILTER_MIN_MAG_MIP_POINT : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    return nearestMag && nearestMin ? MaterialFilter::Point : MaterialFilter::Linear;
 }
 
-std::shared_ptr<Texture2D> LoadImage(const cgltf_data& data, const cgltf_image& image,
-                                     const std::filesystem::path& modelPath, ResourceCache& resources)
+void SetImageReference(Material& material, const cgltf_data& data, const cgltf_image& image,
+                       const std::filesystem::path& modelPath)
 {
     if (image.uri != nullptr && std::strncmp(image.uri, "data:", 5) != 0)
     {
@@ -130,7 +131,8 @@ std::shared_ptr<Texture2D> LoadImage(const cgltf_data& data, const cgltf_image& 
         cgltf_decode_uri(decodedUri.data());
         decodedUri.resize(std::strlen(decodedUri.c_str()));
         const auto uri = std::u8string(reinterpret_cast<const char8_t*>(decodedUri.data()), decodedUri.size());
-        return resources.LoadTexture(modelPath.parent_path() / std::filesystem::path(uri));
+        material.SetBaseColorTexturePath(modelPath.parent_path() / std::filesystem::path(uri));
+        return;
     }
     if (image.buffer_view == nullptr || image.buffer_view->buffer == nullptr ||
         image.buffer_view->buffer->data == nullptr)
@@ -138,26 +140,25 @@ std::shared_ptr<Texture2D> LoadImage(const cgltf_data& data, const cgltf_image& 
         throw std::runtime_error("glTF image has no supported URI or buffer view");
     }
     const auto imageIndex = static_cast<std::size_t>(&image - data.images);
+    const std::string key = Utf8Path(modelPath) + "#image-" + std::to_string(imageIndex);
     const auto* begin = static_cast<const std::byte*>(image.buffer_view->buffer->data) + image.buffer_view->offset;
     const std::span bytes{begin, image.buffer_view->size};
-    return resources.LoadEmbeddedTexture(Utf8Path(modelPath) + "#image-" + std::to_string(imageIndex), bytes);
+    MaterialManager::Instance().RegisterEmbeddedTexture(key, bytes);
+    material.SetEmbeddedBaseColorTextureKey(key);
 }
 
-Material LoadMaterial(const cgltf_data& data, const cgltf_material* source, const std::filesystem::path& modelPath,
-                      ResourceCache& resources)
+Material LoadMaterial(const cgltf_data& data, const cgltf_material* source, const std::filesystem::path& modelPath)
 {
-    Material material = resources.DefaultMaterial();
-    material.SetBaseColorTexture(nullptr);
+    Material material = MaterialManager::Instance().DefaultMaterial();
     material.SetName(source != nullptr && source->name != nullptr ? source->name : "glTF material");
     if (source == nullptr || !source->has_pbr_metallic_roughness)
     {
-        material.SetBaseColorTexture(resources.DefaultMaterial().GetBaseColorTexture());
         material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
         return material;
     }
 
     const auto& pbr = source->pbr_metallic_roughness;
-    material.SetBaseColorFactor(
+    material.SetBaseColor(
         {pbr.base_color_factor[0], pbr.base_color_factor[1], pbr.base_color_factor[2], pbr.base_color_factor[3]});
     material.SetSpecularStrength(0.04F + pbr.metallic_factor * 0.46F);
     material.SetShininess(8.0F + (1.0F - pbr.roughness_factor) * 120.0F);
@@ -166,19 +167,16 @@ Material LoadMaterial(const cgltf_data& data, const cgltf_material* source, cons
     const cgltf_texture* texture = pbr.base_color_texture.texture;
     if (texture != nullptr && texture->image != nullptr)
     {
-        material.SetBaseColorTexture(LoadImage(data, *texture->image, modelPath, resources));
-        SamplerDescription samplerDescription;
-        samplerDescription.filter = FilterMode(texture->sampler);
+        SetImageReference(material, data, *texture->image, modelPath);
+        material.SetFilter(FilterMode(texture->sampler));
         if (texture->sampler != nullptr)
         {
-            samplerDescription.addressU = AddressMode(texture->sampler->wrap_s);
-            samplerDescription.addressV = AddressMode(texture->sampler->wrap_t);
+            material.SetAddressModes(AddressMode(texture->sampler->wrap_s), AddressMode(texture->sampler->wrap_t));
         }
-        material.SetSampler(resources.GetSampler(samplerDescription));
+        material.SetDisplayMode(SurfaceDisplayMode::LitTextured);
     }
     else
     {
-        material.SetBaseColorTexture(resources.DefaultMaterial().GetBaseColorTexture());
         material.SetDisplayMode(SurfaceDisplayMode::LitUntextured);
     }
     return material;
@@ -193,12 +191,11 @@ MeshPart LoadPrimitive(const cgltf_data& data, const cgltf_node& node, const cgl
     }
     const cgltf_accessor* positions = FindAttribute(primitive, cgltf_attribute_type_position);
     const cgltf_accessor* normals = FindAttribute(primitive, cgltf_attribute_type_normal);
-    const cgltf_int textureCoordinateSet =
-        primitive.material != nullptr && primitive.material->has_pbr_metallic_roughness
-            ? primitive.material->pbr_metallic_roughness.base_color_texture.texcoord
-            : 0;
-    const cgltf_accessor* textureCoordinates =
-        FindAttribute(primitive, cgltf_attribute_type_texcoord, textureCoordinateSet);
+    const cgltf_int textureCoordinateSet = primitive.material != nullptr &&
+                                                   primitive.material->has_pbr_metallic_roughness
+                                               ? primitive.material->pbr_metallic_roughness.base_color_texture.texcoord
+                                               : 0;
+    const cgltf_accessor* textureCoordinates = FindAttribute(primitive, cgltf_attribute_type_texcoord, textureCoordinateSet);
     if (positions == nullptr || positions->count == 0)
     {
         throw std::runtime_error("glTF primitive has no POSITION attribute");
@@ -235,8 +232,7 @@ MeshPart LoadPrimitive(const cgltf_data& data, const cgltf_node& node, const cgl
             }
         }
         Vector3 position = Vector3::Transform(Vector3{positionValues[0], positionValues[1], positionValues[2]}, world);
-        Vector3 normal =
-            Vector3::TransformNormal(Vector3{normalValues[0], normalValues[1], normalValues[2]}, normalMatrix);
+        Vector3 normal = Vector3::TransformNormal(Vector3{normalValues[0], normalValues[1], normalValues[2]}, normalMatrix);
         normal.Normalize();
         position.z = -position.z;
         normal.z = -normal.z;
@@ -251,8 +247,7 @@ MeshPart LoadPrimitive(const cgltf_data& data, const cgltf_node& node, const cgl
     std::vector<std::uint32_t> indices(indexCount);
     for (std::size_t index = 0; index < indexCount; ++index)
     {
-        const std::size_t value =
-            primitive.indices != nullptr ? cgltf_accessor_read_index(primitive.indices, index) : index;
+        const std::size_t value = primitive.indices != nullptr ? cgltf_accessor_read_index(primitive.indices, index) : index;
         if (value >= vertices.size())
         {
             throw std::runtime_error("glTF index is outside the vertex buffer");
@@ -268,7 +263,7 @@ MeshPart LoadPrimitive(const cgltf_data& data, const cgltf_node& node, const cgl
         mesh_import::ComputeNormals(vertices, indices);
     }
     return {std::make_unique<Mesh>(resources.Device(), vertices, indices),
-            LoadMaterial(data, primitive.material, modelPath, resources)};
+            LoadMaterial(data, primitive.material, modelPath)};
 }
 
 } // namespace

@@ -12,7 +12,7 @@
 namespace lrender
 {
 
-MaterialCommand::MaterialCommand(Scene& scene, std::uint32_t entityId, EntityMaterial before, EntityMaterial after)
+MaterialCommand::MaterialCommand(Scene& scene, std::uint32_t entityId, Material before, Material after)
     : m_scene(scene), m_entityId(entityId), m_before(std::move(before)), m_after(std::move(after))
 {
 }
@@ -27,7 +27,7 @@ void MaterialCommand::Undo()
     Apply(m_before);
 }
 
-void MaterialCommand::Apply(const EntityMaterial& value)
+void MaterialCommand::Apply(const Material& value)
 {
     Entity* entity = m_scene.FindEntity(m_entityId);
     if (entity == nullptr)

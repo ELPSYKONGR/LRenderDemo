@@ -28,7 +28,7 @@ LRenderDemo 不是教程章节的线性复刻。它的平台能力已经超过�
 | 可见编辑器界面 | 已完成，包含停靠、视口、层级、检查器和工具栏 | `editor/EditorLayer.*` |
 | 场景与相机 | 已完成基础实体、环绕/平移/缩放相机 | `core/Scene.*`、`core/Camera.*` |
 | 基础几何 | 已完成立方体和 UV 球体程序化生成 | `render/PrimitiveFactory.*` |
-| 纹理与材质 | 已完成 UV、sRGB BaseColor、Sampler、生成棋盘纹理和基础高光参数 | `render/Material.h`、`Texture2D.*` |
+| 纹理与材质 | 已完成 UV、sRGB BaseColor、Sampler、生成棋盘纹理和基础高光参数 | `core/Material.*`、`render/MaterialManager*`、`Texture2D.*` |
 | 模型与缓存 | 已完成静态 glTF/GLB、子网格、节点变换、外部/内嵌图片和资源复用 | `render/GltfLoader.*`、`ResourceCache.*` |
 | 基础光照 | 已完成方向光、四盏点光、Lambert、Blinn-Phong 和编辑器参数控制 | `render/BasicMeshEffect.*`、`editor/EditorAssets.cpp` |
 | Shader 工作流 | 已完成 VS 工程显示、FXC 增量构建和 CSO 加载 | `src/shaders/`、`src/CMakeLists.txt` |

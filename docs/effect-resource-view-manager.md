@@ -89,7 +89,8 @@ graph TD
     Renderer --> Sky[SkyCubeEffect]
     Sky --> Cube[EffectCubeMapResource]
     ViewManager --> ViewTarget[每个 View 的 EffectResource]
-    Cache[ResourceCache] --> Shared[共享 Mesh/Texture/Sampler]
+    Cache[ResourceCache] --> Meshes[共享 MeshAsset]
+    MaterialManager[MaterialManager] --> Shared[共享 Texture/Sampler]
 ```
 
 多 Pass Effect 需要几个中间目标，就显式声明几个 `EffectResource` 成员。只有资源数量确实需要在运行时

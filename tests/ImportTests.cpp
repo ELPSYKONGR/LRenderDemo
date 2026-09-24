@@ -5,6 +5,7 @@
  * @depends render/ResourceCache.h, D3D11 WARP
  */
 #include "render/Dx11ConstantBuffer.h"
+#include "render/MaterialManager.h"
 #include "render/ResourceCache.h"
 
 #include <cmath>
@@ -72,22 +73,41 @@ void TestObjImport()
                                              device.GetAddressOf(), &featureLevel, context.GetAddressOf());
     Require(SUCCEEDED(result), "WARP D3D11 device creation failed");
 
-    lrender::ResourceCache resources(device.Get(), context.Get());
-    const std::filesystem::path path = std::filesystem::path(LRENDER_TEST_ASSET_DIR) / "obj" / "mixed.obj";
-    const auto asset = resources.LoadMeshAsset(path);
-    Require(asset->entities.size() == 2, "OBJ shapes should become separate asset entities");
-    Require(asset->entities[0].name == "RedTriangle", "First OBJ shape name is incorrect");
-    Require(asset->entities[1].name == "BlueTriangle", "Second OBJ shape name is incorrect");
-    Require(asset->entities[0].parts.size() == 1, "First OBJ shape should have one part");
-    Require(asset->entities[1].parts.size() == 1, "Second OBJ shape should have one part");
-    Require(asset->entities[0].parts[0].mesh->IndexCount() == 3, "OBJ triangle index count is wrong");
-    RequireNear(asset->entities[0].parts[0].material.GetBaseColorFactor().x, 0.8F,
-                "OBJ MTL diffuse color was not imported");
-    RequireNear(asset->entities[1].parts[0].material.GetShininess(), 16.0F, "OBJ MTL shininess was not imported");
+    lrender::MaterialManager::Initialize(device.Get(), context.Get());
+    {
+        lrender::Material source = lrender::MaterialManager::Instance().CheckerMaterial();
+        lrender::Material overrideMaterial = source;
+        overrideMaterial.SetBaseColor({0.2F, 0.4F, 0.8F, 1.0F});
+        overrideMaterial.SetTextureSource(lrender::MaterialTextureSource::Source);
+        overrideMaterial.SetAddressModes(lrender::MaterialAddressMode::Clamp, lrender::MaterialAddressMode::Mirror);
+        const lrender::MaterialDrawData prepared = lrender::MaterialManager::Instance().PrepareMaterial(source, &overrideMaterial);
+        Require(prepared.baseColorTexture != nullptr, "Source texture should resolve through MaterialManager");
+        Require(prepared.sampler != nullptr, "Sampler should resolve through MaterialManager");
+        Require(prepared.material.UsesBaseColorTexture(), "Prepared material should retain source texture usage");
+        D3D11_SAMPLER_DESC samplerDescription{};
+        prepared.sampler->Get()->GetDesc(&samplerDescription);
+        Require(samplerDescription.AddressU == D3D11_TEXTURE_ADDRESS_CLAMP, "MaterialManager should preserve the U address mode");
+        Require(samplerDescription.AddressV == D3D11_TEXTURE_ADDRESS_MIRROR, "MaterialManager should preserve the V address mode");
 
-    const auto cached = resources.LoadMeshAsset(path);
-    Require(asset == cached, "Repeated OBJ loads should return the cached mesh asset");
-    Require(resources.MeshAssetCount() == 1, "OBJ cache should contain one mesh asset");
+        lrender::ResourceCache resources(device.Get());
+        const std::filesystem::path path = std::filesystem::path(LRENDER_TEST_ASSET_DIR) / "obj" / "mixed.obj";
+        const auto asset = resources.LoadMeshAsset(path);
+        Require(asset->entities.size() == 2, "OBJ shapes should become separate asset entities");
+        Require(asset->entities[0].name == "RedTriangle", "First OBJ shape name is incorrect");
+        Require(asset->entities[1].name == "BlueTriangle", "Second OBJ shape name is incorrect");
+        Require(asset->entities[0].parts.size() == 1, "First OBJ shape should have one part");
+        Require(asset->entities[1].parts.size() == 1, "Second OBJ shape should have one part");
+        Require(asset->entities[0].parts[0].mesh->IndexCount() == 3, "OBJ triangle index count is wrong");
+        RequireNear(asset->entities[0].parts[0].material.GetBaseColor().x, 0.8F,
+                    "OBJ MTL diffuse color was not imported");
+        RequireNear(asset->entities[1].parts[0].material.GetShininess(), 16.0F,
+                    "OBJ MTL shininess was not imported");
+
+        const auto cached = resources.LoadMeshAsset(path);
+        Require(asset == cached, "Repeated OBJ loads should return the cached mesh asset");
+        Require(resources.MeshAssetCount() == 1, "OBJ cache should contain one mesh asset");
+    }
+    lrender::MaterialManager::Shutdown();
 }
 
 } // namespace

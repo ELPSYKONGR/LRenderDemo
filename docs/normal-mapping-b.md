@@ -27,8 +27,8 @@ BasicMeshVS/PS: worldNormal
 | 顶点数据 | `src/render/Mesh.h` 的 `MeshVertex` | 增加切线和 handedness，更新 Input Layout 与上传结构 |
 | 程序化几何 | `src/render/PrimitiveFactory.*` | 为 Cube/Sphere/Plane 生成切线，处理退化 UV |
 | 导入器 | `src/render/GltfLoader.*`、`ObjLoader.*`、`MeshImportUtils.*` | 读取已有切线；没有时按位置和 UV 重建；处理镜像与退化情况 |
-| 材质 | `src/render/Material.*`、`src/core/EntityMaterial.*` | 增加 Normal Texture、启用标志和必要的编辑/序列化字段 |
-| 缓存 | `src/render/ResourceCache.*` | 复用法线纹理资源，保持与 BaseColor 相同的生命周期边界 |
+| 材质 | `src/core/Material.*`、`src/render/MaterialManager*` | 增加 Normal Texture 引用、启用标志和 GPU 资源解析 |
+| 缓存 | `src/render/MaterialManager*` | 复用法线纹理资源，保持与 BaseColor 相同的生命周期边界 |
 | Effect | `src/render/BasicMeshEffect.*` | 增加法线纹理 SRV、绑定槽位和纹理存在性参数 |
 | Shader | `src/shaders/BasicMeshVS.hlsl`、`BasicMeshPS.hlsl`、必要时 `common.hlsli` | 传递 T/B/N，解码 normal map，构造世界空间法线 |
 | 编辑器 | `src/editor/EditorMaterial.*` | 显示法线贴图状态、开关和 Debug View |
@@ -43,7 +43,7 @@ graph TD
     Primitive[PrimitiveFactory] --> Utils
     Utils --> Vertex[MeshVertex: P N UV T]
     Vertex --> Mesh[Mesh GPU Buffer]
-    MatFile[Material / EntityMaterial] --> Resolve[Dx11Renderer::ResolveMaterial]
+    MatFile[Material] --> Resolve[MaterialManager::PrepareMaterial]
     Resolve --> Effect[BasicMeshEffect]
     Mesh --> VS[BasicMeshVS]
     Effect --> PS[BasicMeshPS]
@@ -130,7 +130,7 @@ glTF、OBJ 的坐标和绕序转换已经在导入边界完成。切线必须和
 - normal scale 只能作为明确的学习参数，默认值为 1；
 - 贴图的 mipmap、过滤和各向异性设置沿用现有 Sampler，但要记录它们对远处稳定性的影响。
 
-不要把法线纹理塞进 `EntityMaterial.baseColor` 的语义里。材质字段必须表达“它是什么数据”，否则编辑器和序列化会在下一阶段 PBR 时失去边界。
+不要把法线纹理塞进 `Material::GetBaseColor()` 的语义里。材质字段必须表达“它是什么数据”，否则编辑器和序列化会在下一阶段 PBR 时失去边界。
 
 ### 4. 扩展 Shader 的 TBN 链
 

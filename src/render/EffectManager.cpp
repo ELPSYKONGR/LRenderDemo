@@ -163,8 +163,7 @@ void EffectManager::SetStencil(const StencilDescription& stencil)
     description.StencilEnable = stencil.enabled ? TRUE : FALSE;
     description.StencilReadMask = stencil.readMask;
     description.StencilWriteMask = stencil.writeMask;
-    description.FrontFace = {stencil.failOperation, stencil.depthFailOperation, stencil.passOperation,
-                             stencil.comparison};
+    description.FrontFace = {stencil.failOperation, stencil.depthFailOperation, stencil.passOperation, stencil.comparison};
     description.BackFace = description.FrontFace;
     const auto state = CreateDepthStencilState(description);
     m_context->OMSetDepthStencilState(state.Get(), stencil.reference);
@@ -231,19 +230,16 @@ void EffectManager::CreateCommonStates()
     m_premultipliedBlendState = CreateBlendState(BuildBlendDescription(BlendMode::Premultiplied));
     m_solidCullClockwiseState = CreateRasterizerState(BuildRasterizerDescription(RasterizerMode::SolidCullClockwise));
     m_solidCullNoneState = CreateRasterizerState(BuildRasterizerDescription(RasterizerMode::SolidCullNone));
-    m_wireframeCullClockwiseState =
-        CreateRasterizerState(BuildRasterizerDescription(RasterizerMode::WireframeCullClockwise));
+    m_wireframeCullClockwiseState = CreateRasterizerState(BuildRasterizerDescription(RasterizerMode::WireframeCullClockwise));
     m_wireframeCullNoneState = CreateRasterizerState(BuildRasterizerDescription(RasterizerMode::WireframeCullNone));
-    m_solidCullClockwiseScissorState =
-        CreateRasterizerState(BuildRasterizerDescription(RasterizerMode::SolidCullClockwiseScissor));
+    m_solidCullClockwiseScissorState = CreateRasterizerState(BuildRasterizerDescription(RasterizerMode::SolidCullClockwiseScissor));
 }
 
 D3D11_DEPTH_STENCIL_DESC EffectManager::BuildDepthStencilDescription(DepthMode mode)
 {
     D3D11_DEPTH_STENCIL_DESC description = {};
     description.DepthEnable = mode != DepthMode::Disabled ? TRUE : FALSE;
-    description.DepthWriteMask = mode == DepthMode::ReadWrite ? D3D11_DEPTH_WRITE_MASK_ALL
-                                                               : D3D11_DEPTH_WRITE_MASK_ZERO;
+    description.DepthWriteMask = mode == DepthMode::ReadWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
     description.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
     return description;
 }

@@ -82,11 +82,8 @@ class EffectManager final
 
     void SetDepthMode(DepthMode mode);
     void SetStencil(const StencilDescription& description);
-    void SetBlendMode(BlendMode mode, const std::array<float, 4>& blendFactor = {},
-                      UINT sampleMask = 0xffffffffU);
-    void SetBlendState(const D3D11_BLEND_DESC& description,
-                       const std::array<float, 4>& blendFactor = {},
-                       UINT sampleMask = 0xffffffffU);
+    void SetBlendMode(BlendMode mode, const std::array<float, 4>& blendFactor = {}, UINT sampleMask = 0xffffffffU);
+    void SetBlendState(const D3D11_BLEND_DESC& description, const std::array<float, 4>& blendFactor = {}, UINT sampleMask = 0xffffffffU);
     void SetRasterizerMode(RasterizerMode mode);
     void SetRasterizerState(const D3D11_RASTERIZER_DESC& description);
 

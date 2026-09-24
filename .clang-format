@@ -4,7 +4,9 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortBlocksOnASingleLine: Never
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
 IndentWidth: 4
-ColumnLimit: 120
+ColumnLimit: 140
 PointerAlignment: Left
 SortIncludes: Never
+PenaltyBreakAssignment: 1000

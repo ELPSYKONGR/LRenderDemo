@@ -41,8 +41,7 @@ void TestLightLifecycleAndBuffer()
     lights.SetSettings(restored);
     Require(std::abs(lights.AmbientIntensity() - 0.5F) < 0.001F,
             "Ambient intensity replacement failed");
-    Require(lights.Directional() != nullptr && lights.Directional()->id != 0,
-            "Restored directional light should receive a runtime id");
+    Require(lights.Directional() != nullptr && lights.Directional()->id != 0, "Restored directional light should receive a runtime id");
     Require(lights.PointLights()[0].id != 0, "Restored point lights should receive runtime ids");
 
     const lrender::LightId directionalId = lights.Directional()->id;

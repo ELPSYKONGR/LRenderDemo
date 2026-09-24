@@ -58,8 +58,7 @@ TestEffect::TestEffect(ID3D11Device* device, ID3D11DeviceContext* context,
 		throw std::runtime_error("Failed to create test pixel shader");
 	}
 
-    constexpr D3D11_INPUT_ELEMENT_DESC inputElements[] =
-    {
+    constexpr D3D11_INPUT_ELEMENT_DESC inputElements[] = {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,12, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
@@ -71,16 +70,14 @@ TestEffect::TestEffect(ID3D11Device* device, ID3D11DeviceContext* context,
     }
 
     // 测试几何使用裁剪空间坐标，便于独立验证输入布局、深度和混合状态。
-    constexpr std::array<TestVertex, 3> singleTriangleVertices =
-    {
+    constexpr std::array<TestVertex, 3> singleTriangleVertices = {
         TestVertex{{-1.0F, -1.0F, 0.F}, {1.0F, 0.1F, 0.1F, 1.0F}},
         TestVertex{{0.0F, 0.0F, 0.F}, {0.1F, 1.0F, 0.1F, 1.0F}},
         TestVertex{{-0.5F, 0.5F, 0.20F}, {0.1F, 0.1F, 1.0F, 1.0F}}
     };
     constexpr std::array<std::uint32_t, 3> singleTriangleIndices = {0, 2, 1};
 
-    constexpr std::array<TestVertex, 9> transparentVertices =
-    {
+    constexpr std::array<TestVertex, 9> transparentVertices = {
         TestVertex{{-0.62F, -0.50F, 0.20F}, {1.0F, 0.1F, 0.1F, 0.35F}},
         TestVertex{{0.0F, 0.62F, 0.20F}, {1.0F, 0.1F, 0.1F, 0.35F}},
         TestVertex{{0.62F, -0.50F, 0.20F}, {1.0F, 0.1F, 0.1F, 0.35F}},
@@ -93,10 +90,12 @@ TestEffect::TestEffect(ID3D11Device* device, ID3D11DeviceContext* context,
     };
     constexpr std::array<std::uint32_t, 9> transparentIndices = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
-    m_singleTriangleVertexBuffer = CreateBuffer(Device(), singleTriangleVertices.data(),sizeof(singleTriangleVertices), D3D11_BIND_VERTEX_BUFFER);
-    m_singleTriangleIndexBuffer = CreateBuffer(Device(), singleTriangleIndices.data(),sizeof(singleTriangleIndices), D3D11_BIND_INDEX_BUFFER);
-    m_transparentVertexBuffer = CreateBuffer(Device(), transparentVertices.data(),sizeof(transparentVertices), D3D11_BIND_VERTEX_BUFFER);
-    m_transparentIndexBuffer = CreateBuffer(Device(), transparentIndices.data(),sizeof(transparentIndices), D3D11_BIND_INDEX_BUFFER);
+    m_singleTriangleVertexBuffer = CreateBuffer(
+        Device(), singleTriangleVertices.data(), sizeof(singleTriangleVertices), D3D11_BIND_VERTEX_BUFFER);
+    m_singleTriangleIndexBuffer = CreateBuffer(
+        Device(), singleTriangleIndices.data(), sizeof(singleTriangleIndices), D3D11_BIND_INDEX_BUFFER);
+    m_transparentVertexBuffer = CreateBuffer(Device(), transparentVertices.data(), sizeof(transparentVertices), D3D11_BIND_VERTEX_BUFFER);
+    m_transparentIndexBuffer = CreateBuffer(Device(), transparentIndices.data(), sizeof(transparentIndices), D3D11_BIND_INDEX_BUFFER);
     m_singleTriangleIndexCount = static_cast<std::uint32_t>(singleTriangleIndices.size());
     m_transparentIndexCount = static_cast<std::uint32_t>(transparentIndices.size());
 }

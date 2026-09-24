@@ -1,5 +1,23 @@
 # LESSONS - LRenderDemo
 
+### ADR-022：统一材质定义并由 MaterialManager 解析 GPU 资源
+
+- **决策**：Core 层只保留一个不依赖图形 API 的 `Material` 类；Entity 的基础材质和覆盖材质、
+  MeshPart 的导入源材质都使用该类型。`MaterialManager` 作为受控单例持有 Texture2D/Sampler 缓存，
+  合并源材质与 Entity Override，并生成只供一次绘制使用的 `MaterialDrawData`。
+- **原因**：原 `EntityMaterial` 与渲染层 `Material` 重复保存同一组属性，新增属性需要双向同步，且
+  GPU 指针混入材质语义后不利于序列化和未来 RHI。统一值类型后，场景、命令、导入和持久化共享
+  同一份定义，DX11 对象仍严格留在渲染层。
+- **多材质边界**：MeshPart 继续保存各自源材质；Entity 没有 Override 时直接使用每个 Part 的源材质，
+  有 Override 时统一覆盖属性，`MaterialTextureSource::Source` 仍保留各 Part 自己的 BaseColor 贴图。
+- **Sampler 边界**：Material 分别保存 U/V 寻址方式以保留 glTF `wrap_s`/`wrap_t`；编辑器的单一寻址控件
+  仍通过 `SetAddressMode()` 同时修改两轴。
+- **持久化**：MaterialManager 集中材质 JSON 转换，SceneSerializer 保存基础材质和可选覆盖材质；旧场景
+  缺少 `materialOverride` 时按兼容路径读取。
+- **代码风格**：工程行宽为 140 字符；包含 `=` 的完整赋值或初始化语句在不超过 140 字符时必须单行。
+  长表达式需要续行时，函数名、条件或左大括号与 `=` 保持同一行，不允许让 `=` 单独位于行尾。
+- **状态**：已接受，取代 ADR-006 的双材质解析实现。
+
 ### ADR-021：Effect 资源尺寸和 Pass 状态恢复分离
 
 - **决策**：EffectResource 显式区分 `MatchViewport` 与 `Fixed`；Renderer 调整视口时通知 Effect，Effect 自己调整私有动态资源。EffectFrameContext 按 Pass 捕获和恢复核心管线状态；SRV/Sampler 由 Effect 依据 `stdfx.h` 固定槽位管理。
@@ -27,7 +45,7 @@
 
 - **决策**：`EffectResource` 表示单个二维颜色/深度目标，`EffectCubeMapResource` 表示单个 Cubemap；具体 Effect 直接持有需要的资源成员，不使用字符串资源注册表。
 - **原因**：当前资源数量在编译期明确，显式成员更容易追踪所有权、调试和调整不同分辨率，也避免资源容器与资源实例职责重叠。
-- **边界**：跨 Effect 共享的 Mesh、Texture 和 Sampler 继续由 `ResourceCache` 管理；资源数量真正动态变化后才使用容器。
+- **边界**：跨 Effect 共享的 Mesh 由 `ResourceCache` 管理，材质 Texture 和 Sampler 由 `MaterialManager` 管理；资源数量真正动态变化后才使用容器。
 - **工程约定**：`stdfx.h` 作为 CMake 预编译头集中维护常用依赖，但公共头仍必须自包含。
 - **状态**：已接受，取代 ADR-012 中“IRenderEffect 持有资源注册表”的部分。
 
@@ -64,7 +82,7 @@
 
 - **决策**：使用 `common.hlsli` 统一声明 Frame、Object、Material、Light CBuffer；C++ 使用 `CommonConstants.h` 对齐布局。
 - **原因**：多个 Effect 需要共享数据，但世界矩阵、材质和相机的更新频率不同，不能继续塞进一个 BasicMesh 专属缓冲。
-- **边界**：纹理类型和采样器语义由具体 Effect 声明，CPU 侧通过 `ResourceCache` 复用资源；Core 层不依赖 DX11。
+- **边界**：纹理类型和采样器语义由具体 Effect 声明，CPU 侧通过 `MaterialManager` 复用材质资源；Core 层不依赖 DX11。
 - **状态**：已接受。
 
 本文档记录长期有效的架构决策和项目专用工程知识。
@@ -121,8 +139,8 @@
 - **决策**：内置固定提交的 `cgltf`，项目负责坐标系转换、GPU 资源创建与缓存。
 - **原因**：保留 glTF 数据流的学习可见性，同时避免自行维护格式解析器；C 接口也能验证工程的 C/C++
   混合编译边界。
-- **结果**：`core/Scene` 只保存资产路径和资产实体索引，DX11 对象集中在 `render/`；网格资产、
-  纹理与 Sampler 由 `ResourceCache` 复用。当前只承诺静态三角网格和 BaseColor，不把近似高光
+- **结果**：`core/Scene` 只保存资产路径和资产实体索引，DX11 对象集中在 `render/`；网格资产由
+  `ResourceCache` 复用，纹理与 Sampler 由 `MaterialManager` 复用。当前只承诺静态三角网格和 BaseColor，不把近似高光
   称为完整 PBR。
 - **状态**：已接受。
 
@@ -137,7 +155,7 @@
 - **原因**：实体材质可撤销、可序列化且不依赖 DX11；同一缓存模型的多个实例可以独立编辑，
   不会互相污染。
 - **结果**：后续增加材质通道时，先扩展 API 无关的数据，再由后端解析成纹理槽和渲染状态。
-- **状态**：已接受。
+- **状态**：已由 ADR-022 取代。
 
 ### ADR-007：分离场景 Model 与渲染 MeshAsset，并用导入器策略扩展格式
 
@@ -241,5 +259,5 @@ glTF 节点矩阵为列主序，当前 DirectX `SimpleMath` 代码采用行向�
 
 - **决策**：`EffectManager` 作为绑定当前 Device/ImmediateContext 的单例，负责 EffectResource/Cubemap 创建、常用 Depth/Stencil、Blend、Rasterizer 状态缓存和状态绑定；具体 Effect 或 Renderer 继续拥有实际资源。
 - **原因**：ViewManager 的逻辑 View 生命周期与 DX11 管线状态创建职责不同；拆分后新增 Effect 不再依赖 ViewManager 创建状态，状态也可以跨 Effect 复用。
-- **边界**：ViewManager 继续负责窗口、Camera、Viewport、Scissor Rect 和状态快照；ResourceCache 继续负责普通模型纹理缓存；EffectManager 不管理 Effect 实例，也不使用字符串资源注册表。
+- **边界**：ViewManager 继续负责窗口、Camera、Viewport、Scissor Rect 和状态快照；MaterialManager 负责普通材质纹理与 Sampler 缓存；EffectManager 不管理 Effect 实例，也不使用字符串资源注册表。
 - **状态**：已接受。

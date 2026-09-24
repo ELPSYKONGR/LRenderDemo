@@ -1,5 +1,17 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-09-24 版本 1.3.2：统一 Material 与 MaterialManager
+
+- 删除重复的 `EntityMaterial` 和旧 GPU `Material`，Core 层统一使用可编辑、可序列化的 `Material` 类。
+- 新增单例 `MaterialManager`，集中管理 Texture2D/Sampler 缓存、源材质与 Entity Override 合并以及材质 JSON 转换。
+- OBJ/glTF MeshPart 保留各自源材质；Entity Override 可统一覆盖属性并选择保留源贴图或使用自定义贴图。
+- 保留 glTF Sampler 的 U/V 独立寻址方式，材质 JSON 同时兼容旧的单一 `addressMode` 字段。
+- 修正 `LitTextured` 模式的 Shader 贴图判断，分别表达“采样 BaseColor”和“Texture Only 跳过光照”。
+- `.lscene` 分别保存基础材质和可选覆盖材质，保持 Reset 状态并兼容旧场景读取。
+- 统一 C/C++/HLSL 赋值换行风格：行宽调整为 140 字符，不超过该宽度的赋值语句保持单行；该约定同步
+  写入项目代理规则、clang-format 和长期架构记录。
+- 工程补丁版本由 `1.3.1` 提升至 `1.3.2`。
+
 ## 2026-09-23 版本 1.3.1：调整 Cornell Box 与渲染流程
 
 - Cornell Box 左右墙使用与房间高度、宽度匹配的平面尺寸。
@@ -154,7 +166,7 @@
 
 ## 2026-09-02 添加 C++ 格式化配置
 
-- 新增项目级 `.clang-format`，固定 Allman 大括号、4 空格缩进、左指针/引用和 120 列宽规则。
+- 新增项目级 `.clang-format`，固定 Allman 大括号、4 空格缩进、左指针/引用和统一行宽规则；当前行宽以配置文件为准。
 - 后续可直接使用 VS2022 的 clang-format 按同一配置格式化源码。
 
 ## 2026-09-02 统一大括号换行风格

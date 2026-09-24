@@ -7,6 +7,7 @@
 #include "render/ObjLoader.h"
 
 #include "render/MeshImportUtils.h"
+#include "render/MaterialManager.h"
 #include "render/ResourceCache.h"
 
 #include <tiny_obj_loader.h>
@@ -91,8 +92,7 @@ std::uint32_t AddVertex(PartBuilder& builder, const tinyobj::index_t& source, co
     {
         ValidateIndex(source.normal_index, attributes.normals.size() / 3U, "normal");
         const std::size_t normalOffset = static_cast<std::size_t>(source.normal_index) * 3U;
-        vertex.normal = {attributes.normals[normalOffset], attributes.normals[normalOffset + 1U],
-                         -attributes.normals[normalOffset + 2U]};
+        vertex.normal = {attributes.normals[normalOffset], attributes.normals[normalOffset + 1U], -attributes.normals[normalOffset + 2U]};
     }
     else
     {
@@ -103,8 +103,7 @@ std::uint32_t AddVertex(PartBuilder& builder, const tinyobj::index_t& source, co
     {
         ValidateIndex(source.texcoord_index, attributes.texcoords.size() / 2U, "texture coordinate");
         const std::size_t textureOffset = static_cast<std::size_t>(source.texcoord_index) * 2U;
-        vertex.textureCoordinate = {attributes.texcoords[textureOffset],
-                                    1.0F - attributes.texcoords[textureOffset + 1U]};
+        vertex.textureCoordinate = {attributes.texcoords[textureOffset], 1.0F - attributes.texcoords[textureOffset + 1U]};
     }
 
     const auto index = static_cast<std::uint32_t>(builder.vertices.size());
@@ -114,9 +113,9 @@ std::uint32_t AddVertex(PartBuilder& builder, const tinyobj::index_t& source, co
 }
 
 Material LoadMaterial(int materialId, const std::vector<tinyobj::material_t>& sources,
-                      const std::filesystem::path& modelPath, ResourceCache& resources)
+                      const std::filesystem::path& modelPath)
 {
-    Material material = resources.DefaultMaterial();
+    Material material = MaterialManager::Instance().DefaultMaterial();
     if (materialId < 0)
     {
         material.SetName("OBJ default material");
@@ -130,14 +129,14 @@ Material LoadMaterial(int materialId, const std::vector<tinyobj::material_t>& so
 
     const tinyobj::material_t& source = sources[static_cast<std::size_t>(materialId)];
     material.SetName(source.name.empty() ? "OBJ material" : source.name);
-    material.SetBaseColorFactor({source.diffuse[0], source.diffuse[1], source.diffuse[2], source.dissolve});
+    material.SetBaseColor({source.diffuse[0], source.diffuse[1], source.diffuse[2], source.dissolve});
     material.SetSpecularColor({source.specular[0], source.specular[1], source.specular[2], 1.0F});
     material.SetSpecularStrength(1.0F);
     material.SetShininess(std::clamp(source.shininess, 1.0F, 256.0F));
     if (!source.diffuse_texname.empty())
     {
-        material.SetBaseColorTexture(
-            resources.LoadTexture(modelPath.parent_path() / Utf8RelativePath(source.diffuse_texname)));
+        material.SetBaseColorTexturePath(modelPath.parent_path() / Utf8RelativePath(source.diffuse_texname));
+        material.SetDisplayMode(SurfaceDisplayMode::LitTextured);
     }
     else
     {
@@ -183,7 +182,7 @@ MeshAssetEntity LoadShape(const tinyobj::shape_t& shape, std::size_t shapeIndex,
             mesh_import::ComputeNormals(builder.vertices, builder.indices);
         }
         entity.parts.push_back({std::make_unique<Mesh>(resources.Device(), builder.vertices, builder.indices),
-                                LoadMaterial(builder.materialId, materials, modelPath, resources)});
+                                LoadMaterial(builder.materialId, materials, modelPath)});
         entity.localBoundingBox.ExtendBox(entity.parts.back().mesh->LocalBoundingBox());
     }
     return entity;
@@ -221,8 +220,7 @@ std::shared_ptr<MeshAsset> ObjLoader::Import(const std::filesystem::path& path, 
     const auto& shapes = reader.GetShapes();
     for (std::size_t index = 0; index < shapes.size(); ++index)
     {
-        MeshAssetEntity entity =
-            LoadShape(shapes[index], index, reader.GetAttrib(), reader.GetMaterials(), path, resources);
+        MeshAssetEntity entity = LoadShape(shapes[index], index, reader.GetAttrib(), reader.GetMaterials(), path, resources);
         if (!entity.parts.empty())
         {
             asset->entities.push_back(std::move(entity));

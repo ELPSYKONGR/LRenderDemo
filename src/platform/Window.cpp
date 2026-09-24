@@ -128,8 +128,7 @@ LRESULT CALLBACK Window::WindowProcedure(HWND window, UINT message, WPARAM wPara
         SetWindowLongPtrW(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
         self->m_handle = window;
     }
-    return self != nullptr ? self->HandleMessage(message, wParam, lParam)
-                           : DefWindowProcW(window, message, wParam, lParam);
+    return self != nullptr ? self->HandleMessage(message, wParam, lParam) : DefWindowProcW(window, message, wParam, lParam);
 }
 
 LRESULT Window::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)

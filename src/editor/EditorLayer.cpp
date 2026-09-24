@@ -222,7 +222,8 @@ void EditorLayer::DrawViewport(Scene& scene, CommandHistory& history, Camera& ca
     {
         renderer.SetViewportDebugView(static_cast<ViewportDebugView>(debugViewIndex));
     }
-    ItemTooltip("Lit shows final shading. World Normal shows encoded world-space XYZ directions as RGB. Press F2 to toggle.");
+        ItemTooltip("Lit shows final shading. World Normal shows encoded world-space XYZ directions as RGB. "
+                    "Press F2 to toggle.");
     bool skyCubeEnabled = renderer.IsSkyCubeEnabled();
     if (ImGui::Checkbox("Sky Cube", &skyCubeEnabled))
     {

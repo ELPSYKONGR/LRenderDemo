@@ -134,13 +134,13 @@ void Application::Initialize()
 
     //auto& cube = m_scene.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
     //cube.transform.position.x = -0.8F;
-    //cube.EntityMaterialData().baseColor = {0.25F, 0.55F, 0.92F, 1.0F};
+    //cube.EntityMaterialData().SetBaseColor({0.25F, 0.55F, 0.92F, 1.0F});
     //auto& sphere = m_scene.CreateEntity(defaultModelId, PrimitiveType::Sphere, "Sphere 2");
     //sphere.transform.position.x = 0.8F;
-    //sphere.EntityMaterialData().baseColor = {0.92F, 0.42F, 0.22F, 1.0F};
+    //sphere.EntityMaterialData().SetBaseColor({0.92F, 0.42F, 0.22F, 1.0F});
     //auto& plane = m_scene.CreateEntity(defaultModelId, PrimitiveType::Plane, "Plane 3");
     //plane.transform.position.y = -0.5F;
-    //plane.EntityMaterialData().baseColor = {0.55F, 0.58F, 0.62F, 1.0F};
+    //plane.EntityMaterialData().SetBaseColor({0.55F, 0.58F, 0.62F, 1.0F});
 
     //const std::filesystem::path sampleModel = "assets/test-scenes/downloads/suzanne/Suzanne.gltf";
     //"assets/test-scenes/downloads/sponza/Sponza.gltf";

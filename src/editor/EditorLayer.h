@@ -49,7 +49,7 @@ class EditorLayer final
     void CreateSolid(Scene& scene, CommandHistory& history, SolidGeometry geometry, std::string name);
     void ImportModel(Scene& scene, CommandHistory& history, Dx11Renderer& renderer);
     void TrackPropertyEdit(Scene& scene, CommandHistory& history, Entity& entity, const Transform& beforeControl);
-    void TrackMaterialEdit(Scene& scene, CommandHistory& history, Entity& entity, const EntityMaterial& beforeControl);
+    void TrackMaterialEdit(Scene& scene, CommandHistory& history, Entity& entity, const Material& beforeControl);
     void TrackSolidEdit(Scene& scene, CommandHistory& history, Entity& entity, const SolidGeometry& beforeControl);
     bool SaveScene(const Scene& scene, CommandHistory& history, Dx11Renderer& renderer, bool saveAs);
     void OpenScene(Scene& scene, CommandHistory& history, Dx11Renderer& renderer, const std::filesystem::path& path);
@@ -65,7 +65,7 @@ class EditorLayer final
     Transform m_gizmoStart;
     std::optional<Transform> m_propertyEditStart;
     std::uint32_t m_propertyEditEntityId = 0;
-    std::optional<EntityMaterial> m_materialEditStart;
+    std::optional<Material> m_materialEditStart;
     std::uint32_t m_materialEditEntityId = 0;
     std::string m_importError;
     bool m_openImportErrorPopup = false;

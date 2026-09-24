@@ -33,8 +33,7 @@ std::string PathUtf8(const std::filesystem::path& path)
 std::filesystem::path SelectModelFile(HWND owner)
 {
     std::array<wchar_t, 32768> pathBuffer{};
-    const std::filesystem::path assetDirectory =
-        std::filesystem::current_path() / "assets" / "test-scenes" / "downloads";
+    const std::filesystem::path assetDirectory = std::filesystem::current_path() / "assets" / "test-scenes" / "downloads";
     const std::wstring initialDirectory = std::filesystem::is_directory(assetDirectory)
                                               ? assetDirectory.wstring()
                                               : std::filesystem::current_path().wstring();
@@ -89,6 +88,15 @@ void EditorLayer::ImportModel(Scene& scene, CommandHistory& history, Dx11Rendere
             Logger::Instance().Info("assets", "Mesh import warning: " + warning);
         }
         Model& model = scene.CreateMeshModel(path, PathUtf8(path.stem()), entityNames, entityBounds);
+        for (std::size_t entityIndex = 0; entityIndex < model.entities.size(); ++entityIndex)
+        {
+            if (!asset->entities[entityIndex].parts.empty())
+            {
+                Material sourceMaterial = asset->entities[entityIndex].parts.front().material;
+                sourceMaterial.SetTextureSource(MaterialTextureSource::Source);
+                model.entities[entityIndex].EntityMaterialData() = std::move(sourceMaterial);
+            }
+        }
         m_selectedModelId = model.id;
         m_selectedEntityId = model.entities.front().id;
         history.PushApplied(std::make_unique<CreateModelCommand>(scene, model));

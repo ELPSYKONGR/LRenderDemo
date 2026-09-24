@@ -12,7 +12,7 @@ sequenceDiagram
     participant Win32 as Win32 消息泵
     participant Editor as EditorLayer
     participant Scene as Scene 和 Commands
-    participant DX11 as Dx11Renderer 和 ResourceCache
+    participant DX11 as Dx11Renderer、ResourceCache 和 MaterialManager
     participant UI as ImGui DX11 后端
     Win32->>Editor: 开始 ImGui 帧
     Editor->>Scene: 应用相机和变换编辑
@@ -26,8 +26,9 @@ sequenceDiagram
 
 - `Application` 负责子系统生命周期和帧循环。
 - `Window` 只负责 Win32 `HWND` 和消息状态。
-- `Dx11Renderer` 负责 GPU 对象、参数化 Solid 的运行时 Mesh、资源缓存和当前启用的 Effects。
-- `ResourceCache` 按规范化路径复用 `MeshAsset` 和纹理，并按描述复用 Sampler；缓存与 D3D 设备同生命周期。
+- `Dx11Renderer` 负责 GPU 设备、参数化 Solid 的运行时 Mesh、场景遍历和当前启用的 Effects。
+- `ResourceCache` 按规范化路径复用 `MeshAsset`；`MaterialManager` 复用 Texture2D 和 SamplerState，并把
+  API 无关的 `Material` 解析为一次绘制使用的 `MaterialDrawData`。两者都与 D3D 设备同生命周期。
 - `Scene` 管理 `Model`，每个 `Model` 管理一组 `Entity`。同一 Model 可以同时包含 Solid Entity 和
   Mesh Entity；Solid 保存尺寸/半径/细分参数，Mesh 保存资产路径/索引，场景层不持有 GPU 资源。
 - `EditorLayer` 将用户交互转换为场景编辑和命令。
@@ -69,9 +70,10 @@ graph LR
     Json --> Serializer
 ```
 
-`LRenderPersistence` 依赖 `LRenderCore` 和固定版本 `nlohmann/json`，Core 不依赖 JSON。保存记录场景
-语义和外部资源引用，不记录 GPU 对象或缓存。加载先创建临时 Scene，编辑器再预加载资源，成功后才
-替换当前场景并清空运行时 Solid Mesh 和命令历史。
+`LRenderPersistence` 依赖 `LRenderCore`、`LRenderAssets` 和固定版本 `nlohmann/json`，通过
+`MaterialManager` 复用统一的材质 JSON 转换；Core 不依赖 JSON 或 DX11。保存记录场景语义和外部资源
+引用，不记录 GPU 对象或缓存。加载先创建临时 Scene，编辑器再预加载资源，成功后才替换当前场景并
+清空运行时 Solid Mesh 和命令历史。
 
 ## 模型格式扩展边界
 
@@ -115,7 +117,7 @@ Entity、解析后的 Material 和选择 ID 构造 `EffectDrawContext`，逐对�
 不继承共同父类。后处理输入纹理由 Renderer 在调用 `RenderEffect` 前显式设置。
 
 `IRenderEffect` 不再持有通用资源注册表。具体 Effect 通过显式成员管理资源：二维颜色/深度目标使用
-`EffectResource`，Cubemap 使用 `EffectCubeMapResource`，普通共享纹理继续由 `ResourceCache` 管理。
+`EffectResource`，Cubemap 使用 `EffectCubeMapResource`，普通材质纹理由 `MaterialManager` 管理。
 多 Pass Effect 可以直接持有多个具名成员，例如 `m_blurResource` 和 `m_bloomResource`，在同一个
 `RenderEffect` 中完成 RTV/SRV 切换。这种所有权可以直接在调试器中观察，也避免依赖字符串查找。
 

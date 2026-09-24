@@ -33,8 +33,9 @@ std::filesystem::path SelectTextureFile(HWND owner)
 {
     std::array<wchar_t, 32768> pathBuffer{};
     const std::filesystem::path textureDirectory = std::filesystem::current_path() / "assets" / "textures";
-    const std::filesystem::path initialDirectory =
-        std::filesystem::is_directory(textureDirectory) ? textureDirectory : std::filesystem::current_path() / "assets";
+    const std::filesystem::path initialDirectory = std::filesystem::is_directory(textureDirectory)
+                                                       ? textureDirectory
+                                                       : std::filesystem::current_path() / "assets";
 
     OPENFILENAMEW dialog{};
     dialog.lStructSize = sizeof(dialog);
@@ -61,9 +62,9 @@ std::filesystem::path SelectTextureFile(HWND owner)
     return {};
 }
 
-void PushDiscreteEdit(Scene& scene, CommandHistory& history, Entity& entity, const EntityMaterial& before, bool changed)
+void PushDiscreteEdit(Scene& scene, CommandHistory& history, Entity& entity, const Material& before, bool changed)
 {
-    const EntityMaterial after = entity.EditableMaterial();
+    const Material after = entity.EditableMaterial();
     if (changed && !before.NearlyEquals(after))
     {
         entity.SetOverrideMaterial(after);
@@ -75,38 +76,64 @@ void PushDiscreteEdit(Scene& scene, CommandHistory& history, Entity& entity, con
 
 void EditorLayer::DrawMaterialEditor(Scene& scene, CommandHistory& history, Dx11Renderer& renderer, Entity& entity)
 {
-    EntityMaterial& material = entity.EditableMaterial();
+    Material& material = entity.EditableMaterial();
     if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        EntityMaterial before = material;
-        ImGui::ColorEdit3("Base color", &material.baseColor.x);
+        Material before = material;
+        DirectX::SimpleMath::Color baseColor = material.GetBaseColor();
+        if (ImGui::ColorEdit3("Base color", &baseColor.x))
+        {
+            material.SetBaseColor(baseColor);
+        }
         TrackMaterialEdit(scene, history, entity, before);
 
         before = material;
-        ImGui::DragFloat("Diffuse strength", &material.diffuseStrength, 0.01F, 0.0F, 2.0F, "%.2f");
+        float diffuseStrength = material.GetDiffuseStrength();
+        if (ImGui::DragFloat("Diffuse strength", &diffuseStrength, 0.01F, 0.0F, 2.0F, "%.2f"))
+        {
+            material.SetDiffuseStrength(diffuseStrength);
+        }
         TrackMaterialEdit(scene, history, entity, before);
 
         before = material;
-        ImGui::ColorEdit3("Specular color", &material.specularColor.x);
+        DirectX::SimpleMath::Color specularColor = material.GetSpecularColor();
+        if (ImGui::ColorEdit3("Specular color", &specularColor.x))
+        {
+            material.SetSpecularColor(specularColor);
+        }
         TrackMaterialEdit(scene, history, entity, before);
 
         before = material;
-        ImGui::DragFloat("Specular strength", &material.specularStrength, 0.01F, 0.0F, 2.0F, "%.2f");
+        float specularStrength = material.GetSpecularStrength();
+        if (ImGui::DragFloat("Specular strength", &specularStrength, 0.01F, 0.0F, 2.0F, "%.2f"))
+        {
+            material.SetSpecularStrength(specularStrength);
+        }
         TrackMaterialEdit(scene, history, entity, before);
 
         before = material;
-        ImGui::DragFloat("Shininess", &material.shininess, 1.0F, 1.0F, 256.0F, "%.0f");
+        float shininess = material.GetShininess();
+        if (ImGui::DragFloat("Shininess", &shininess, 1.0F, 1.0F, 256.0F, "%.0f"))
+        {
+            material.SetShininess(shininess);
+        }
         TrackMaterialEdit(scene, history, entity, before);
 
         before = material;
-        PushDiscreteEdit(scene, history, entity, before, ImGui::Checkbox("Double sided", &material.doubleSided));
+        bool doubleSided = material.IsDoubleSided();
+        const bool doubleSidedChanged = ImGui::Checkbox("Double sided", &doubleSided);
+        if (doubleSidedChanged)
+        {
+            material.SetDoubleSided(doubleSided);
+        }
+        PushDiscreteEdit(scene, history, entity, before, doubleSidedChanged);
 
         constexpr const char* displayModes[]{"Lit textured", "Texture only", "Lit untextured"};
-        int displayMode = static_cast<int>(material.displayMode);
+        int displayMode = static_cast<int>(material.GetDisplayMode());
         before = material;
         if (ImGui::Combo("Display mode", &displayMode, displayModes, std::size(displayModes)))
         {
-            material.displayMode = static_cast<SurfaceDisplayMode>(displayMode);
+            material.SetDisplayMode(static_cast<SurfaceDisplayMode>(displayMode));
             PushDiscreteEdit(scene, history, entity, before, true);
         }
 
@@ -119,17 +146,17 @@ void EditorLayer::DrawMaterialEditor(Scene& scene, CommandHistory& history, Dx11
         {
             ImGui::TextDisabled("No texture preview");
         }
-        if (material.useSourceTexture)
+        if (material.GetTextureSource() == MaterialTextureSource::Source)
         {
-            ImGui::TextUnformatted(entity.IsMesh() ? "Mesh texture (first material)" : "Generated checker texture");
+            ImGui::TextUnformatted("Source texture");
         }
         else
         {
-            const std::string fileName = PathUtf8(material.baseColorTexturePath.filename());
+            const std::string fileName = PathUtf8(material.GetBaseColorTexturePath().filename());
             ImGui::TextWrapped("%s", fileName.c_str());
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
             {
-                const std::string fullPath = PathUtf8(material.baseColorTexturePath);
+                const std::string fullPath = PathUtf8(material.GetBaseColorTexturePath());
                 ImGui::SetTooltip("%s", fullPath.c_str());
             }
         }
@@ -142,9 +169,9 @@ void EditorLayer::DrawMaterialEditor(Scene& scene, CommandHistory& history, Dx11
                 if (!path.empty())
                 {
                     renderer.PreloadTexture(path);
-                    EntityMaterial after = material;
-                    after.baseColorTexturePath = path;
-                    after.useSourceTexture = false;
+                    Material after = material;
+                    after.SetBaseColorTexturePath(path);
+                    after.SetTextureSource(MaterialTextureSource::Custom);
                     history.Execute(std::make_unique<MaterialCommand>(scene, entity.id, material, std::move(after)));
                 }
             }
@@ -163,31 +190,31 @@ void EditorLayer::DrawMaterialEditor(Scene& scene, CommandHistory& history, Dx11
             }
         }
         ImGui::SameLine();
-        ImGui::BeginDisabled(material.useSourceTexture);
+        ImGui::BeginDisabled(material.GetTextureSource() == MaterialTextureSource::Source);
         if (ImGui::Button("Use source"))
         {
-            EntityMaterial after = material;
-            after.useSourceTexture = true;
-            after.baseColorTexturePath.clear();
+            Material after = material;
+            after.SetTextureSource(MaterialTextureSource::Source);
+            after.ClearBaseColorTexture();
             history.Execute(std::make_unique<MaterialCommand>(scene, entity.id, material, std::move(after)));
         }
         ImGui::EndDisabled();
 
         constexpr const char* filters[]{"Point", "Linear", "Anisotropic"};
-        int filter = static_cast<int>(material.filter);
+        int filter = static_cast<int>(material.GetFilter());
         before = material;
         if (ImGui::Combo("Filter", &filter, filters, std::size(filters)))
         {
-            material.filter = static_cast<MaterialFilter>(filter);
+            material.SetFilter(static_cast<MaterialFilter>(filter));
             PushDiscreteEdit(scene, history, entity, before, true);
         }
 
         constexpr const char* addressModes[]{"Wrap", "Clamp", "Mirror"};
-        int addressMode = static_cast<int>(material.addressMode);
+        int addressMode = static_cast<int>(material.GetAddressMode());
         before = material;
         if (ImGui::Combo("Address mode", &addressMode, addressModes, std::size(addressModes)))
         {
-            material.addressMode = static_cast<MaterialAddressMode>(addressMode);
+            material.SetAddressMode(static_cast<MaterialAddressMode>(addressMode));
             PushDiscreteEdit(scene, history, entity, before, true);
         }
 
@@ -195,8 +222,8 @@ void EditorLayer::DrawMaterialEditor(Scene& scene, CommandHistory& history, Dx11
         ImGui::BeginDisabled(!entity.HasMaterialOverride());
         if (ImGui::Button("Reset"))
         {
-            const EntityMaterial beforeReset = entity.EffectiveMaterial();
-            const EntityMaterial afterReset = entity.EntityMaterialData();
+            const Material beforeReset = entity.EffectiveMaterial();
+            const Material afterReset = entity.EntityMaterialData();
             history.Execute(std::make_unique<MaterialCommand>(scene, entity.id, beforeReset, afterReset));
         }
         ImGui::EndDisabled();
@@ -219,7 +246,7 @@ void EditorLayer::DrawMaterialEditor(Scene& scene, CommandHistory& history, Dx11
 }
 
 void EditorLayer::TrackMaterialEdit(Scene& scene, CommandHistory& history, Entity& entity,
-                                    const EntityMaterial& beforeControl)
+                                    const Material& beforeControl)
 {
     if (ImGui::IsItemActivated())
     {
@@ -228,7 +255,7 @@ void EditorLayer::TrackMaterialEdit(Scene& scene, CommandHistory& history, Entit
     }
     if (ImGui::IsItemDeactivatedAfterEdit() && m_materialEditStart && m_materialEditEntityId == entity.id)
     {
-        const EntityMaterial after = entity.EditableMaterial();
+        const Material after = entity.EditableMaterial();
         if (!m_materialEditStart->NearlyEquals(after))
         {
             entity.SetOverrideMaterial(after);

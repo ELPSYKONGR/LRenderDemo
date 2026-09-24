@@ -21,11 +21,11 @@
 
 ## 材质数据边界
 
-渲染层使用 `src/render/Material.h` 中的 `Material` 类。它保存已经解析完成、可以直接提交给 GPU 的颜色、光照参数、纹理和采样器，并通过 `Get...`/`Set...` 接口访问。`Material` 使用值语义，纹理和采样器由 `shared_ptr` 共享所有权。
+场景、编辑器、命令和导入 MeshPart 统一使用 `src/core/Material.*` 中的 `Material` 类。它只保存颜色、光照参数、显示模式、采样枚举和纹理引用，不持有 `Texture2D`、SRV 或 SamplerState，因此可以直接复制、撤销和序列化。
 
-编辑器和 `.lscene` 文件使用 `src/core/EntityMaterial.h` 中的 `EntityMaterial`。它只保存与图形 API 无关的可编辑设置，例如贴图路径、过滤模式和显示模式。`Dx11Renderer::ResolveMaterial` 在每次绘制前把实体设置合并到导入材质或默认材质，生成本次绘制使用的 `Material`。
+`src/render/MaterialManager*` 按 D3D11 Device 生命周期初始化，拥有纹理与 Sampler 缓存。绘制前由 `PrepareMaterial()` 合并 MeshPart 源材质和可选 Entity Override，生成临时 `MaterialDrawData`；其中包含统一 `Material` 快照及本次 Draw 使用的 Texture2D/SamplerState。`Dx11Renderer` 不再实现材质解析规则。
 
-BaseColor 的来源是互斥的：当 `Material::UsesBaseColorTexture()` 为真时，像素着色器直接使用贴图采样颜色；否则直接使用 `EntityMaterial.baseColor`。该查询完全由 `SurfaceDisplayMode` 推导：`LitTextured` 和 `TextureOnly` 表示使用贴图，`LitUntextured` 表示使用实体颜色。渲染器在没有实际贴图时会把模式规范化为 `LitUntextured`，避免白色占位纹理被误认为真实贴图。导入材质的 BaseColor 因子不会再与实体颜色或贴图颜色相乘。
+BaseColor 的来源互斥：存在有效贴图且模式为 `LitTextured` 或 `TextureOnly` 时直接使用采样颜色，否则使用 `Material::GetBaseColor()`。Entity Override 选择 `MaterialTextureSource::Source` 时，各 MeshPart 保留自己的源贴图；选择 `Custom` 时使用 Entity 指定路径。没有有效贴图时 Manager 把显示模式规范化为 `LitUntextured`，白色占位纹理不会被当作真实材质贴图。
 
 ## 公共光照函数
 
@@ -35,7 +35,7 @@ BaseColor 的来源是互斥的：当 `Material::UsesBaseColorTexture()` 为真�
 
 `IRenderEffect` 只持有非拥有的 D3D11 Device/Context，并提供编译产物加载辅助函数。每个派生 Effect 自己管理 Shader、InputLayout、纹理、采样器和渲染状态。二维颜色/深度目标使用 `EffectResource`，TextureCube 使用 `EffectCubeMapResource`；基类不提供字符串资源注册表。`EffectFrameContext` 与 `EffectDrawContext` 是 CPU 侧只读快照，FrameContext 只借用 Renderer 的 `CommonConstantBuffers`，不拥有 GPU Buffer。
 
-普通材质的 `Texture2D`、天空盒的 `TextureCube` 和后处理的场景颜色纹理由各自的 Shader 声明；CPU 侧的 `ResourceCache` 负责复用纹理和 SamplerState。
+普通材质的 `Texture2D` 和 SamplerState 由 `MaterialManager` 复用；`ResourceCache` 只缓存 MeshAsset。天空盒 TextureCube 和后处理场景颜色仍由各自 Effect 管理。
 
 ## 当前后处理入口
 

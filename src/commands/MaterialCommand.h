@@ -15,18 +15,18 @@ namespace lrender
 class MaterialCommand final : public ICommand
 {
   public:
-    MaterialCommand(Scene& scene, std::uint32_t entityId, EntityMaterial before, EntityMaterial after);
+    MaterialCommand(Scene& scene, std::uint32_t entityId, Material before, Material after);
     void Execute() override;
     void Undo() override;
     [[nodiscard]] std::string_view Name() const noexcept override;
 
   private:
-    void Apply(const EntityMaterial& value);
+    void Apply(const Material& value);
 
     Scene& m_scene;
     std::uint32_t m_entityId;
-    EntityMaterial m_before;
-    EntityMaterial m_after;
+    Material m_before;
+    Material m_after;
 };
 
 } // namespace lrender

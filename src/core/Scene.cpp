@@ -15,22 +15,22 @@
 namespace lrender
 {
 
-const EntityMaterial& Entity::EntityMaterialData() const noexcept
+const Material& Entity::EntityMaterialData() const noexcept
 {
     return m_entityMaterial;
 }
 
-EntityMaterial& Entity::EntityMaterialData() noexcept
+Material& Entity::EntityMaterialData() noexcept
 {
     return m_entityMaterial;
 }
 
-const EntityMaterial& Entity::EffectiveMaterial() const noexcept
+const Material& Entity::EffectiveMaterial() const noexcept
 {
     return m_hasOverrideEntityMaterial ? m_overrideEntityMaterial : m_entityMaterial;
 }
 
-EntityMaterial& Entity::EditableMaterial() noexcept
+Material& Entity::EditableMaterial() noexcept
 {
     if (!m_hasOverrideEntityMaterial)
     {
@@ -44,7 +44,7 @@ bool Entity::HasMaterialOverride() const noexcept
     return m_hasOverrideEntityMaterial;
 }
 
-void Entity::SetOverrideMaterial(EntityMaterial material)
+void Entity::SetOverrideMaterial(Material material)
 {
     if (material.NearlyEquals(m_entityMaterial))
     {
@@ -202,7 +202,7 @@ Entity& Scene::CreateMeshEntity(ModelId modelId, std::filesystem::path assetPath
     Entity entity;
     entity.id = m_nextEntityId++;
     entity.name = std::move(name);
-    entity.EntityMaterialData().useSourceTexture = true;
+    entity.EntityMaterialData().SetTextureSource(MaterialTextureSource::Source);
     entity.SetLocalBoundingBox(std::move(localBoundingBox));
     entity.geometry = MeshGeometry{std::move(assetPath), assetEntityIndex};
     return AddEntity(modelId, std::move(entity));
@@ -257,11 +257,7 @@ Entity& Scene::AddEntity(ModelId modelId, Entity entity)
 
 std::optional<Model> Scene::RemoveModel(ModelId id)
 {
-    const auto iterator =
-        std::find_if(m_models.begin(), m_models.end(), [id](const Model& model)
-        {
-            return model.id == id;
-        });
+    const auto iterator = std::find_if(m_models.begin(), m_models.end(), [id](const Model& model) { return model.id == id; });
     if (iterator == m_models.end())
     {
         return std::nullopt;
@@ -292,21 +288,13 @@ std::optional<Entity> Scene::RemoveEntity(EntityId id)
 
 Model* Scene::FindModel(ModelId id)
 {
-    const auto iterator =
-        std::find_if(m_models.begin(), m_models.end(), [id](const Model& model)
-        {
-            return model.id == id;
-        });
+    const auto iterator = std::find_if(m_models.begin(), m_models.end(), [id](const Model& model) { return model.id == id; });
     return iterator == m_models.end() ? nullptr : &*iterator;
 }
 
 const Model* Scene::FindModel(ModelId id) const
 {
-    const auto iterator =
-        std::find_if(m_models.begin(), m_models.end(), [id](const Model& model)
-        {
-            return model.id == id;
-        });
+    const auto iterator = std::find_if(m_models.begin(), m_models.end(), [id](const Model& model) { return model.id == id; });
     return iterator == m_models.end() ? nullptr : &*iterator;
 }
 

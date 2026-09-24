@@ -100,8 +100,7 @@ bool Camera::CalcFitView(const BoundingBox& boundingBox, float aspectRatio, floa
     constexpr float minimumDistance = 0.5F;
     constexpr float maximumDistance = 100.0F;
     const float verticalHalfFieldOfView = verticalFieldOfView * 0.5F;
-    const float horizontalHalfFieldOfView =
-        std::atan(std::tan(verticalHalfFieldOfView) * std::max(aspectRatio, 0.01F));
+    const float horizontalHalfFieldOfView = std::atan(std::tan(verticalHalfFieldOfView) * std::max(aspectRatio, 0.01F));
     const float halfFieldOfView = std::min(verticalHalfFieldOfView, horizontalHalfFieldOfView);
     const float radius = std::max(boundingBox.Radius(), 0.001F);
     const float distance = radius / std::tan(halfFieldOfView) * margin;
