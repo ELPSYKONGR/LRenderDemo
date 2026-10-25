@@ -1,5 +1,14 @@
 # CHANGELOG - LRenderDemo
 
+## 2026-10-25 版本 1.4.0：增加教学版 TAA 与细长模型测试场景
+
+- 新增 `TAAEffect` 及配套全屏 Vertex/Pixel Shader，使用两张 `EffectResource` 历史纹理进行 Ping-Pong 累积。
+- TAA Pixel Shader 增加 3x3 当前帧邻域裁剪，减少历史颜色越界造成的拖影；首帧、关闭重开、视口尺寸变化和调试视图切换会重置历史。
+- Viewport 面板新增 `TAA` 开关，World Normal 调试模式直接显示法线结果并跳过 TAA。
+- 新增独立 `TAA Test Rods` Model，包含五根不同深度和旋转角度的细长立方体及两根横向细线，用于观察边缘闪烁和历史拖影。
+- 当前版本是教学验证通路，尚未加入子像素投影抖动、运动矢量和深度重投影；相机快速移动时仍可能出现拖影。
+- 工程次版本由 `1.3.2` 提升至 `1.4.0`。
+
 ## 2026-09-24 版本 1.3.2：统一 Material 与 MaterialManager
 
 - 删除重复的 `EntityMaterial` 和旧 GPU `Material`，Core 层统一使用可编辑、可序列化的 `Material` 类。

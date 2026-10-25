@@ -1,5 +1,13 @@
 # LESSONS - LRenderDemo
 
+### ADR-023：教学版 TAA 使用 Effect 内部历史纹理 Ping-Pong
+
+- **决策**：`TAAEffect` 继承 `IRenderEffect`，内部持有两张随 Viewport 尺寸变化的 `EffectResource`，每帧用一张读取历史、另一张写入累积结果，再由现有 `ColorProcessorEffect` 显示结果。
+- **原因**：不扩展 `EffectResource` 暴露底层 Texture，也不改交换链和基础网格绘制；两张资源保证历史 SRV 与当前 RTV 不会发生 D3D11 绑定冲突。
+- **历史边界**：首帧、关闭后重开、视口 Resize 和 Lit/World Normal 切换都会清除历史有效标志。World Normal 直接显示法线资源，避免把颜色历史混入调试结果。
+- **Shader 边界**：当前只实现固定历史权重和 3x3 邻域颜色裁剪，作为 TAA 学习通路；子像素投影抖动、运动矢量、深度重投影和反遮挡留给后续迭代。
+- **状态**：已接受。
+
 ### ADR-022：统一材质定义并由 MaterialManager 解析 GPU 资源
 
 - **决策**：Core 层只保留一个不依赖图形 API 的 `Material` 类；Entity 的基础材质和覆盖材质、

@@ -17,6 +17,7 @@
 #include "render/ResourceCache.h"
 #include "render/SkyCubeEffect.h"
 #include "render/SolidMeshCache.h"
+#include "render/TAAEffect.h"
 
 #include <cstdint>
 #include <d3d11.h>
@@ -54,6 +55,7 @@ class Dx11Renderer final
     void ClearTarget() noexcept;
     void SetViewportDebugView(ViewportDebugView view) noexcept;
     void SetSkyCubeEnabled(bool enabled) noexcept;
+    void SetTAAEnabled(bool enabled) noexcept;
 
     [[nodiscard]] ID3D11ShaderResourceView* MaterialPreview(const Entity& entity);
 
@@ -63,6 +65,7 @@ class Dx11Renderer final
     [[nodiscard]] const EffectResource& NormalResource() const noexcept;
     [[nodiscard]] ViewportDebugView GetViewportDebugView() const noexcept;
     [[nodiscard]] bool IsSkyCubeEnabled() const noexcept;
+    [[nodiscard]] bool IsTAAEnabled() const noexcept;
     [[nodiscard]] BasicMeshEffect& Effect() noexcept;
     [[nodiscard]] std::size_t CachedMeshAssetCount() const noexcept;
     [[nodiscard]] std::size_t CachedTextureCount() const noexcept;
@@ -85,10 +88,12 @@ class Dx11Renderer final
     std::unique_ptr<SkyCubeEffect> m_skyCubeEffect;
     std::unique_ptr<ColorProcessorEffect> m_colorProcessor;
     std::unique_ptr<TestEffect> m_testEffect;
+    std::unique_ptr<TAAEffect> m_taaEffect;
     std::unique_ptr<ResourceCache> m_resources;
     std::unique_ptr<CommonConstantBuffers> m_commonConstantBuffers;
     ViewportDebugView m_viewportDebugView = ViewportDebugView::Lit;
     bool m_skyCubeEnabled = true;
+    bool m_taaEnabled = false;
 };
 
 } // namespace lrender

@@ -2,7 +2,7 @@
 
 ### 工程版本维护
 
-`VERSION.md` 记录当前工程版本和后续提交的版本递增规则。CMake 内部版本为 `1.3.2`，对外显示版本为 `1.3.2`。
+`VERSION.md` 记录当前工程版本和后续提交的版本递增规则。CMake 内部版本为 `1.4.0`，对外显示版本为 `1.4.0`。
 
 ### 编辑器控件到渲染层调试流程
 
@@ -37,6 +37,7 @@
 | `src/render/LightManager.h/.cpp` | 全局灯光增删、设置整体恢复、环境光强度和 `b3` Light CBuffer 管理 | `LightManager`、`SetSettings()` |
 | `src/render/SSREffect.h/.cpp`、`src/shaders/SSREffectVS.hlsl`、`src/shaders/SSREffectPS.hlsl` | SSR Pass 的可编译空实现骨架 | `SSREffect` |
 | `src/render/TestEffect.h/.cpp`、`src/shaders/TestEffectVS.hlsl`、`src/shaders/TestEffectPS.hlsl` | 帧级测试 Pass，绘制单三角形或透明三角形组 | `TestEffect::RenderEffect()` |
+| `src/render/TAAEffect.h/.cpp`、`src/shaders/TAAEffectVS.hlsl`、`src/shaders/TAAEffectPS.hlsl` | 教学版 TAA Pass，管理两张历史纹理并进行邻域裁剪累积 | `TAAEffect` |
 | `src/render/EffectResource.h/.cpp` | 单个二维颜色/深度渲染资源，封装 RTV/SRV/DSV | `EffectResource` |
 | `src/render/EffectCubeMapResource.h/.cpp` | Effect 私有 TextureCube、SRV 和可选六面 RTV | `EffectCubeMapResource` |
 | `src/render/CommonConstantBuffers.h/.cpp` | Renderer 统一拥有和更新 Frame/Object/Material 三类公共 CBuffer | `CommonConstantBuffers` |
@@ -46,10 +47,11 @@
 | `docs/forward-and-deferred-rendering.md` | 独立的直接渲染与延迟渲染图形学学习笔记 | 中文学习文档 |
 | `docs/normal-mapping-a.md` | 法线贴图公开课讲义：原理、TBN、收益、局限与调试 | 中文学习文档 |
 | `docs/normal-mapping-b.md` | 法线贴图 LRenderDemo 工程实践：文件映射、实现顺序、测试与验收 | 中文学习文档 |
+| `docs/taa-effect.md` | 教学版 TAA 的资源 Ping-Pong、Shader 算法、测试模型和后续扩展 | 中文学习文档 |
 
-本次框架补充：`src/render/CommonConstantBuffers.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer 和统一 Buffer 管理；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 与 `SkyVS/SkyPS` 实现 TextureCube 天空背景。详细设计见 `docs/render-framework-common-shader.md`。
+本次框架补充：`src/render/CommonConstantBuffers.h` 与 `src/shaders/common.hlsli` 定义公共 CBuffer 和统一 Buffer 管理；`src/core/ViewPort.*` 定义 API 无关视口；`src/render/IRenderEffect.cpp` 提供 Effect 基类辅助逻辑；`src/render/ColorProcessorEffect.*` 组成全屏后处理入口；`src/render/SkyCubeEffect.*` 与 `SkyVS/SkyPS` 实现 TextureCube 天空背景；`src/render/TAAEffect.*` 与 `TAAEffectVS/TAAEffectPS` 实现教学版时间累积抗锯齿。详细设计见 `docs/render-framework-common-shader.md` 和 `docs/taa-effect.md`。
 
-> 最后更新：2026-09-24 | 维护者：Codex
+> 最后更新：2026-10-25 | 维护者：Codex
 
 ## 源文件
 

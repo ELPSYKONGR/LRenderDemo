@@ -4,7 +4,7 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 编辑器、场景、命令、渲染器和 Effect 之间的边界清晰，使学习者无需引入完整游戏引擎，便可独立
 实现、验证和比较不同渲染技术。
 
-当前工程版本：**1.3.2**。工程内部使用语义化版本 `1.3.2`，定义位于根目录的 `CMakeLists.txt`。
+当前工程版本：**1.4.0**。工程内部使用语义化版本 `1.4.0`，定义位于根目录的 `CMakeLists.txt`。
 后续每次提交都必须更新版本号，并在 `CHANGELOG.md` 中记录本次变更。
 
 ## 当前里程碑
@@ -18,6 +18,7 @@ LRenderDemo 是一个用于学习 Direct3D 11 的小型 Windows 原生渲染实�
 - 导入静态 glTF/GLB 和 OBJ/MTL 模型，支持多网格实体、基础材质、贴图与资源缓存
 - `Scene -> Model -> Entity` 两级场景层级；同一 Model 可混合绘制 Solid Entity 和 Mesh Entity
 - 一盏方向光和最多四盏点光，支持 Lambert 漫反射与 Blinn-Phong 高光实时调节
+- 教学版 TAA：两张历史纹理 Ping-Pong、邻域裁剪和 Viewport 面板启用开关
 - 使用 ImGuizmo 进行平移、旋转和缩放
 - 对实体创建、变换和材质编辑执行撤销/重做
 - 使用版本化 `.lscene` JSON 保存/打开场景，外部资源使用相对路径引用

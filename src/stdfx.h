@@ -71,3 +71,5 @@ namespace
 #define MaterialSLOT 1
 #define NormalSLOT 2
 #define SkyTextureCubeSLOT 3
+#define TAAHistorySLOT 4
+#define TAAInfoSLOT 4

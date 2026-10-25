@@ -132,6 +132,9 @@ void Application::Initialize()
     ViewManager::Instance().CreateCornellBoxTestScene(m_scene, defaultModelId);
     ConfigureCornellBoxLight();
 
+    Model& taaModel = m_scene.CreateModel("TAA Test Rods");
+    ViewManager::Instance().CreateTAATestEntities(m_scene, taaModel.id);
+
     //auto& cube = m_scene.CreateEntity(defaultModelId, PrimitiveType::Cube, "Cube 1");
     //cube.transform.position.x = -0.8F;
     //cube.EntityMaterialData().SetBaseColor({0.25F, 0.55F, 0.92F, 1.0F});

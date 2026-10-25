@@ -281,6 +281,41 @@ void ViewManager::CreatePlaneTestEntity(Scene& scene, std::uint32_t modelId) con
     material.SetDoubleSided(false);
 }
 
+void ViewManager::CreateTAATestEntities(Scene& scene, std::uint32_t modelId) const
+{
+    constexpr std::array<float, 5> xPositions = {-2.0F, -1.0F, 0.0F, 1.0F, 2.0F};
+    constexpr std::array<float, 5> zPositions = {1.4F, 1.0F, 0.6F, 0.2F, -0.2F};
+    constexpr std::array<float, 5> rotations = {-14.0F, -7.0F, 0.0F, 7.0F, 14.0F};
+    constexpr std::array<DirectX::SimpleMath::Color, 5> colors = {
+        DirectX::SimpleMath::Color{0.90F, 0.12F, 0.10F, 1.0F},
+        DirectX::SimpleMath::Color{0.15F, 0.80F, 0.18F, 1.0F},
+        DirectX::SimpleMath::Color{0.12F, 0.35F, 0.95F, 1.0F},
+        DirectX::SimpleMath::Color{0.95F, 0.75F, 0.08F, 1.0F},
+        DirectX::SimpleMath::Color{0.72F, 0.18F, 0.82F, 1.0F}};
+    CubeParameters rodParameters;
+    rodParameters.size = DirectX::SimpleMath::Vector3{0.08F, 3.2F, 0.08F};
+
+    for (std::size_t index = 0; index < xPositions.size(); ++index)
+    {
+        const std::string name = "TAATestRod_" + std::to_string(index + 1U);
+        Entity& rod = scene.CreateSolidEntity(modelId, SolidGeometry::Cube(rodParameters), name);
+        rod.transform.position = {xPositions[index], 1.6F, zPositions[index]};
+        rod.transform.rotationDegrees.z = rotations[index];
+        ConfigureUntexturedMaterial(rod, colors[index], 0.08F, 20.0F);
+    }
+
+    CubeParameters barParameters;
+    barParameters.size = DirectX::SimpleMath::Vector3{4.6F, 0.08F, 0.08F};
+    Entity& upperBar = scene.CreateSolidEntity(modelId, SolidGeometry::Cube(barParameters), "TAATestBar_Upper");
+    upperBar.transform.position = {0.0F, 3.0F, 1.0F};
+    ConfigureUntexturedMaterial(upperBar, {0.92F, 0.92F, 0.92F, 1.0F}, 0.08F, 20.0F);
+
+    Entity& lowerBar = scene.CreateSolidEntity(modelId, SolidGeometry::Cube(barParameters), "TAATestBar_Lower");
+    lowerBar.transform.position = {0.0F, 0.75F, -1.0F};
+    ConfigureUntexturedMaterial(lowerBar, {0.72F, 0.72F, 0.76F, 1.0F}, 0.08F, 20.0F);
+    scene.CalculateBoundingBoxes();
+}
+
 void ViewManager::CreateCornellBoxTestScene(Scene& scene, std::uint32_t modelId) const
 {
     constexpr DirectX::SimpleMath::Color floorColor{0.54F, 0.50F, 0.45F, 1.0F};

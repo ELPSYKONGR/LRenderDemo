@@ -110,6 +110,7 @@ set(LRENDER_DEMO_HEADERS
     render/Lighting.h
     render/PrimitiveFactory.h
     render/SSREffect.h
+    render/TAAEffect.h
     render/TestEffect.h
     render/ViewManager.h)
 list(APPEND LRENDER_DEMO_HEADERS render/SolidMeshCache.h render/SkyCubeEffect.h)
@@ -139,6 +140,7 @@ add_executable(LRenderDemo WIN32
     render/IRenderEffect.cpp
     render/LightManager.cpp
     render/SSREffect.cpp
+    render/TAAEffect.cpp
     render/TestEffect.cpp
     render/SkyCubeEffect.cpp
     render/Dx11Renderer.cpp
@@ -165,7 +167,9 @@ set(LRENDER_SHADER_SOURCES
     shaders/TestEffectVS.hlsl
     shaders/TestEffectPS.hlsl
     shaders/SkyVS.hlsl
-    shaders/SkyPS.hlsl)
+    shaders/SkyPS.hlsl
+    shaders/TAAEffectVS.hlsl
+    shaders/TAAEffectPS.hlsl)
 set(LRENDER_SHADER_HEADERS
     shaders/common.hlsli)
 set_source_files_properties(${LRENDER_SHADER_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
@@ -238,6 +242,20 @@ set_source_files_properties(shaders/SkyPS.hlsl PROPERTIES
     VS_SHADER_MODEL 5.0
     VS_SHADER_ENTRYPOINT PSMain
     VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/SkyPS.cso"
+    VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
+    VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
+set_source_files_properties(shaders/TAAEffectVS.hlsl PROPERTIES
+    VS_SHADER_TYPE Vertex
+    VS_SHADER_MODEL 5.0
+    VS_SHADER_ENTRYPOINT VSMain
+    VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/TAAEffectVS.cso"
+    VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
+    VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
+set_source_files_properties(shaders/TAAEffectPS.hlsl PROPERTIES
+    VS_SHADER_TYPE Pixel
+    VS_SHADER_MODEL 5.0
+    VS_SHADER_ENTRYPOINT PSMain
+    VS_SHADER_OBJECT_FILE_NAME "${LRENDER_SHADER_BUILD_OUTPUT_DIR}/TAAEffectPS.cso"
     VS_SHADER_DISABLE_OPTIMIZATIONS "$<$<CONFIG:Debug>:true>"
     VS_SHADER_ENABLE_DEBUG "$<$<CONFIG:Debug>:true>")
 

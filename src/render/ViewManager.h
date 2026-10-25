@@ -90,6 +90,7 @@ class ViewManager final
                                float margin = 1.15F) const noexcept;
     void CreateSphereTestEntity(Scene& scene, std::uint32_t modelId) const;
     void CreatePlaneTestEntity(Scene& scene, std::uint32_t modelId) const;
+    void CreateTAATestEntities(Scene& scene, std::uint32_t modelId) const;
     void CreateCornellBoxTestScene(Scene& scene, std::uint32_t modelId) const;
 
   private:

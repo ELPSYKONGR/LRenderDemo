@@ -81,6 +81,7 @@ void Dx11Renderer::Initialize(HWND windowHandle, std::uint32_t width, std::uint3
     m_skyCubeEffect = std::make_unique<SkyCubeEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_colorProcessor = std::make_unique<ColorProcessorEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_testEffect = std::make_unique<TestEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
+    m_taaEffect = std::make_unique<TAAEffect>(m_device.Get(), m_context.Get(), LRENDER_SHADER_OUTPUT_DIR);
     m_resources = std::make_unique<ResourceCache>(m_device.Get());
 }
 
@@ -90,6 +91,7 @@ void Dx11Renderer::Shutdown() noexcept
     m_effect.reset();
     m_skyCubeEffect.reset();
     m_testEffect.reset();
+    m_taaEffect.reset();
     m_colorProcessor.reset();
     ViewManager::Shutdown();
     EffectManager::Shutdown();
@@ -151,6 +153,7 @@ void Dx11Renderer::ResizeViewport(std::uint32_t width, std::uint32_t height)
     m_skyCubeEffect->ResizeResources(width, height);
     m_testEffect->ResizeResources(width, height);
     m_colorProcessor->ResizeResources(width, height);
+    m_taaEffect->ResizeResources(width, height);
 }
 
 void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::uint32_t selectedEntityId)
@@ -185,12 +188,20 @@ void Dx11Renderer::RenderScene(const Scene& scene, const Camera& camera, std::ui
     m_context->PSSetSamplers(LinearClampSamplerSLOT, 1, &nullSampler);
     m_context->RSSetState(nullptr);
 
-    m_viewportResource.BindAndClear(m_context.Get(), clearColor);
     ID3D11ShaderResourceView* viewportSource = m_sceneResource.GetShaderResourceView();
     if (m_viewportDebugView == ViewportDebugView::WorldNormal)
     {
         viewportSource = m_normalResource.GetShaderResourceView();
     }
+    else if (m_taaEnabled)
+    {
+        frameContext.CapturePipelineState();
+        m_taaEffect->SetSource(m_sceneResource.GetShaderResourceView());
+        m_taaEffect->RenderEffect(frameContext);
+        frameContext.ResetPipelineState();
+        viewportSource = m_taaEffect->OutputResource().GetShaderResourceView();
+    }
+    m_viewportResource.BindAndClear(m_context.Get(), clearColor);
     frameContext.CapturePipelineState();
     m_colorProcessor->SetSource(viewportSource);
     m_colorProcessor->RenderEffect(frameContext);
@@ -346,6 +357,10 @@ const EffectResource& Dx11Renderer::NormalResource() const noexcept
 
 void Dx11Renderer::SetViewportDebugView(ViewportDebugView view) noexcept
 {
+    if (m_viewportDebugView != view && m_taaEffect != nullptr)
+    {
+        m_taaEffect->ResetHistory();
+    }
     m_viewportDebugView = view;
 }
 
@@ -354,9 +369,23 @@ void Dx11Renderer::SetSkyCubeEnabled(bool enabled) noexcept
     m_skyCubeEnabled = enabled;
 }
 
+void Dx11Renderer::SetTAAEnabled(bool enabled) noexcept
+{
+    if (m_taaEnabled != enabled && m_taaEffect != nullptr)
+    {
+        m_taaEffect->ResetHistory();
+    }
+    m_taaEnabled = enabled;
+}
+
 bool Dx11Renderer::IsSkyCubeEnabled() const noexcept
 {
     return m_skyCubeEnabled;
+}
+
+bool Dx11Renderer::IsTAAEnabled() const noexcept
+{
+    return m_taaEnabled;
 }
 
 ViewportDebugView Dx11Renderer::GetViewportDebugView() const noexcept

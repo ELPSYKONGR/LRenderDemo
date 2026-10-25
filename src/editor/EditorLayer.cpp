@@ -229,6 +229,12 @@ void EditorLayer::DrawViewport(Scene& scene, CommandHistory& history, Camera& ca
     {
         renderer.SetSkyCubeEnabled(skyCubeEnabled);
     }
+    bool taaEnabled = renderer.IsTAAEnabled();
+    if (ImGui::Checkbox("TAA", &taaEnabled))
+    {
+        renderer.SetTAAEnabled(taaEnabled);
+    }
+    ItemTooltip("Temporal accumulation with neighborhood clamping. Disable it to compare the current frame directly.");
     ImGui::Separator();
     const ImVec2 available = ImGui::GetContentRegionAvail();
     const auto width = static_cast<std::uint32_t>(std::max(available.x, 1.0F));
